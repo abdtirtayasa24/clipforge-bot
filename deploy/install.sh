@@ -116,16 +116,21 @@ record_release() {
     fi
 }
 
+# Reads one KEY=value line like systemd's EnvironmentFile; sourcing the file would make bash
+# treat the "&" inside database URLs as a background operator.
+env_file_value() {
+    local file="$1" key="$2" value
+    value="$(sed -n "s/^${key}=//p" "${file}" | tail -n 1)"
+    value="${value%\"}"
+    printf '%s' "${value#\"}"
+}
+
 run_migrations() {
     log "applying database migrations"
-    (
-        set -a
-        # shellcheck source=/dev/null
-        . "${CONFIG_DIR}/migration.env"
-        set +a
-        cd "${BACKEND_DIR}"
-        "${VENV_DIR}/bin/alembic" upgrade head
-    )
+    local url
+    url="$(env_file_value "${CONFIG_DIR}/migration.env" CLIPFORGE_MIGRATION_DATABASE_URL)"
+    [[ -n "${url}" ]] || fail "CLIPFORGE_MIGRATION_DATABASE_URL missing in ${CONFIG_DIR}/migration.env"
+    (cd "${BACKEND_DIR}" && CLIPFORGE_MIGRATION_DATABASE_URL="${url}" "${VENV_DIR}/bin/alembic" upgrade head)
 }
 
 install_units() {
