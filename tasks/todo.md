@@ -120,12 +120,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/queue/{repository,errors,backoff}.py`, `backend/tests/integration/test_queue.py`, `backend/tests/unit/test_backoff.py`
 **Size:** M
 
-### - [ ] T09: Worker process skeleton
+### - [x] T09: Worker process skeleton
 **Description:** `python -m clipforge.workers.main`: loop claim → run stage pipeline → idle poll with backoff. Heartbeat asyncio task renews lease every 60 s; on `LeaseLost` cancels current stage. Stage registry interface (`async run(ctx) -> StageResult`) with "skip if durable artifact exists and checksum verifies" helper. Honors `cancel_requested` between and within stages. SIGTERM/SIGINT → finish/abort current step, release nothing (lease expires naturally) and exit 0. Single job at a time.
 **Acceptance criteria:**
-- [ ] With fake stages, a job advances through all stages and completes; events recorded
-- [ ] Killing the worker mid-stage and restarting resumes from the last completed stage
-- [ ] Cancellation request stops the job at the next checkpoint → `cancelled`
+- [x] With fake stages, a job advances through all stages and completes; events recorded
+- [x] Killing the worker mid-stage and restarting resumes from the last completed stage
+- [x] Cancellation request stops the job at the next checkpoint → `cancelled`
 **Verification:** standard + `rtk test python -m pytest tests/integration/test_worker.py`
 **Dependencies:** T08
 **Files:** `backend/clipforge/workers/main.py`, `backend/clipforge/pipeline/{runner,context,stage}.py`, tests

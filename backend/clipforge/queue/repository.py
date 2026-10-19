@@ -244,6 +244,13 @@ class JobQueue:
             job = await self._fenced(session, lease, values)
             session.add(self._event(job, event_type, message=message, details=details))
 
+    async def cancel_requested(self, job_id: uuid.UUID) -> bool:
+        async with self._sessions() as session:
+            requested = await session.scalar(
+                select(ProcessingJob.cancel_requested).where(ProcessingJob.id == job_id)
+            )
+        return bool(requested)
+
     async def fenced_update(self, lease: Lease, **fields: Any) -> None:
         async with self._sessions.begin() as session:
             await self._fenced(session, lease, fields)

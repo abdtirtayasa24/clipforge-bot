@@ -1,13 +1,11 @@
 import asyncio
 import uuid
-from collections.abc import AsyncIterator
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import insert, select, update
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy import select
 
-from clipforge.db.models import JobEvent, MediaAsset, ProcessingJob, Video
+from clipforge.db.models import ProcessingJob
 from clipforge.db.session import create_engine, create_session_factory
 from clipforge.queue.errors import (
     ActiveJobExists,
@@ -17,89 +15,18 @@ from clipforge.queue.errors import (
     PermanentError,
     TransientError,
 )
-from clipforge.queue.repository import ACTIVE_STATUSES, LEASE_DURATION, ClaimedJob, JobQueue
+from clipforge.queue.repository import LEASE_DURATION, JobQueue
 from tests.clock import FakeClock
-
-Sessions = async_sessionmaker[AsyncSession]
-
-
-@pytest.fixture
-async def sessions(migrated_database_url: str) -> AsyncIterator[Sessions]:
-    """Sessions on the shared test database with no claimable job left by earlier tests."""
-    engine = create_engine(migrated_database_url, pool_size=3)
-    factory = create_session_factory(engine)
-    async with factory.begin() as session:
-        await session.execute(
-            update(ProcessingJob)
-            .where(ProcessingJob.status.in_(ACTIVE_STATUSES))
-            .values(status="cancelled", lease_token=None, lease_expires_at=None)
-        )
-    yield factory
-    await engine.dispose()
-
-
-@pytest.fixture
-def clock() -> FakeClock:
-    return FakeClock()
-
-
-@pytest.fixture
-def queue(sessions: Sessions, clock: FakeClock) -> JobQueue:
-    return JobQueue(sessions, clock=clock, jitter=lambda: 0.0)
-
-
-def new_key() -> str:
-    return uuid.uuid4().hex
-
-
-async def make_video(sessions: Sessions) -> uuid.UUID:
-    async with sessions.begin() as session:
-        video_id = await session.scalar(
-            insert(Video)
-            .values(youtube_video_id=uuid.uuid4().hex[:11], title="t", channel_id="c")
-            .returning(Video.id)
-        )
-    assert video_id is not None
-    return video_id
-
-
-async def make_media_asset(sessions: Sessions, video_id: uuid.UUID) -> uuid.UUID:
-    async with sessions.begin() as session:
-        asset_id = await session.scalar(
-            insert(MediaAsset)
-            .values(video_id=video_id, kind="upload", permission_evidence={}, state="ready")
-            .returning(MediaAsset.id)
-        )
-    assert asset_id is not None
-    return asset_id
-
-
-async def make_queued_job(queue: JobQueue, sessions: Sessions) -> uuid.UUID:
-    video_id = await make_video(sessions)
-    asset_id = await make_media_asset(sessions, video_id)
-    job, _ = await queue.enqueue(video_id, new_key(), media_asset_id=asset_id)
-    return job.id
-
-
-async def load_job(sessions: Sessions, job_id: uuid.UUID) -> ProcessingJob:
-    async with sessions() as session:
-        job = await session.get(ProcessingJob, job_id)
-    assert job is not None
-    return job
-
-
-async def event_types(sessions: Sessions, job_id: uuid.UUID) -> list[str]:
-    async with sessions() as session:
-        rows = await session.scalars(
-            select(JobEvent.event_type).where(JobEvent.job_id == job_id).order_by(JobEvent.id)
-        )
-        return list(rows)
-
-
-async def claim(queue: JobQueue, worker_id: str = "worker-a") -> ClaimedJob:
-    claimed = await queue.claim_next(worker_id)
-    assert claimed is not None
-    return claimed
+from tests.jobs import (
+    Sessions,
+    claim,
+    event_types,
+    load_job,
+    make_media_asset,
+    make_queued_job,
+    make_video,
+    new_key,
+)
 
 
 async def test_enqueue_is_idempotent_per_key(queue: JobQueue, sessions: Sessions) -> None:
