@@ -56,12 +56,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/migrations/sql/{004,005}_*.sql` (+down), `backend/migrations/versions/{0004,0005}_*.py`, `backend/tests/integration/test_security_roles.py`
 **Size:** M
 
-### - [ ] T05: Telegram `initData` auth + admin guard
+### - [x] T05: Telegram `initData` auth + admin guard
 **Description:** `POST /api/v1/auth/telegram` verifies `initData` per Telegram spec (HMAC-SHA256 with `WebAppData` key, constant-time compare, `auth_date` freshness window, parse `user.id`), checks `admin_users`, returns signed session token (12 h). FastAPI dependency `require_admin` for all privileged routers. CLI/command to bootstrap the admin Telegram ID. Rate-limit failed attempts (in-process).
 **Acceptance criteria:**
-- [ ] Valid initData for admin → 200 + token; tampered hash, stale `auth_date`, non-admin → 401/403
-- [ ] Privileged route without/with expired/forged token → 401
-- [ ] initData and tokens never appear in logs (test captures log output)
+- [x] Valid initData for admin → 200 + token; tampered hash, stale `auth_date`, non-admin → 401/403
+- [x] Privileged route without/with expired/forged token → 401
+- [x] initData and tokens never appear in logs (test captures log output)
 **Verification:** standard + `rtk test python -m pytest tests/unit/test_telegram_auth.py tests/integration/test_auth_api.py`
 **Dependencies:** T02 (admin_users), T01
 **Files:** `backend/clipforge/auth/{telegram,session,deps}.py`, `backend/clipforge/api/v1/auth.py`, `backend/clipforge/admin_cli.py`, tests

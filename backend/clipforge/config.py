@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     db_pool_size: int = Field(default=5, ge=1, le=20)
     db_disable_prepared_statements: bool = False
+    telegram_bot_token: SecretStr | None = None
+    session_secret: SecretStr | None = Field(default=None, min_length=32)
+    init_data_max_age_seconds: int = Field(default=3600, ge=60, le=86400)
+    auth_max_failures: int = Field(default=10, ge=1)
+    auth_failure_window_seconds: int = Field(default=300, ge=1)
 
     @field_validator("log_level", mode="before")
     @classmethod
