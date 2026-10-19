@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 import pytest
+from pydantic import AliasChoices
 
 from clipforge.config import Settings
 
@@ -23,8 +24,18 @@ def unit(name: str) -> configparser.ConfigParser:
     return parser
 
 
+def known_env_names() -> set[str]:
+    names = set()
+    for name, field in Settings.model_fields.items():
+        if isinstance(field.validation_alias, AliasChoices):
+            names |= {str(choice).upper() for choice in field.validation_alias.choices}
+        else:
+            names.add(f"CLIPFORGE_{name.upper()}")
+    return names
+
+
 def test_backend_env_example_only_sets_known_settings() -> None:
-    known = {f"CLIPFORGE_{name.upper()}" for name in Settings.model_fields}
+    known = known_env_names()
 
     assert set(env_example("backend.env.example")) <= known
 
@@ -34,6 +45,7 @@ def test_backend_env_example_holds_placeholders_only() -> None:
 
     for field in SECRET_FIELDS:
         assert "CHANGE_ME" in values[f"CLIPFORGE_{field.upper()}"], field
+    assert values["YOUTUBE_API_KEY"] == "CHANGE_ME"
 
 
 def test_runtime_env_never_carries_migration_credentials() -> None:
@@ -67,3 +79,26 @@ def test_api_unit_is_hardened() -> None:
     assert service["PrivateTmp"] == "true"
     assert service["ReadWritePaths"] == "/var/lib/clipforge-bot"
     assert service["Restart"] == "on-failure"
+
+
+def test_discovery_unit_runs_the_cli_once_as_service_user() -> None:
+    service = unit("clipforge-discovery.service")["Service"]
+
+    assert service["Type"] == "oneshot"
+    assert service["User"] == "clipforge"
+    assert service["EnvironmentFile"] == "/etc/clipforge-bot/backend.env"
+    assert (
+        service["ExecStart"]
+        == "/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli"
+    )
+    assert service["NoNewPrivileges"] == "true"
+    assert service["ProtectSystem"] == "strict"
+
+
+def test_discovery_timer_fires_daily_at_three_and_catches_up() -> None:
+    timer = unit("clipforge-discovery.timer")
+
+    assert timer["Timer"]["OnCalendar"] == "*-*-* 03:00:00"
+    assert timer["Timer"]["Persistent"] == "true"
+    assert timer["Timer"]["Unit"] == "clipforge-discovery.service"
+    assert timer["Install"]["WantedBy"] == "timers.target"

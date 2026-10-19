@@ -143,12 +143,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/discovery/{youtube_client,service,duration}.py`, `backend/tests/fixtures/youtube/*.json`, tests
 **Size:** M
 
-### - [ ] T11: Sources/videos/discovery API, CLI, timer
+### - [x] T11: Sources/videos/discovery API, CLI, timer
 **Description:** `GET/POST /sources`, `PATCH/DELETE /sources/{id}` (DELETE = disable), `POST /discovery/run` (runs in background task with a DB advisory lock to prevent overlap), `GET /videos` (filters + pagination). `python -m clipforge.discovery_cli` uses the same service. `clipforge-discovery.service` (oneshot) + `.timer` (`OnCalendar=*-*-* 03:00:00`, `Persistent=true`).
 **Acceptance criteria:**
-- [ ] CRUD validated (channel ID format, region code), admin-only
-- [ ] Concurrent manual + timer runs don't overlap (second returns "already running")
-- [ ] CLI exits non-zero on failure (systemd shows failed)
+- [x] CRUD validated (channel ID format, region code), admin-only
+- [x] Concurrent manual + timer runs don't overlap (second returns "already running")
+- [x] CLI exits non-zero on failure (systemd shows failed)
 **Verification:** standard + `rtk test python -m pytest tests -k "sources or discovery_api"`; VPS: `systemctl list-timers clipforge-discovery.timer`
 **Dependencies:** T10, T05
 **Files:** `backend/clipforge/api/v1/{sources,videos,discovery}.py`, `backend/clipforge/discovery_cli.py`, `deploy/systemd/clipforge-discovery.{service,timer}`, tests

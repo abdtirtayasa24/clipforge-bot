@@ -34,6 +34,16 @@ class ApiError(Exception):
         self.details = details
 
 
+class NotFound(ApiError):
+    status_code = 404
+    code = "not_found"
+
+
+class Conflict(ApiError):
+    status_code = 409
+    code = "conflict"
+
+
 def error_response(
     status_code: int,
     code: str,

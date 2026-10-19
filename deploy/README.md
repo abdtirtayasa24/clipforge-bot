@@ -1,12 +1,14 @@
-# VPS Setup and Verification (Phase 1 / Checkpoint M1)
+# VPS Setup and Verification
 
-Installs the ClipForge Bot API on the Ubuntu VPS and verifies the VPS-side items of
-Checkpoint M1 in `tasks/todo.md` (T07). Run every command on the VPS.
+Installs ClipForge Bot on the Ubuntu VPS and verifies the VPS-side checkpoint items in
+`tasks/todo.md`: steps 1–10 for Checkpoint M1, section 11 onwards for Checkpoint M2. Run every
+command on the VPS.
 
 | Path | Purpose |
 |---|---|
 | `deploy/install.sh` | Idempotent provisioning and update script (run as root) |
 | `deploy/systemd/clipforge-api.service` | API unit, installed to `/etc/systemd/system/` |
+| `deploy/systemd/clipforge-discovery.{service,timer}` | Daily YouTube discovery at 03:00 (oneshot + timer) |
 | `deploy/backend.env.example` | Template for `/etc/clipforge-bot/backend.env` (runtime, `root:clipforge 0640`) |
 | `deploy/migration.env.example` | Template for `/etc/clipforge-bot/migration.env` (schema owner, `root:root 0600`) |
 
@@ -21,6 +23,8 @@ the API process never holds schema-changing rights (ADR-003).
   - the project ref and region of the **session pooler** host, port `5432` (ADR-004);
   - the CA certificate: *Project Settings → Database → SSL Configuration → Download certificate*.
 - Telegram bot token from @BotFather and your numeric Telegram user ID.
+- YouTube Data API v3 key (Google Cloud console → *APIs & Services → Credentials*; restrict it to
+  the YouTube Data API v3). Discovery uses about 10 of the 10,000 daily quota units per trending run.
 
 ## 1. Clone and first run
 
@@ -61,7 +65,7 @@ sudo nano /etc/clipforge-bot/backend.env
 ```
 
 Set `CLIPFORGE_DATABASE_URL` (the `clipforge_app_prod` login created in step 6; choose its
-password now), `CLIPFORGE_TELEGRAM_BOT_TOKEN` and `CLIPFORGE_SESSION_SECRET`. The script refuses to
+password now), `CLIPFORGE_TELEGRAM_BOT_TOKEN`, `CLIPFORGE_SESSION_SECRET` and `YOUTUBE_API_KEY`. The script refuses to
 continue while any `CHANGE_ME` remains.
 
 ## 5. Install and migrate
@@ -114,7 +118,7 @@ Expected: a JSON log line `"msg": "admin enabled"`. The command is idempotent;
 
 ```bash
 sudo systemd-analyze verify /etc/systemd/system/clipforge-api.service
-sudo systemctl enable --now clipforge-api
+sudo systemctl enable --now clipforge-api clipforge-discovery.timer
 systemctl status clipforge-api --no-pager
 curl -s 127.0.0.1:8000/api/v1/health/live
 curl -s -w '\n%{http_code}\n' 127.0.0.1:8000/api/v1/health/ready
@@ -164,6 +168,58 @@ curl -s -X POST 127.0.0.1:8000/api/v1/auth/telegram \
 
 Don't paste initData or tokens into chats or tickets; they grant access until they expire.
 
+## 11. Discovery (Checkpoint M2)
+
+Servers installed before Phase 2 need the YouTube key and the timer once:
+
+```bash
+cd ~/clipforge-bot && git pull
+echo 'YOUTUBE_API_KEY=<your key>' | sudo tee -a /etc/clipforge-bot/backend.env >/dev/null
+sudo ./deploy/install.sh
+sudo systemctl enable --now clipforge-discovery.timer
+sudo systemd-analyze verify /etc/systemd/system/clipforge-discovery.{service,timer}
+systemctl list-timers clipforge-discovery.timer
+```
+
+Expected: `verify` prints nothing; `list-timers` shows the next run at 03:00 (VPS time zone).
+
+Add discovery sources with a session token from step 10 (`TOKEN=<access_token>`):
+
+```bash
+API=127.0.0.1:8000/api/v1
+curl -s -X POST $API/sources -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json'   -d '{"kind": "trending", "name": "Trending Indonesia", "region_code": "ID"}'
+# Optional monitored channel (24-character ID starting with UC):
+curl -s -X POST $API/sources -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json'   -d '{"kind": "channel", "name": "<channel name>", "channel_id": "UC..."}'
+curl -s $API/sources -H "Authorization: Bearer $TOKEN"
+```
+
+Run discovery by hand, through the timer's unit and through the API:
+
+```bash
+sudo systemctl start clipforge-discovery.service
+systemctl status clipforge-discovery.service --no-pager
+journalctl -u clipforge-discovery -n 20 --no-pager
+curl -s -w '
+%{http_code}
+' -X POST $API/discovery/run -H "Authorization: Bearer $TOKEN"
+curl -s "$API/videos?limit=5" -H "Authorization: Bearer $TOKEN"
+```
+
+Expected:
+
+- The service ends `inactive (dead)` with `status=0/SUCCESS`; the journal shows
+  `"msg": "discovery finished"` with `quota_units` (about 10 per trending source, 3 per channel),
+  `new_videos`, `updated_videos` and `failed_sources: []`.
+- The API answers `202 {"status":"started"}`. A second `POST` while a run is still going answers
+  `409` `discovery is already running`; a timer run that overlaps logs `already running; skipped`.
+- Running discovery again creates no duplicate videos: `new_videos` counts only videos not seen
+  before, and `updated_videos` the ones refreshed.
+- `/videos` lists only 30–120 minute videos, each with `"rights_status": "unverified"` and
+  `"source_status": "awaiting_source"`. The trending chart is mostly short videos, so few or no new
+  videos per run is normal; monitored channels are the more reliable long-form source.
+
+The day after, `journalctl -u clipforge-discovery --since yesterday` shows the 03:00 run.
+
 ## Updating
 
 ```bash
@@ -181,10 +237,12 @@ The script syncs code, reinstalls, migrates and restarts the API only when somet
 | `failing: ["workspace"]` | `/var/lib/clipforge-bot/workspace` missing or not owned by `clipforge`; re-run `install.sh`. |
 | `failing: ["disk"]` | Less free space than `app_settings.reserved_disk_bytes` (5 GB). |
 | `failing: ["ffmpeg"]` | ffmpeg/ffprobe not on `PATH`; re-run `install.sh`. |
+| `YOUTUBE_API_KEY is not set` (discovery exits 2) / `YouTube API key is not configured` (503) | Add `YOUTUBE_API_KEY` to `backend.env` and restart `clipforge-api`. |
+| `failed_sources` not empty / `quotaExceeded` | Check the key and its API restriction; the daily quota resets at midnight Pacific time. |
 | `auth is not configured` (503) | `CLIPFORGE_TELEGRAM_BOT_TOKEN` or `CLIPFORGE_SESSION_SECRET` (≥ 32 chars) missing. |
 | Migration fails with permission errors | `migration.env` must use the Supabase `postgres` user, not `clipforge_app_prod`. |
 
 ## After verification
 
-Tick the VPS items of T07 and Checkpoint M1 in `tasks/todo.md`, or send the outputs of steps 5,
-8, 9 and 10 for review.
+Tick the VPS items in `tasks/todo.md` (T07 and Checkpoint M1 for steps 1–10, T11 and Checkpoint
+M2 for section 11), or send the outputs for review.

@@ -3,14 +3,16 @@
 import logging
 import uuid
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+import httpx
 from pydantic import BaseModel, Field
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from clipforge.db.models import AppSetting, Video, VideoSource, YoutubeSource
 from clipforge.discovery.duration import parse_iso8601_duration
@@ -27,6 +29,12 @@ logger = logging.getLogger(__name__)
 MIN_DURATION_S = 30 * 60
 MAX_DURATION_S = 120 * 60
 CATEGORY_CACHE_KEY = "youtube_categories"
+# Session-level advisory lock shared by the timer, the CLI and the API so runs never overlap.
+DISCOVERY_LOCK_KEY = 0x636C6970_64697363
+
+
+class DiscoveryAlreadyRunning(Exception):
+    pass
 
 
 class DiscoverySettings(BaseModel):
@@ -285,3 +293,27 @@ class DiscoveryService:
                     set_={"last_seen_at": now},
                 )
             )
+
+
+async def run_exclusive(
+    engine: AsyncEngine,
+    api_key: str,
+    *,
+    on_lock: Callable[[bool], None] = lambda _acquired: None,
+) -> DiscoveryReport:
+    """Runs discovery while holding the discovery lock; `on_lock` reports whether it was free."""
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    async with engine.connect() as lock_connection:
+        acquired = bool(
+            await lock_connection.scalar(select(func.pg_try_advisory_lock(DISCOVERY_LOCK_KEY)))
+        )
+        await lock_connection.commit()
+        on_lock(acquired)
+        if not acquired:
+            raise DiscoveryAlreadyRunning("discovery is already running")
+        try:
+            async with httpx.AsyncClient() as http:
+                return await DiscoveryService(sessions, YouTubeClient(http, api_key)).run()
+        finally:
+            # Closing the session releases the lock; a pooled connection would keep holding it.
+            await lock_connection.invalidate()

@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily ClipForge Bot YouTube discovery at 03:00 (VPS time zone)
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=clipforge-discovery.service
+
+[Install]
+WantedBy=timers.target

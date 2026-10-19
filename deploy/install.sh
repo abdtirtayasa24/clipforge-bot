@@ -15,7 +15,9 @@ WEB_DIR="/var/www/clipforge-bot"
 CONFIG_DIR="/etc/clipforge-bot"
 SYSTEMD_DIR="/etc/systemd/system"
 APT_PACKAGES=(ffmpeg git curl ca-certificates rsync build-essential libpq-dev)
-UNITS=(clipforge-api.service)
+UNITS=(clipforge-api.service clipforge-discovery.service clipforge-discovery.timer)
+# Started on first install; the discovery service itself only runs from its timer.
+ENABLE_UNITS=(clipforge-api.service clipforge-discovery.timer)
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHANGED=0
@@ -170,7 +172,7 @@ main() {
     record_release
     run_migrations
     restart_active_units
-    log "done; first install: systemctl enable --now ${UNITS[*]}"
+    log "done; first install: systemctl enable --now ${ENABLE_UNITS[*]}"
 }
 
 main "$@"
