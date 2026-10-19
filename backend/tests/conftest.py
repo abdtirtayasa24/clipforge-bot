@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import os
+import shutil
 import sys
 import uuid
 from collections.abc import Callable, Iterator
@@ -79,3 +80,11 @@ def db_conn(migrated_database_url: str) -> Iterator[psycopg.Connection]:
     with psycopg.connect(libpq_url(migrated_database_url)) as conn:
         yield conn
         conn.rollback()
+
+
+@pytest.fixture(scope="session")
+def require_ffmpeg() -> None:
+    if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+        if os.environ.get("CI"):
+            pytest.fail("ffmpeg and ffprobe must be installed in CI")
+        pytest.skip("ffmpeg/ffprobe are not installed")

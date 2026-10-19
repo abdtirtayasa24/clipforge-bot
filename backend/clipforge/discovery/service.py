@@ -22,12 +22,11 @@ from clipforge.discovery.youtube_client import (
     YouTubeApiError,
     YouTubeClient,
 )
+from clipforge.ingest.validation import MAX_DURATION_S, MIN_DURATION_S
 from clipforge.queue.repository import Clock, utc_now
 
 logger = logging.getLogger(__name__)
 
-MIN_DURATION_S = 30 * 60
-MAX_DURATION_S = 120 * 60
 CATEGORY_CACHE_KEY = "youtube_categories"
 # Session-level advisory lock shared by the timer, the CLI and the API so runs never overlap.
 DISCOVERY_LOCK_KEY = 0x636C6970_64697363

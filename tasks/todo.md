@@ -154,11 +154,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/api/v1/{sources,videos,discovery}.py`, `backend/clipforge/discovery_cli.py`, `deploy/systemd/clipforge-discovery.{service,timer}`, tests
 **Size:** M
 
-### - [ ] T12: Media validation + disk admission
+### - [x] T12: Media validation + disk admission
 **Description:** `media/probe.py` async ffprobe wrapper → typed `MediaInfo`; validator: container/codec allowlist, has audio, duration 30–120 min, max resolution/bitrate sanity. `ingest/disk.py`: projected-usage estimate (source size + audio ≈ duration×bitrate + 3 clips) vs free space minus 5 GB reserve; returns admit / defer / reject.
 **Acceptance criteria:**
-- [ ] Generated fixtures: valid file passes; no-audio, too-short, corrupt file → `PermanentError` with reason
-- [ ] Admission rejects when projected use would breach reserve (free space injected)
+- [x] Generated fixtures: valid file passes; no-audio, too-short, corrupt file → `PermanentError` with reason
+- [x] Admission rejects when projected use would breach reserve (free space injected)
 **Verification:** standard + `rtk test python -m pytest tests -k "probe or admission"`
 **Dependencies:** T01
 **Files:** `backend/clipforge/media/probe.py`, `backend/clipforge/ingest/{validation,disk}.py`, `backend/tests/fixtures/make_media.py`, tests
