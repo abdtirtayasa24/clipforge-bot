@@ -2,13 +2,18 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import exists, func, select
 
 from clipforge.api.deps import DbSession
-from clipforge.auth.deps import require_admin
+from clipforge.api.errors import ApiError, NotFound
+from clipforge.auth.deps import CurrentAdmin, require_admin
+from clipforge.db.app_settings import permitted_download_domains
 from clipforge.db.models import MediaAsset, Video, VideoSource
+from clipforge.ingest.evidence import PermissionEvidence
+from clipforge.ingest.uploads import evidence_record
+from clipforge.security.url_guard import UrlRejected, check_url
 
 router = APIRouter(prefix="/videos", tags=["videos"], dependencies=[Depends(require_admin)])
 
@@ -90,3 +95,55 @@ async def list_videos(
         for video, ready in rows
     ]
     return VideoPage(items=items, total=total or 0, limit=limit, offset=offset)
+
+
+class UrlRejectedError(ApiError):
+    status_code = 422
+    code = "url_rejected"
+
+
+class MediaRegistration(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    url: str = Field(min_length=1, max_length=2048)
+    permission: PermissionEvidence
+
+
+class MediaOut(BaseModel):
+    id: uuid.UUID
+    video_id: uuid.UUID
+    kind: str
+    source_url: str | None
+    state: str
+    created_at: datetime
+
+
+@router.post("/{video_id}/media", status_code=status.HTTP_201_CREATED)
+async def register_media_url(
+    video_id: uuid.UUID, body: MediaRegistration, session: DbSession, admin: CurrentAdmin
+) -> MediaOut:
+    """Registers a permitted download URL; the worker's ingest stage fetches and validates it."""
+    if await session.get(Video, video_id) is None:
+        raise NotFound("video not found")
+    try:
+        check_url(body.url, await permitted_download_domains(session))
+    except UrlRejected as exc:
+        raise UrlRejectedError(str(exc)) from None
+    asset = MediaAsset(
+        video_id=video_id,
+        kind="url",
+        source_url=body.url,
+        permission_evidence=evidence_record(body.permission, admin.id),
+        state="pending",
+    )
+    session.add(asset)
+    await session.commit()
+    await session.refresh(asset)
+    return MediaOut(
+        id=asset.id,
+        video_id=asset.video_id,
+        kind=asset.kind,
+        source_url=asset.source_url,
+        state=asset.state,
+        created_at=asset.created_at,
+    )

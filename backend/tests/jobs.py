@@ -61,3 +61,14 @@ async def claim(queue: JobQueue, worker_id: str = "worker-a") -> ClaimedJob:
     claimed = await queue.claim_next(worker_id)
     assert claimed is not None
     return claimed
+
+
+async def stage_events(sessions: Sessions, job_id: uuid.UUID) -> list[str | None]:
+    """Stages recorded by `stage_changed` events, in order."""
+    async with sessions() as session:
+        rows = await session.scalars(
+            select(JobEvent.stage)
+            .where(JobEvent.job_id == job_id, JobEvent.event_type == "stage_changed")
+            .order_by(JobEvent.id)
+        )
+        return list(rows)

@@ -175,12 +175,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/api/v1/uploads.py`, `backend/clipforge/ingest/uploads.py`, tests
 **Size:** M
 
-### - [ ] T14: Permitted URL registration + SSRF-safe download stage
+### - [x] T14: Permitted URL registration + SSRF-safe download stage
 **Description:** `POST /videos/{id}/media` registers an https URL + permission evidence; the host must match `app_settings.permitted_download_domains` (exact host or `*.suffix`; empty list ⇒ URL ingestion disabled with a clear error). YouTube hosts (`youtube.com`, `youtu.be`, `googlevideo.com`, subdomains) are rejected and can't be added to the allowlist (enforced in T30 validation). `security/url_guard.py` resolves DNS and blocks private/loopback/link-local/multicast/reserved IPs on every redirect hop; worker `ingest` stage streams download with size cap, timeout, sha256, then T12 validation.
 **Acceptance criteria:**
-- [ ] `http://`, `file://`, IP-literal private addresses, redirect to `127.0.0.1`, YouTube URLs, non-allowlisted host, redirect to a non-allowlisted host → rejected; `*.example.com` matches `cdn.example.com` but not `example.com.evil.net`
-- [ ] Download over max size aborts and cleans up; success persists checksum
-- [ ] Download stage is skipped on restart if artifact exists and checksum matches
+- [x] `http://`, `file://`, IP-literal private addresses, redirect to `127.0.0.1`, YouTube URLs, non-allowlisted host, redirect to a non-allowlisted host → rejected; `*.example.com` matches `cdn.example.com` but not `example.com.evil.net`
+- [x] Download over max size aborts and cleans up; success persists checksum
+- [x] Download stage is skipped on restart if artifact exists and checksum matches
 **Verification:** standard + `rtk test python -m pytest tests -k "url_guard or download"`
 **Dependencies:** T09, T12
 **Files:** `backend/clipforge/security/url_guard.py`, `backend/clipforge/ingest/download.py`, `backend/clipforge/pipeline/stages/ingest.py`, `backend/clipforge/api/v1/videos.py`, tests

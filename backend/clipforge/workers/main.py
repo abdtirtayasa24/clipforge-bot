@@ -102,8 +102,10 @@ async def serve(settings: Settings, database_url: str) -> None:
         disable_prepared_statements=settings.db_disable_prepared_statements,
     )
     try:
-        queue = JobQueue(create_session_factory(engine))
-        runner = PipelineRunner(queue, default_stages(), workspace_root=settings.workspace_dir)
+        sessions = create_session_factory(engine)
+        queue = JobQueue(sessions)
+        stages = default_stages(sessions, workspace_root=settings.workspace_dir)
+        runner = PipelineRunner(queue, stages, workspace_root=settings.workspace_dir)
         worker_id = f"{socket.gethostname()}:{os.getpid()}"
         logger.info("worker started", extra={"worker_id": worker_id})
         await Worker(queue, runner, worker_id).run(stop)
