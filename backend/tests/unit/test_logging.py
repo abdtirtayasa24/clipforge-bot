@@ -5,7 +5,7 @@ from collections.abc import Iterator
 
 import pytest
 
-from clipforge.logging import REDACTED, configure_logging, log_context, redact
+from clipforge.logging import REDACTED, JsonFormatter, configure_logging, log_context, redact
 
 
 @pytest.fixture
@@ -129,3 +129,25 @@ def test_secrets_never_reach_the_log_output(log_stream: io.StringIO) -> None:
     for secret in ("tok-123", "hash=abc", "tok-456", "tok-789"):
         assert secret not in output
     assert all(isinstance(r, dict) for r in read_records(log_stream))
+
+
+def test_extra_field_may_share_a_context_key(log_stream: io.StringIO) -> None:
+    with log_context(stage="download"):
+        logging.getLogger("clipforge.test").info("moved", extra={"stage": "render"})
+
+    [record] = read_records(log_stream)
+    assert record["stage"] == "render"
+
+
+def test_context_survives_deferred_formatting() -> None:
+    configure_logging(level="INFO", stream=io.StringIO())
+    captured: list[logging.LogRecord] = []
+    handler = logging.Handler()
+    handler.emit = captured.append  # type: ignore[method-assign]
+    logging.getLogger().addHandler(handler)
+
+    with log_context(job_id="job-9"):
+        logging.getLogger("clipforge.test").info("queued")
+
+    logging.getLogger().handlers.clear()
+    assert '"job_id": "job-9"' in JsonFormatter().format(captured[0])

@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from clipforge.api.errors import install_error_handlers
+from clipforge.api.middleware import RequestContextMiddleware
 from clipforge.api.v1 import auth, health
 from clipforge.auth.rate_limit import FailedAttemptLimiter
 from clipforge.config import Settings, get_settings
@@ -44,6 +46,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         max_failures=settings.auth_max_failures,
         window_seconds=settings.auth_failure_window_seconds,
     )
+    install_error_handlers(app)
+    app.add_middleware(RequestContextMiddleware)
     app.include_router(health.router, prefix=API_PREFIX)
     app.include_router(auth.router, prefix=API_PREFIX)
     return app

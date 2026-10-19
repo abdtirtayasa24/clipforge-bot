@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
@@ -13,6 +14,7 @@ class Settings(BaseSettings):
     )
 
     log_level: LogLevel = "INFO"
+    workspace_dir: Path = Path("/var/lib/clipforge-bot/workspace")
     database_url: SecretStr | None = None
     db_pool_size: int = Field(default=5, ge=1, le=20)
     db_disable_prepared_statements: bool = False

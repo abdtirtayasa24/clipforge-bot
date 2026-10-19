@@ -67,11 +67,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/auth/{telegram,session,deps}.py`, `backend/clipforge/api/v1/auth.py`, `backend/clipforge/admin_cli.py`, tests
 **Size:** M
 
-### - [ ] T06: `/health/ready`, error format, request logging
+### - [x] T06: `/health/ready`, error format, request logging
 **Description:** Readiness checks DB (`SELECT 1` with timeout), workspace dir writable, free disk ≥ reserve, `ffmpeg`/`ffprobe` on PATH. Consistent JSON error envelope (`{"error":{"code","message","details"}}`) via exception handlers; request ID middleware; access logs with redaction.
 **Acceptance criteria:**
-- [ ] Ready returns 200 when all checks pass; 503 with failing check names otherwise
-- [ ] Validation errors and domain errors use the envelope
+- [x] Ready returns 200 when all checks pass; 503 with failing check names otherwise
+- [x] Validation errors and domain errors use the envelope
 **Verification:** standard + `rtk test python -m pytest tests -k "health or errors"`
 **Dependencies:** T02
 **Files:** `backend/clipforge/api/v1/health.py`, `backend/clipforge/api/errors.py`, `backend/clipforge/api/middleware.py`, tests

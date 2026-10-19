@@ -2,7 +2,7 @@ import json
 import logging
 import re
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -67,6 +67,24 @@ def log_context(**fields: Any) -> Iterator[None]:
         _context.reset(token)
 
 
+def _stamp_context(factory: Callable[..., logging.LogRecord]) -> Callable[..., logging.LogRecord]:
+    # Copy the context onto the record when it is created, so handlers that format later
+    # (or on another thread) still see the request/job it belongs to.
+    def create(*args: Any, **kwargs: Any) -> logging.LogRecord:
+        record = factory(*args, **kwargs)
+        record._clipforge_context = _context.get() or {}
+        return record
+
+    create.clipforge_context = True  # type: ignore[attr-defined]
+    return create
+
+
+def install_context_record_factory() -> None:
+    factory = logging.getLogRecordFactory()
+    if not getattr(factory, "clipforge_context", False):
+        logging.setLogRecordFactory(_stamp_context(factory))
+
+
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
@@ -75,7 +93,7 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "msg": redact(record.getMessage()),
         }
-        payload.update(_context.get() or {})
+        payload.update(getattr(record, "_clipforge_context", {}))
         for key, value in vars(record).items():
             if key not in _RESERVED_ATTRS and not key.startswith("_"):
                 payload[key] = _redact_value(key, value)
@@ -85,6 +103,7 @@ class JsonFormatter(logging.Formatter):
 
 
 def configure_logging(level: str = "INFO", stream: TextIO | None = None) -> None:
+    install_context_record_factory()
     handler = logging.StreamHandler(stream or sys.stdout)
     handler.setFormatter(JsonFormatter())
     root = logging.getLogger()
