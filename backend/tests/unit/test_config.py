@@ -35,3 +35,13 @@ def test_database_settings(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "app@localhost" not in repr(settings)
     assert settings.db_pool_size == 4
     assert settings.db_disable_prepared_statements is False
+
+
+def test_empty_env_values_count_as_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CLIPFORGE_DATABASE_URL", "")
+    monkeypatch.setenv("CLIPFORGE_SESSION_SECRET", "")
+
+    settings = Settings()
+
+    assert settings.database_url is None
+    assert settings.session_secret is None

@@ -8,7 +8,9 @@ LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="CLIPFORGE_", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix="CLIPFORGE_", extra="ignore", env_ignore_empty=True
+    )
 
     log_level: LogLevel = "INFO"
     database_url: SecretStr | None = None
