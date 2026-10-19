@@ -1,0 +1,76 @@
+{
+  "kind": "youtube#videoCategoryListResponse",
+  "etag": "etag-cats",
+  "items": [
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-1",
+      "id": "1",
+      "snippet": {
+        "title": "Film & Animation",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    },
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-10",
+      "id": "10",
+      "snippet": {
+        "title": "Music",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    },
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-17",
+      "id": "17",
+      "snippet": {
+        "title": "Sports",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    },
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-20",
+      "id": "20",
+      "snippet": {
+        "title": "Gaming",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    },
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-22",
+      "id": "22",
+      "snippet": {
+        "title": "People & Blogs",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    },
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-24",
+      "id": "24",
+      "snippet": {
+        "title": "Entertainment",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    },
+    {
+      "kind": "youtube#videoCategory",
+      "etag": "etag-cat-25",
+      "id": "25",
+      "snippet": {
+        "title": "News & Politics",
+        "assignable": true,
+        "channelId": "UCBR8-60-B28hp2BmDPdntcQ"
+      }
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "kind": "youtube#playlistItemListResponse",
+  "etag": "etag-pl",
+  "pageInfo": {
+    "totalResults": 3,
+    "resultsPerPage": 50
+  },
+  "items": [
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "etag-pl-0",
+      "id": "pli0",
+      "contentDetails": {
+        "videoId": "M0400000000",
+        "videoPublishedAt": "2026-10-18T18:00:00Z"
+      }
+    },
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "etag-pl-1",
+      "id": "pli1",
+      "contentDetails": {
+        "videoId": "CH100000000",
+        "videoPublishedAt": "2026-10-18T00:00:00Z"
+      }
+    },
+    {
+      "kind": "youtube#playlistItem",
+      "etag": "etag-pl-2",
+      "id": "pli2",
+      "contentDetails": {
+        "videoId": "CH200000000",
+        "videoPublishedAt": "2026-10-19T20:00:00Z"
+      }
+    }
+  ]
+}

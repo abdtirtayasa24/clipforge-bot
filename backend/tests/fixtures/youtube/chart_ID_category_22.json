@@ -1,0 +1,52 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "etag-page",
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "etag-C22A0000000",
+      "id": "C22A0000000",
+      "snippet": {
+        "publishedAt": "2026-10-19T04:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video c22a",
+        "description": "Description of c22a",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/C22A0000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/C22A0000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "22",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT35M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "30000",
+        "likeCount": "300",
+        "favoriteCount": "0",
+        "commentCount": "30"
+      }
+    }
+  ],
+  "pageInfo": {
+    "totalResults": 1,
+    "resultsPerPage": 5
+  }
+}

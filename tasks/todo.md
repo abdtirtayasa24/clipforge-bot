@@ -131,13 +131,13 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/workers/main.py`, `backend/clipforge/pipeline/{runner,context,stage}.py`, tests
 **Size:** M
 
-### - [ ] T10: YouTube Data API client + discovery service
+### - [x] T10: YouTube Data API client + discovery service
 **Description:** httpx client (API key from env) for `videos.list(chart=mostPopular)`, `channels.list(contentDetails)`, `playlistItems.list`, batched `videos.list(part=snippet,contentDetails,statistics)`; ISO-8601 duration parsing; filter 30–120 min; upsert `videos` on `youtube_video_id`, link `video_sources`; quota-aware (unit counter logged per run); transient error retry. Trending algorithm (ADR-019): full `regionCode=ID` chart (4 × 50) → count `categoryId` → top 5 non-excluded categories → each category chart (50, skip on 404 "chart not supported") → duration filter → rank new eligible by views/hour → keep ≤ 20. Category names from `videoCategories.list(regionCode=ID)` cached for the UI. Recorded JSON fixtures, no live calls in tests.
 **Acceptance criteria:**
-- [ ] Running discovery twice on same fixtures creates no duplicate videos; second source surfacing same video adds only a `video_sources` row
-- [ ] Top categories are derived from the fixture chart (not hard-coded); excluded categories skipped; a 404 category chart doesn't fail the run; ≤ 20 new eligible videos kept; run uses ≤ 12 quota units
-- [ ] Videos outside 30–120 min are stored as ineligible (or skipped — per decision) and never auto-queued
-- [ ] Discovered videos default to `rights_status='unverified'` / `awaiting_source`
+- [x] Running discovery twice on same fixtures creates no duplicate videos; second source surfacing same video adds only a `video_sources` row
+- [x] Top categories are derived from the fixture chart (not hard-coded); excluded categories skipped; a 404 category chart doesn't fail the run; ≤ 20 new eligible videos kept; run uses ≤ 12 quota units
+- [x] Videos outside 30–120 min are skipped, not stored (decision), and never auto-queued
+- [x] Discovered videos default to `rights_status='unverified'` / `awaiting_source`
 **Verification:** standard + `rtk test python -m pytest tests -k discovery`
 **Dependencies:** T03
 **Files:** `backend/clipforge/discovery/{youtube_client,service,duration}.py`, `backend/tests/fixtures/youtube/*.json`, tests

@@ -45,3 +45,13 @@ def test_empty_env_values_count_as_unset(monkeypatch: pytest.MonkeyPatch) -> Non
 
     assert settings.database_url is None
     assert settings.session_secret is None
+
+
+def test_youtube_api_key_uses_its_standard_env_name(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("YOUTUBE_API_KEY", "yt-key")
+
+    settings = Settings()
+
+    assert settings.youtube_api_key is not None
+    assert settings.youtube_api_key.get_secret_value() == "yt-key"
+    assert "yt-key" not in repr(settings)

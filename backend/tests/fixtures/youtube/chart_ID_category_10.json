@@ -1,0 +1,94 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "etag-page",
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "etag-C10A0000000",
+      "id": "C10A0000000",
+      "snippet": {
+        "publishedAt": "2026-10-19T14:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video c10a",
+        "description": "Description of c10a",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/C10A0000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/C10A0000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "10",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT1H20M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "70000",
+        "likeCount": "700",
+        "favoriteCount": "0",
+        "commentCount": "70"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "etag-C10B0000000",
+      "id": "C10B0000000",
+      "snippet": {
+        "publishedAt": "2026-10-19T00:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video c10b",
+        "description": "Description of c10b",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/C10B0000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/C10B0000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "10",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT3M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "10000",
+        "likeCount": "100",
+        "favoriteCount": "0",
+        "commentCount": "10"
+      }
+    }
+  ],
+  "pageInfo": {
+    "totalResults": 2,
+    "resultsPerPage": 5
+  }
+}

@@ -1,0 +1,178 @@
+{
+  "kind": "youtube#videoListResponse",
+  "etag": "etag-page",
+  "items": [
+    {
+      "kind": "youtube#video",
+      "etag": "etag-C24A0000000",
+      "id": "C24A0000000",
+      "snippet": {
+        "publishedAt": "2026-10-19T14:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video c24a",
+        "description": "Description of c24a",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/C24A0000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/C24A0000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "24",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT50M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "150000",
+        "likeCount": "1500",
+        "favoriteCount": "0",
+        "commentCount": "150"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "etag-M0200000000",
+      "id": "M0200000000",
+      "snippet": {
+        "publishedAt": "2026-10-19T04:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video m02",
+        "description": "Description of m02",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/M0200000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/M0200000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "24",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT45M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "500000",
+        "likeCount": "5000",
+        "favoriteCount": "0",
+        "commentCount": "500"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "etag-C24B0000000",
+      "id": "C24B0000000",
+      "snippet": {
+        "publishedAt": "2026-10-19T00:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video c24b",
+        "description": "Description of c24b",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/C24B0000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/C24B0000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "24",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT2M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "10000",
+        "likeCount": "100",
+        "favoriteCount": "0",
+        "commentCount": "10"
+      }
+    },
+    {
+      "kind": "youtube#video",
+      "etag": "etag-C24C0000000",
+      "id": "C24C0000000",
+      "snippet": {
+        "publishedAt": "2026-10-18T18:00:00Z",
+        "channelId": "UCtrending00000000000001",
+        "title": "Video c24c",
+        "description": "Description of c24c",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/C24C0000000/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/C24C0000000/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Channel 001",
+        "categoryId": "24",
+        "liveBroadcastContent": "none",
+        "defaultAudioLanguage": "id"
+      },
+      "contentDetails": {
+        "duration": "PT1H5M",
+        "dimension": "2d",
+        "definition": "hd",
+        "caption": "false",
+        "licensedContent": true,
+        "contentRating": {},
+        "projection": "rectangular"
+      },
+      "statistics": {
+        "viewCount": "90000",
+        "likeCount": "900",
+        "favoriteCount": "0",
+        "commentCount": "90"
+      }
+    }
+  ],
+  "pageInfo": {
+    "totalResults": 4,
+    "resultsPerPage": 5
+  }
+}

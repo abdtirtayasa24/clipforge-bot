@@ -1,0 +1,15 @@
+{
+  "error": {
+    "code": 404,
+    "message": "The requested video chart is not supported or is not available.",
+    "errors": [
+      {
+        "message": "The requested video chart is not supported or is not available.",
+        "domain": "youtube.video",
+        "reason": "videoChartNotFound",
+        "location": "chart",
+        "locationType": "parameter"
+      }
+    ]
+  }
+}
