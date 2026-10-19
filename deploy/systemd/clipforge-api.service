@@ -1,0 +1,39 @@
+[Unit]
+Description=ClipForge Bot API (FastAPI/Uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=clipforge
+Group=clipforge
+WorkingDirectory=/opt/clipforge-bot/backend
+EnvironmentFile=/etc/clipforge-bot/backend.env
+# The app writes its own access log (path only, request ID); Nginx is the only trusted proxy.
+ExecStart=/opt/clipforge-bot/backend/.venv/bin/uvicorn clipforge.main:app --host 127.0.0.1 --port 8000 --workers 1 --no-access-log --proxy-headers --forwarded-allow-ips 127.0.0.1
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+ReadWritePaths=/var/lib/clipforge-bot
+
+[Install]
+WantedBy=multi-user.target

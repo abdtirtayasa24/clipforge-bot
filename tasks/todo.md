@@ -82,7 +82,7 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Acceptance criteria:**
 - [ ] `systemd-analyze verify` passes on the unit (run on VPS)
 - [ ] Re-running `install.sh` is a no-op on a provisioned host
-- [ ] No real secrets in repo (`.env.example` placeholders only)
+- [x] No real secrets in repo (`.env.example` placeholders only)
 **Verification:** on VPS: `sudo systemctl enable --now clipforge-api` → `curl 127.0.0.1:8000/api/v1/health/ready` = 200; locally `rtk err shellcheck deploy/install.sh` if available
 **Dependencies:** T06
 **Files:** `deploy/systemd/clipforge-api.service`, `deploy/backend.env.example`, `deploy/install.sh`
