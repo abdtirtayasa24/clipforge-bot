@@ -22,3 +22,16 @@ def test_invalid_log_level_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(ValueError):
         Settings()
+
+
+def test_database_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CLIPFORGE_DATABASE_URL", "postgresql://app@localhost/clipforge")
+    monkeypatch.setenv("CLIPFORGE_DB_POOL_SIZE", "4")
+
+    settings = Settings()
+
+    assert settings.database_url is not None
+    assert settings.database_url.get_secret_value() == "postgresql://app@localhost/clipforge"
+    assert "app@localhost" not in repr(settings)
+    assert settings.db_pool_size == 4
+    assert settings.db_disable_prepared_statements is False

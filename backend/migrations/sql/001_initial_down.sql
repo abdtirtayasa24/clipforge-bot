@@ -1,0 +1,14 @@
+DROP TABLE oauth_credentials;
+DROP TABLE app_settings;
+DROP TABLE provider_usage;
+DROP TABLE ai_provider_configs;
+DROP TABLE clip_reviews;
+DROP TABLE clips;
+DROP TABLE clip_candidates;
+DROP TABLE processing_jobs;
+DROP TABLE media_assets;
+DROP TABLE video_sources;
+DROP TABLE videos;
+DROP TABLE youtube_sources;
+DROP TABLE admin_users;
+DROP FUNCTION set_updated_at();

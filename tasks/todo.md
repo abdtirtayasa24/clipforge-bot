@@ -22,12 +22,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/pyproject.toml`, `backend/clipforge/{__init__,main,config,logging}.py`, `backend/tests/unit/test_health.py`
 **Size:** M
 
-### - [ ] T02: DB layer, Alembic-runs-SQL, `001_initial.sql`
+### - [x] T02: DB layer, Alembic-runs-SQL, `001_initial.sql`
 **Description:** Async SQLAlchemy engine/session factory (psycopg 3, TLS options, pool sizing for 1 API + 1 worker). Alembic configured with `migrations/sql/NNN_*.sql` executed by thin revisions (ADR-002), using a separate `CLIPFORGE_MIGRATION_DATABASE_URL`. `001_initial.sql`: `admin_users`, `youtube_sources`, `videos`, `video_sources`, `media_assets`, `processing_jobs` (core cols), `clip_candidates`, `clips`, `clip_reviews`, `ai_provider_configs`, `provider_usage`, `app_settings`, `oauth_credentials` — UUID PKs (`gen_random_uuid()`), FKs, CHECK constraints for status enums, `created_at/updated_at`. Matching down script.
 **Acceptance criteria:**
-- [ ] `alembic upgrade head` then `downgrade base` succeed on an empty Postgres
-- [ ] `videos.youtube_video_id` UNIQUE; `video_sources` PK `(video_id, source_id)`
-- [ ] Integration test fixture creates/destroys a test DB per session from `CLIPFORGE_TEST_DATABASE_URL`
+- [x] `alembic upgrade head` then `downgrade base` succeed on an empty Postgres
+- [x] `videos.youtube_video_id` UNIQUE; `video_sources` PK `(video_id, source_id)`
+- [x] Integration test fixture creates/destroys a test DB per session from `CLIPFORGE_TEST_DATABASE_URL`
 **Verification:** standard + `rtk test python -m pytest tests/integration/test_migrations.py`
 **Dependencies:** T01
 **Files:** `backend/alembic.ini`, `backend/migrations/{env.py,versions/0001_initial.py,sql/001_initial.sql,sql/001_initial_down.sql}`, `backend/clipforge/db/session.py`, `backend/tests/conftest.py`
