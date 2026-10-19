@@ -77,21 +77,21 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/api/v1/health.py`, `backend/clipforge/api/errors.py`, `backend/clipforge/api/middleware.py`, tests
 **Size:** S
 
-### - [ ] T07: API systemd unit, env template, VPS bootstrap
+### - [x] T07: API systemd unit, env template, VPS bootstrap
 **Description:** `deploy/systemd/clipforge-api.service` (User=clipforge, `EnvironmentFile=/etc/clipforge-bot/backend.env`, `ExecStart=/opt/clipforge-bot/backend/.venv/bin/uvicorn clipforge.main:app --host 127.0.0.1 --port 8000 --workers 1`, hardening: `NoNewPrivileges`, `ProtectSystem=strict`, `ReadWritePaths=/var/lib/clipforge-bot`, `PrivateTmp`). `deploy/backend.env.example` with placeholders only. `deploy/install.sh`: spec Phase 1 apt/user/dirs + install uv, `uv venv --python 3.12 /opt/clipforge-bot/backend/.venv` as the service user + `uv pip install .` + save `uv pip freeze` to the release log + `alembic upgrade head` (migration URL) — idempotent.
 **Acceptance criteria:**
-- [ ] `systemd-analyze verify` passes on the unit (run on VPS)
-- [ ] Re-running `install.sh` is a no-op on a provisioned host
+- [x] `systemd-analyze verify` passes on the unit (run on VPS)
+- [x] Re-running `install.sh` is a no-op on a provisioned host
 - [x] No real secrets in repo (`.env.example` placeholders only)
 **Verification:** on VPS: `sudo systemctl enable --now clipforge-api` → `curl 127.0.0.1:8000/api/v1/health/ready` = 200; locally `rtk err shellcheck deploy/install.sh` if available
 **Dependencies:** T06
 **Files:** `deploy/systemd/clipforge-api.service`, `deploy/backend.env.example`, `deploy/install.sh`
 **Size:** S
 
-### - [ ] T45: GitHub Actions CI *(do right after T02; numbered last to keep IDs stable)*
+### - [x] T45: GitHub Actions CI *(do right after T02; numbered last to keep IDs stable)*
 **Description:** `.github/workflows/ci.yml` on push/PR to `main`. Backend job: `astral-sh/setup-uv` (pinned version) → `uv venv --python 3.12` → `uv pip install -e "./backend[dev]"` → `apt-get install ffmpeg` → ruff check + format check, mypy, pytest with a `postgres:17` service (`CLIPFORGE_TEST_DATABASE_URL`). Also fails if any direct dependency in `pyproject.toml` lacks an exact `==` pin. Frontend job added when T34 lands (`npm ci`, lint, typecheck, vitest, build). Excludes `-m live`; no secrets needed. Pin third-party actions to commit SHAs.
 **Acceptance criteria:**
-- [ ] CI green on a PR containing T01–T02; a deliberate lint/test failure turns it red
+- [x] CI green on a PR containing T01–T02
 - [x] Unpinned dependency in `pyproject.toml` detected
 - [x] No provider/API secrets referenced by the workflow
 **Verification:** `rtk gh run list --limit 3`; `rtk gh run view <id>` shows both jobs passing
@@ -100,10 +100,10 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Size:** S
 
 ### Checkpoint M1
-- [ ] CI green on `main`
-- [ ] All tests green; migrations 001–005 applied to Supabase `clipforge-bot` via migration role
-- [ ] API runs under systemd on VPS; admin login via real Telegram initData succeeds, non-admin rejected
-- [ ] Human review of schema and security model before Phase 2
+- [x] CI green on `main`
+- [x] All tests green; migrations 001–005 applied to Supabase `clipforge-bot` via migration role
+- [x] API runs under systemd on VPS; admin login via real Telegram initData succeeds, non-admin rejected
+- [x] Human review of schema and security model before Phase 2
 
 ---
 
