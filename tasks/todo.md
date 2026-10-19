@@ -109,12 +109,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 2 — Queue, Discovery, Ingestion (M2)
 
-### - [ ] T08: Job queue core (claim / lease / fence / retry / events)
+### - [x] T08: Job queue core (claim / lease / fence / retry / events)
 **Description:** `clipforge/queue/` repository: `enqueue(video_id, idempotency_key)` (returns existing job on same key), `claim_next(worker_id)` using `FOR UPDATE SKIP LOCKED` over eligible jobs (`queued`/retry-due or lease expired), sets new `lease_token`, `lease_version+1`, `lease_expires_at=now()+5m`; `renew(lease)`; `fenced_update(lease, **fields)` raising `LeaseLost` on 0 rows; `complete/fail/schedule_retry` with backoff 1/5/15 min + jitter and `PermanentError` → `failed` without retry; append `job_events` for each transition.
 **Acceptance criteria:**
-- [ ] Two concurrent claimers never get the same job (integration test with 2 connections)
-- [ ] After lease expiry another worker reclaims; the stale lease's write raises `LeaseLost` and changes nothing
-- [ ] Permanent errors are not retried; transient ones retry ≤ max_attempts with expected delays (clock injected)
+- [x] Two concurrent claimers never get the same job (integration test with 2 connections)
+- [x] After lease expiry another worker reclaims; the stale lease's write raises `LeaseLost` and changes nothing
+- [x] Permanent errors are not retried; transient ones retry ≤ max_attempts with expected delays (clock injected)
 **Verification:** standard + `rtk test python -m pytest tests/integration/test_queue.py`
 **Dependencies:** T03
 **Files:** `backend/clipforge/queue/{repository,errors,backoff}.py`, `backend/tests/integration/test_queue.py`, `backend/tests/unit/test_backoff.py`
