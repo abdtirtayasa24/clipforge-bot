@@ -117,6 +117,10 @@ def test_unknown_source_is_not_found(client: TestClient) -> None:
         ("DELETE", f"{SOURCES}/{UNKNOWN_ID}"),
         ("GET", "/api/v1/videos"),
         ("POST", "/api/v1/discovery/run"),
+        ("POST", "/api/v1/uploads"),
+        ("GET", f"/api/v1/uploads/{UNKNOWN_ID}"),
+        ("PATCH", f"/api/v1/uploads/{UNKNOWN_ID}"),
+        ("POST", f"/api/v1/uploads/{UNKNOWN_ID}/complete"),
     ],
 )
 def test_routes_require_an_admin_session(

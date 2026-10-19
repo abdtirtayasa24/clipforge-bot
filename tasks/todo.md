@@ -164,12 +164,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/media/probe.py`, `backend/clipforge/ingest/{validation,disk}.py`, `backend/tests/fixtures/make_media.py`, tests
 **Size:** M
 
-### - [ ] T13: Chunked upload API with rights evidence
+### - [x] T13: Chunked upload API with rights evidence
 **Description:** `POST /uploads` (video_id, filename, total size, sha256, permission evidence: type + statement + optional reference; admission check) → upload record + staging path. `PATCH /uploads/{id}` with `Content-Range`, ≤ 8 MiB, append at exact offset (409 on mismatch, returns current offset for resume). `POST /uploads/{id}/complete` verifies size + sha256, runs T12 validation, marks `media_assets` ready, sets video `rights_status='authorized'`.
 **Acceptance criteria:**
-- [ ] Interrupted upload resumes from server-reported offset and completes
-- [ ] Wrong checksum, oversize chunk, missing evidence → rejected; staging file removed on failure
-- [ ] Staging dir permissions 0700; filenames never used as paths (UUID names)
+- [x] Interrupted upload resumes from server-reported offset and completes
+- [x] Wrong checksum, oversize chunk, missing evidence → rejected; staging file removed on failure
+- [x] Staging dir permissions 0700; filenames never used as paths (UUID names)
 **Verification:** standard + `rtk test python -m pytest tests -k uploads`
 **Dependencies:** T12, T05
 **Files:** `backend/clipforge/api/v1/uploads.py`, `backend/clipforge/ingest/uploads.py`, tests

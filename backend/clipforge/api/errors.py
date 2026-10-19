@@ -19,6 +19,7 @@ _CODES = {
     429: "rate_limited",
     500: "internal_error",
     503: "service_unavailable",
+    507: "insufficient_storage",
 }
 
 
@@ -42,6 +43,16 @@ class NotFound(ApiError):
 class Conflict(ApiError):
     status_code = 409
     code = "conflict"
+
+
+class PayloadTooLarge(ApiError):
+    status_code = 413
+    code = "payload_too_large"
+
+
+class InsufficientStorage(ApiError):
+    status_code = 507
+    code = "insufficient_storage"
 
 
 def error_response(

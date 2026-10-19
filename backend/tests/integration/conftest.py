@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 import psycopg
 import pytest
@@ -12,6 +13,7 @@ from clipforge.discovery.youtube_client import BASE_URL
 from clipforge.queue.repository import ACTIVE_STATUSES, JobQueue
 from tests.clock import FakeClock
 from tests.db import libpq_url
+from tests.fixtures.make_media import make_media
 from tests.jobs import Sessions
 from tests.youtube import FakeYouTube, fixture_video_ids
 
@@ -66,3 +68,14 @@ def clean_discovery(migrated_database_url: str) -> Iterator[None]:
         yield
         reset(conn)
         conn.execute("UPDATE app_settings SET value = %s WHERE key = 'discovery'", (Jsonb(row[0]),))
+
+
+@pytest.fixture(scope="session")
+def media_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return tmp_path_factory.mktemp("media")
+
+
+@pytest.fixture(scope="session")
+def valid_source(media_dir: Path, require_ffmpeg: None) -> Path:
+    """A 31-minute source that passes validation (smallest valid duration plus a margin)."""
+    return make_media(media_dir / "valid.mp4", duration_s=31 * 60)

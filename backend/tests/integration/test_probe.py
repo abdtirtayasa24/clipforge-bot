@@ -10,16 +10,6 @@ from tests.fixtures.make_media import make_corrupt, make_media
 pytestmark = pytest.mark.usefixtures("require_ffmpeg")
 
 
-@pytest.fixture(scope="session")
-def media_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    return tmp_path_factory.mktemp("media")
-
-
-@pytest.fixture(scope="session")
-def valid_source(media_dir: Path) -> Path:
-    return make_media(media_dir / "valid.mp4", duration_s=31 * 60)
-
-
 def file_size(path: Path) -> int:
     return path.stat().st_size
 

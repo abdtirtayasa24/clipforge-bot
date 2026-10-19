@@ -1,9 +1,17 @@
 """Disk admission: a new source must never push free space below the reserve (spec)."""
 
+import shutil
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from clipforge.db.models import AppSetting
 from clipforge.ingest.validation import MAX_DURATION_S
+
+DEFAULT_RESERVED_DISK_BYTES = 5 * 1024**3
 
 # Mono 16 kHz compressed audio (ADR-012) at about 64 kbit/s.
 AUDIO_BYTES_PER_SECOND = 8_000
@@ -51,3 +59,15 @@ def decide_admission(
     else:
         verdict = Admission.REJECT
     return AdmissionDecision(verdict, projected, usage.free, reserve_bytes)
+
+
+def workspace_usage(path: Path) -> DiskUsage:
+    usage = shutil.disk_usage(path)
+    return DiskUsage(total=usage.total, free=usage.free)
+
+
+async def reserved_disk_bytes(session: AsyncSession) -> int:
+    value = await session.scalar(
+        select(AppSetting.value).where(AppSetting.key == "reserved_disk_bytes")
+    )
+    return value if isinstance(value, int) else DEFAULT_RESERVED_DISK_BYTES

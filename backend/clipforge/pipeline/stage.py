@@ -1,13 +1,12 @@
 import asyncio
-import hashlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
 
+from clipforge.checksums import file_sha256
+
 if TYPE_CHECKING:
     from clipforge.pipeline.context import StageContext
-
-_READ_CHUNK_BYTES = 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -29,18 +28,8 @@ class Stage(Protocol):
     async def run(self, ctx: "StageContext") -> StageResult: ...
 
 
-def _sha256(path: Path) -> str | None:
-    if not path.is_file():
-        return None
-    digest = hashlib.sha256()
-    with path.open("rb") as file:
-        while chunk := file.read(_READ_CHUNK_BYTES):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 async def verified_artifact(path: Path, expected_sha256: str | None) -> bool:
     """True when a stage can reuse `path` instead of redoing its work."""
     if expected_sha256 is None:
         return False
-    return await asyncio.to_thread(_sha256, path) == expected_sha256
+    return await asyncio.to_thread(file_sha256, path) == expected_sha256
