@@ -33,12 +33,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/alembic.ini`, `backend/migrations/{env.py,versions/0001_initial.py,sql/001_initial.sql,sql/001_initial_down.sql}`, `backend/clipforge/db/session.py`, `backend/tests/conftest.py`
 **Size:** M
 
-### - [ ] T03: `002_job_recovery.sql`, `003_artifacts.sql`, ORM models
+### - [x] T03: `002_job_recovery.sql`, `003_artifacts.sql`, ORM models
 **Description:** 002 adds to `processing_jobs`: `stage`, `status`, `attempts`, `max_attempts`, `next_attempt_at`, `lease_token`, `lease_version`, `lease_expires_at`, `idempotency_key` (UNIQUE), `settings_snapshot JSONB`, `cancel_requested`, `last_error`; partial unique index preventing >1 active job per video; `job_events` (BIGINT identity, immutable — trigger rejecting UPDATE/DELETE). 003 adds artifact lifecycle: `media_assets` (kind upload/url, path, size, sha256, permission_evidence JSONB, state), `clip_artifacts` (kind, local_path, size, sha256, upload_state, drive_resumable_uri, drive_file_id). Write SQLAlchemy 2.0 typed models for all tables + a schema-drift test comparing ORM metadata to the migrated DB.
 **Acceptance criteria:**
-- [ ] Inserting a second active job for the same video fails; duplicate idempotency key fails
-- [ ] `UPDATE job_events` raises
-- [ ] Schema-drift test passes (ORM ⇔ migrated schema)
+- [x] Inserting a second active job for the same video fails; duplicate idempotency key fails
+- [x] `UPDATE job_events` raises
+- [x] Schema-drift test passes (ORM ⇔ migrated schema)
 **Verification:** standard + `rtk test python -m pytest tests/integration -k "migrations or drift"`
 **Dependencies:** T02
 **Files:** `backend/migrations/sql/{002,003}_*.sql` (+down), `backend/migrations/versions/{0002,0003}_*.py`, `backend/clipforge/db/models.py`, `backend/tests/integration/test_schema_drift.py`

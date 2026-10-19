@@ -1,0 +1,22 @@
+DROP TABLE job_events;
+DROP FUNCTION reject_job_event_change();
+DROP INDEX processing_jobs_one_active_per_video;
+
+ALTER TABLE processing_jobs
+    DROP CONSTRAINT processing_jobs_lease_consistent,
+    DROP CONSTRAINT processing_jobs_idempotency_key_key,
+    DROP COLUMN finished_at,
+    DROP COLUMN started_at,
+    DROP COLUMN last_error,
+    DROP COLUMN cancel_requested,
+    DROP COLUMN settings_snapshot,
+    DROP COLUMN leased_by,
+    DROP COLUMN lease_expires_at,
+    DROP COLUMN lease_version,
+    DROP COLUMN lease_token,
+    DROP COLUMN next_attempt_at,
+    DROP COLUMN max_attempts,
+    DROP COLUMN attempts,
+    DROP COLUMN stage,
+    DROP COLUMN status,
+    DROP COLUMN idempotency_key;
