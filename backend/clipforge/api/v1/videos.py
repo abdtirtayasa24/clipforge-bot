@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import exists, func, select
 
-from clipforge.api.deps import DbSession
+from clipforge.api.deps import DbSession, JobQueueDep
 from clipforge.api.errors import ApiError, NotFound
 from clipforge.auth.deps import CurrentAdmin, require_admin
 from clipforge.db.app_settings import permitted_download_domains
@@ -120,7 +120,11 @@ class MediaOut(BaseModel):
 
 @router.post("/{video_id}/media", status_code=status.HTTP_201_CREATED)
 async def register_media_url(
-    video_id: uuid.UUID, body: MediaRegistration, session: DbSession, admin: CurrentAdmin
+    video_id: uuid.UUID,
+    body: MediaRegistration,
+    session: DbSession,
+    admin: CurrentAdmin,
+    queue: JobQueueDep,
 ) -> MediaOut:
     """Registers a permitted download URL; the worker's ingest stage fetches and validates it."""
     if await session.get(Video, video_id) is None:
@@ -139,6 +143,7 @@ async def register_media_url(
     session.add(asset)
     await session.commit()
     await session.refresh(asset)
+    await queue.attach_source(video_id, asset.id)
     return MediaOut(
         id=asset.id,
         video_id=asset.video_id,

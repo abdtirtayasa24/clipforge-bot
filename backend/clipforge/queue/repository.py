@@ -20,6 +20,8 @@ from clipforge.queue.errors import (
     ActiveJobExists,
     Cancelled,
     IdempotencyConflict,
+    InvalidJobTransition,
+    JobNotFound,
     LeaseLost,
     PermanentError,
 )
@@ -317,3 +319,72 @@ class JobQueue:
             await self.cancel(lease)
             return "cancelled"
         return await self.schedule_retry(lease, error)
+
+    # Admin actions on jobs nobody leases, or that only flag a running job. Each locks the row,
+    # so a worker's SKIP LOCKED claim cannot interleave with them.
+
+    async def _locked(self, session: AsyncSession, job_id: uuid.UUID) -> ProcessingJob:
+        job = await session.scalar(
+            select(ProcessingJob).where(ProcessingJob.id == job_id).with_for_update()
+        )
+        if job is None:
+            raise JobNotFound(str(job_id))
+        return job
+
+    async def attach_source(self, video_id: uuid.UUID, media_asset_id: uuid.UUID) -> int:
+        """Queues the video's jobs that were waiting for an authorized source."""
+        now = self._clock()
+        async with self._sessions.begin() as session:
+            jobs = list(
+                await session.scalars(
+                    select(ProcessingJob)
+                    .where(
+                        ProcessingJob.video_id == video_id,
+                        ProcessingJob.status == "awaiting_source",
+                    )
+                    .with_for_update()
+                )
+            )
+            for job in jobs:
+                job.media_asset_id = media_asset_id
+                job.status = job.stage = "queued"
+                job.next_attempt_at = now
+                details = {"media_asset_id": str(media_asset_id)}
+                session.add(self._event(job, "source_attached", details=details))
+        return len(jobs)
+
+    async def retry(self, job_id: uuid.UUID) -> ProcessingJob:
+        async with self._sessions.begin() as session:
+            job = await self._locked(session, job_id)
+            if job.status != "failed":
+                raise InvalidJobTransition(f"only failed jobs can be retried; job is {job.status}")
+            job.status = "queued" if job.media_asset_id else "awaiting_source"
+            job.attempts = 0
+            job.next_attempt_at = self._clock()
+            job.last_error = None
+            job.finished_at = None
+            job.cancel_requested = False
+            session.add(self._event(job, "retried"))
+            try:
+                await session.flush()
+            except IntegrityError:
+                raise ActiveJobExists("the video already has an active job") from None
+            await session.refresh(job)
+        return job
+
+    async def request_cancel(self, job_id: uuid.UUID) -> ProcessingJob:
+        """Cancels a waiting job now; a running one stops at its next cancellation checkpoint."""
+        async with self._sessions.begin() as session:
+            job = await self._locked(session, job_id)
+            if job.status not in ACTIVE_STATUSES:
+                raise InvalidJobTransition(f"job is already {job.status}")
+            job.cancel_requested = True
+            if job.status == "running":
+                session.add(self._event(job, "cancel_requested"))
+            else:
+                job.status = "cancelled"
+                job.finished_at = self._clock()
+                session.add(self._event(job, "cancelled"))
+            await session.flush()
+            await session.refresh(job)
+        return job

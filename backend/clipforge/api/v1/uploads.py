@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
-from clipforge.api.deps import DbSession, SettingsDep
+from clipforge.api.deps import DbSession, JobQueueDep, SettingsDep
 from clipforge.api.errors import (
     ApiError,
     Conflict,
@@ -149,7 +149,7 @@ async def upload_chunk(upload_id: uuid.UUID, request: Request, session: DbSessio
 
 @router.post("/{upload_id}/complete")
 async def complete_upload(
-    upload_id: uuid.UUID, session: DbSession, settings: SettingsDep
+    upload_id: uuid.UUID, session: DbSession, settings: SettingsDep, queue: JobQueueDep
 ) -> UploadOut:
     try:
         asset = await uploads.complete_upload(session, upload_id, settings.workspace_dir)
@@ -161,4 +161,5 @@ async def complete_upload(
         raise ChecksumMismatchError(str(exc)) from None
     except PermanentError as exc:
         raise InvalidMediaError(str(exc)) from None
+    await queue.attach_source(asset.video_id, asset.id)
     return UploadOut.of(asset)

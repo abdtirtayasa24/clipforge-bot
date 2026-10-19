@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from clipforge.config import Settings
+from clipforge.queue.repository import JobQueue
 
 
 def get_settings(request: Request) -> Settings:
@@ -20,5 +21,13 @@ async def get_db_session(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
+def get_job_queue(request: Request) -> JobQueue:
+    sessions: async_sessionmaker[AsyncSession] | None = request.app.state.session_factory
+    if sessions is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "database is not configured")
+    return JobQueue(sessions)
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+JobQueueDep = Annotated[JobQueue, Depends(get_job_queue)]

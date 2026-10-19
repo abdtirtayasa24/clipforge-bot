@@ -20,3 +20,11 @@ class IdempotencyConflict(Exception):
 
 class ActiveJobExists(Exception):
     """The video already has an unfinished job."""
+
+
+class JobNotFound(Exception):
+    pass
+
+
+class InvalidJobTransition(Exception):
+    """The requested admin action does not apply to the job's current status."""

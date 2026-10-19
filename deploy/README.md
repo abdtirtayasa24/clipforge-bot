@@ -1,7 +1,7 @@
 # VPS Setup and Verification
 
 Installs ClipForge Bot on the Ubuntu VPS and verifies the VPS-side checkpoint items in
-`tasks/todo.md`: steps 1–10 for Checkpoint M1, section 11 onwards for Checkpoint M2. Run every
+`tasks/todo.md`: steps 1–10 for Checkpoint M1, sections 11–12 for Checkpoint M2. Run every
 command on the VPS.
 
 | Path | Purpose |
@@ -220,6 +220,84 @@ Expected:
 
 The day after, `journalctl -u clipforge-discovery --since yesterday` shows the 03:00 run.
 
+## 12. Authorized ingestion (Checkpoint M2)
+
+Needs `TOKEN` and `API` from section 11 and a discovered video (`VIDEO=<id from /videos>`). Only
+use media you are authorized to process.
+
+### Uploaded file
+
+Copy a 30–120 minute authorized file to the VPS (for example `scp talk.mp4 vps:~/`), then upload it
+in 8 MiB chunks:
+
+```bash
+FILE=~/talk.mp4
+SIZE=$(stat -c %s "$FILE"); SHA=$(sha256sum "$FILE" | cut -d' ' -f1)
+UPLOAD=$(curl -s -X POST $API/uploads -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d "{\"video_id\": \"$VIDEO\", \"filename\": \"talk.mp4\", \"size_bytes\": $SIZE, \"sha256\": \"$SHA\",
+       \"permission\": {\"type\": \"own_content\", \"statement\": \"I am the creator of this video.\"}}" \
+  | python3 -c 'import json, sys; print(json.load(sys.stdin)["id"])')
+CHUNK=$((8 * 1024 * 1024)); OFFSET=0
+while [ "$OFFSET" -lt "$SIZE" ]; do
+  END=$(( OFFSET + CHUNK < SIZE ? OFFSET + CHUNK - 1 : SIZE - 1 ))
+  dd if="$FILE" bs=1M skip=$((OFFSET / 1048576)) count=8 status=none \
+    | curl -s -o /dev/null -w '%{http_code} ' -X PATCH $API/uploads/$UPLOAD \
+        -H "Authorization: Bearer $TOKEN" -H "Content-Range: bytes $OFFSET-$END/$SIZE" \
+        -H 'Content-Type: application/octet-stream' --data-binary @-
+  OFFSET=$((END + 1))
+done
+curl -s -X POST $API/uploads/$UPLOAD/complete -H "Authorization: Bearer $TOKEN"
+```
+
+Expected: every chunk `200`; `complete` returns `"state": "ready"`. If a chunk fails, `GET
+$API/uploads/$UPLOAD` shows `received_bytes`; resume from that offset. A wrong checksum or invalid
+media returns `422` and removes the staged file.
+
+### Permitted URL
+
+There is no settings API before Phase 5; allow the media host once in the Supabase SQL editor
+(exact host, or `*.example.com` for its subdomains):
+
+```sql
+UPDATE app_settings SET value = '["media.example.com"]' WHERE key = 'permitted_download_domains';
+```
+
+```bash
+VIDEO2=<another video id>
+curl -s -X POST $API/videos/$VIDEO2/media -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://media.example.com/talk.mp4",
+       "permission": {"type": "creator_permission", "statement": "<who allowed it and how>"}}'
+# Refused (422 url_rejected): YouTube, http://, private addresses, hosts not on the list
+curl -s -X POST $API/videos/$VIDEO2/media -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://www.youtube.com/watch?v=x", "permission": {"type": "own_content", "statement": "test refusal"}}'
+```
+
+### Run the jobs
+
+```bash
+for V in $VIDEO $VIDEO2; do
+  curl -s -X POST $API/videos/$V/jobs -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(cat /proc/sys/kernel/random/uuid)"
+  echo
+done
+# The worker unit arrives in Phase 4; until then run it as a transient unit.
+sudo systemd-run --unit=clipforge-worker-m2 --uid=clipforge \
+  --property=EnvironmentFile=/etc/clipforge-bot/backend.env \
+  --working-directory=/opt/clipforge-bot/backend \
+  /opt/clipforge-bot/backend/.venv/bin/python -m clipforge.workers.main
+journalctl -u clipforge-worker-m2 -f      # Ctrl+C once both jobs finished
+sudo systemctl stop clipforge-worker-m2   # SIGTERM: the worker exits cleanly
+curl -s "$API/jobs?limit=2" -H "Authorization: Bearer $TOKEN"
+curl -s $API/jobs/<job id> -H "Authorization: Bearer $TOKEN"
+```
+
+Expected: each job's events show `stage_changed` to `ingesting` and then `validated`. Until the
+Phase 3 stages exist the pipeline ends there, so the jobs finish `completed`. The URL job's media
+asset becomes `ready` and both videos turn `"rights_status": "authorized"`. Repeating a `POST
+/videos/{id}/jobs` with the same `Idempotency-Key` returns the same job.
+
 ## Updating
 
 ```bash
@@ -245,4 +323,4 @@ The script syncs code, reinstalls, migrates and restarts the API only when somet
 ## After verification
 
 Tick the VPS items in `tasks/todo.md` (T07 and Checkpoint M1 for steps 1–10, T11 and Checkpoint
-M2 for section 11), or send the outputs for review.
+M2 for sections 11–12), or send the outputs for review.

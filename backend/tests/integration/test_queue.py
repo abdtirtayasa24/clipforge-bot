@@ -326,3 +326,19 @@ async def test_last_error_is_redacted_and_bounded(queue: JobQueue, sessions: Ses
     assert job.last_error is not None
     assert "secret" not in job.last_error
     assert len(job.last_error) <= 2000
+
+
+async def test_attaching_a_source_queues_waiting_jobs(
+    queue: JobQueue, sessions: Sessions, clock: FakeClock
+) -> None:
+    video_id = await make_video(sessions)
+    job, _ = await queue.enqueue(video_id, new_key())
+    asset_id = await make_media_asset(sessions, video_id)
+
+    assert await queue.attach_source(video_id, asset_id) == 1
+
+    queued = await load_job(sessions, job.id)
+    assert (queued.status, queued.stage, queued.media_asset_id) == ("queued", "queued", asset_id)
+    assert (await claim(queue)).media_asset_id == asset_id
+    assert await queue.attach_source(video_id, asset_id) == 0
+    assert (await event_types(sessions, job.id))[:2] == ["created", "source_attached"]

@@ -186,11 +186,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/security/url_guard.py`, `backend/clipforge/ingest/download.py`, `backend/clipforge/pipeline/stages/ingest.py`, `backend/clipforge/api/v1/videos.py`, tests
 **Size:** M
 
-### - [ ] T15: Jobs API
+### - [x] T15: Jobs API
 **Description:** `POST /videos/{id}/jobs` requires `Idempotency-Key` header (same key → same job, 200; new key while an active job exists → 409); job refuses to start without an authorized ready media asset (`awaiting_source`). `GET /jobs` (filters, pagination), `GET /jobs/{id}` (stage, attempts, events, cost), `POST /jobs/{id}/retry` (failed → queued, resets attempts), `POST /jobs/{id}/cancel` (sets `cancel_requested`).
 **Acceptance criteria:**
-- [ ] Idempotency semantics as above; missing header → 400
-- [ ] Retry on a non-failed job → 409; cancel on finished job → 409
+- [x] Idempotency semantics as above; missing header → 400
+- [x] Retry on a non-failed job → 409; cancel on finished job → 409
 **Verification:** standard + `rtk test python -m pytest tests -k jobs_api`
 **Dependencies:** T08, T05
 **Files:** `backend/clipforge/api/v1/jobs.py`, `backend/clipforge/api/v1/schemas/jobs.py`, tests
