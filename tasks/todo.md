@@ -9,14 +9,14 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 1 — Foundation (M1)
 
-### - [ ] T01: Backend uv project scaffold
+### - [x] T01: Backend uv project scaffold
 **Description:** Create `backend/` with `pyproject.toml` for package `clipforge` (Python 3.12, setuptools/hatchling build backend). Declare runtime deps (fastapi, uvicorn, pydantic-settings, sqlalchemy, psycopg[binary], alembic, httpx) and a `dev` extra (pytest, pytest-asyncio, respx, ruff, mypy), each exact-pinned (`==`) to the current stable version confirmed from official docs/PyPI. Then `uv venv --python 3.12` and `uv pip install -e ".[dev]"`. Add `clipforge/config.py` (env-driven settings, `CLIPFORGE_` prefix), JSON logging with secret-redaction filter, `clipforge/main.py` with `/api/v1/health/live`.
 **Acceptance criteria:**
-- [ ] Fresh clone: `uv venv --python 3.12` → `uv pip install -e ".[dev]"` gives a working env on Windows and Linux; no `requirements*.txt` or `uv.lock` in the repo
-- [ ] Every direct dependency in `pyproject.toml` uses an exact `==` pin
-- [ ] `uvicorn clipforge.main:app` (venv active) serves `GET /api/v1/health/live` → `200 {"status":"ok"}`
-- [ ] ruff + mypy (strict on `clipforge/`) + pytest configured in `pyproject.toml`
-- [ ] *(Should-Have: logs)* Every log line is one JSON object with `ts`, `level`, `logger`, `msg` and, when set via `contextvars`, `request_id` / `job_id` / `stage` / `attempt`; redaction filter masks `token`, `secret`, `initData`, `Authorization`, URL query strings (unit-tested)
+- [x] Fresh clone: `uv venv --python 3.12` → `uv pip install -e ".[dev]"` gives a working env on Windows and Linux; no `requirements*.txt` or `uv.lock` in the repo
+- [x] Every direct dependency in `pyproject.toml` uses an exact `==` pin
+- [x] `uvicorn clipforge.main:app` (venv active) serves `GET /api/v1/health/live` → `200 {"status":"ok"}`
+- [x] ruff + mypy (strict on `clipforge/`) + pytest configured in `pyproject.toml`
+- [x] *(Should-Have: logs)* Every log line is one JSON object with `ts`, `level`, `logger`, `msg` and, when set via `contextvars`, `request_id` / `job_id` / `stage` / `attempt`; redaction filter masks `token`, `secret`, `initData`, `Authorization`, URL query strings (unit-tested)
 **Verification:** standard backend checks; `rtk curl http://127.0.0.1:8000/api/v1/health/live`
 **Dependencies:** None
 **Files:** `backend/pyproject.toml`, `backend/clipforge/{__init__,main,config,logging}.py`, `backend/tests/unit/test_health.py`

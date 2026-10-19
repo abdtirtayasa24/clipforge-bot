@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "clipforge"
+version = "0.1.0"
+description = "ClipForge Bot backend: AI YouTube viral clip automation"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi==0.148.0",
+    "uvicorn==0.54.0",
+    "pydantic==2.14.1",
+    "pydantic-settings==2.16.0",
+    "sqlalchemy==2.1.5",
+    "psycopg[binary]==3.3.6",
+    "alembic==1.20.0",
+    "httpx==0.28.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "respx==0.23.1",
+    "httpx2==2.14.0",
+    "ruff==0.17.1",
+    "mypy==2.4.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["clipforge"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "ASYNC", "RUF", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+files = ["clipforge"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+markers = [
+    "live: calls real external providers; never run in CI",
+]
+addopts = "-m 'not live'"
