@@ -44,13 +44,13 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/migrations/sql/{002,003}_*.sql` (+down), `backend/migrations/versions/{0002,0003}_*.py`, `backend/clipforge/db/models.py`, `backend/tests/integration/test_schema_drift.py`
 **Size:** M
 
-### - [ ] T04: `004_security.sql`, `005_settings.sql`
+### - [x] T04: `004_security.sql`, `005_settings.sql`
 **Description:** 004: create least-privilege runtime role `clipforge_app` (NOLOGIN group role; login user created per environment out-of-band), grant DML only on app tables, no DDL; enable RLS on all tables with policies only for `clipforge_app`; revoke all from Supabase `anon`/`authenticated`; indexes for hot queries (job claim: `(status, next_attempt_at)`, clips by review status, videos by `published_at`). 005: seed `app_settings` defaults (`min_score=75`, `clip_min_s=20`, `clip_max_s=60`, `max_clips=3`, `max_overlap=0.2`, `affiliate_links_enabled=false`, `affiliate_min_relevance=0.70`, disclosure text, reserved disk 5 GB, discovery config (`region_code='ID'`, `top_categories=5`, `chart_pages=4`, `per_category_results=50`, `max_new_eligible_per_run=20`, `excluded_category_ids=[]`), `permitted_download_domains=[]`, `models.transcription='gemini-3.5-transcribe'` / `models.analysis='gemini-3.5-flash-lite'` / `models.rerank='gemini-3-flash-preview'` / `models.analysis_fallback='openrouter:nvidia/nemotron-3.5-super-vl:free'` / `models.embedding='gemini-embedding-2'`, `audio_chunk_minutes=20`) and `ai_provider_configs` rows for those models (no secrets; `secret_ref` = `GEMINI_API_KEY` / `OPENROUTER_API_KEY`; `rpm_limit`, `rpd_limit`, `quota_reset` (`pacific_midnight`/`utc_midnight`) as admin-editable columns, initially conservative placeholders to be replaced with AI Studio values) including pricing columns (0 for free tier) (`price_input_per_mtok`, `price_output_per_mtok`, `price_per_audio_minute`, `currency`, `enabled`) — ADR-024. `provider_usage` gets `stage`, `audio_seconds`, `estimated_cost`, `currency`; `clips` gets `title`, `title_override` (ADR-025).
 **Acceptance criteria:**
-- [ ] As `clipforge_app`: SELECT/INSERT/UPDATE work; `CREATE TABLE`/`ALTER` fail
-- [ ] As `anon`: any SELECT on app tables fails
-- [ ] `app_settings.affiliate_links_enabled` defaults to JSON `false`
-- [ ] CHECK constraints: prices ≥ 0, `estimated_cost` ≥ 0
+- [x] As `clipforge_app`: SELECT/INSERT/UPDATE work; `CREATE TABLE`/`ALTER` fail
+- [x] As `anon`: any SELECT on app tables fails
+- [x] `app_settings.affiliate_links_enabled` defaults to JSON `false`
+- [x] CHECK constraints: prices ≥ 0, `estimated_cost` ≥ 0
 **Verification:** standard + `rtk test python -m pytest tests/integration/test_security_roles.py`
 **Dependencies:** T03
 **Files:** `backend/migrations/sql/{004,005}_*.sql` (+down), `backend/migrations/versions/{0004,0005}_*.py`, `backend/tests/integration/test_security_roles.py`

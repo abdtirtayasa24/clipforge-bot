@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import os
 import sys
 import uuid
@@ -11,6 +12,7 @@ from alembic import command
 from tests.db import alembic_config, libpq_url, with_database
 
 TEST_DATABASE_URL_ENV = "CLIPFORGE_TEST_DATABASE_URL"
+SUPABASE_API_ROLES = ("anon", "authenticated")
 
 
 def pytest_asyncio_loop_factories(
@@ -20,6 +22,22 @@ def pytest_asyncio_loop_factories(
     if sys.platform == "win32":
         return {"selector": asyncio.SelectorEventLoop}
     return {"default": asyncio.new_event_loop}
+
+
+def emulate_supabase_api_roles(url: str) -> None:
+    """Supabase grants its Data API roles everything created in `public` by default."""
+    with psycopg.connect(libpq_url(url), autocommit=True) as conn:
+        for role in SUPABASE_API_ROLES:
+            exists = conn.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)).fetchone()
+            if not exists:
+                with contextlib.suppress(psycopg.errors.DuplicateObject):
+                    conn.execute(f"CREATE ROLE {role} NOLOGIN")
+        roles = ", ".join(SUPABASE_API_ROLES)
+        conn.execute(f"GRANT ALL ON SCHEMA public TO {roles}")
+        for kind in ("TABLES", "SEQUENCES", "FUNCTIONS"):
+            conn.execute(
+                f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON {kind} TO {roles}"
+            )
 
 
 @pytest.fixture(scope="session")
@@ -37,7 +55,9 @@ def create_database() -> Iterator[Callable[[], str]]:
         with psycopg.connect(libpq_url(server_url), autocommit=True) as conn:
             conn.execute(f'CREATE DATABASE "{name}"')
         created.append(name)
-        return with_database(server_url, name)
+        url = with_database(server_url, name)
+        emulate_supabase_api_roles(url)
+        return url
 
     yield create
 

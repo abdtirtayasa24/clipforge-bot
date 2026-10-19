@@ -208,6 +208,8 @@ class Clip(Base):
     review_status: Mapped[str] = mapped_column(server_default="pending_review")
     drive_file_id: Mapped[str | None]
     drive_web_view_link: Mapped[str | None]
+    title: Mapped[str | None]
+    title_override: Mapped[str | None]
     created_at: Mapped[datetime] = created_at()
     updated_at: Mapped[datetime] = updated_at()
 
@@ -240,6 +242,7 @@ class ClipReview(Base):
     )
     decision: Mapped[str]
     note: Mapped[str | None]
+    title_override: Mapped[str | None]
     created_at: Mapped[datetime] = created_at()
 
 
@@ -252,6 +255,13 @@ class AiProviderConfig(Base):
     capability: Mapped[str]
     secret_ref: Mapped[str]
     enabled: Mapped[bool] = mapped_column(server_default="true")
+    rpm_limit: Mapped[int | None]
+    rpd_limit: Mapped[int | None]
+    quota_reset: Mapped[str] = mapped_column(server_default="utc_midnight")
+    price_input_per_mtok: Mapped[Decimal] = mapped_column(Numeric(12, 6), server_default="0")
+    price_output_per_mtok: Mapped[Decimal] = mapped_column(Numeric(12, 6), server_default="0")
+    price_per_audio_minute: Mapped[Decimal] = mapped_column(Numeric(12, 6), server_default="0")
+    currency: Mapped[str] = mapped_column(CHAR(3), server_default="USD")
     created_at: Mapped[datetime] = created_at()
     updated_at: Mapped[datetime] = updated_at()
 
@@ -271,6 +281,10 @@ class ProviderUsage(Base):
     latency_ms: Mapped[int]
     input_tokens: Mapped[int | None]
     output_tokens: Mapped[int | None]
+    stage: Mapped[str | None]
+    audio_seconds: Mapped[Decimal | None] = mapped_column(Numeric(10, 3))
+    estimated_cost: Mapped[Decimal] = mapped_column(Numeric(14, 8), server_default="0")
+    currency: Mapped[str] = mapped_column(CHAR(3), server_default="USD")
     created_at: Mapped[datetime] = created_at()
 
 
