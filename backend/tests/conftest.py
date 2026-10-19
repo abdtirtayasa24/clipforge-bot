@@ -27,6 +27,8 @@ def create_database() -> Iterator[Callable[[], str]]:
     """Creates empty throwaway databases on the test server; all are dropped at session end."""
     server_url = os.environ.get(TEST_DATABASE_URL_ENV)
     if not server_url:
+        if os.environ.get("CI"):
+            pytest.fail(f"{TEST_DATABASE_URL_ENV} must be set in CI")
         pytest.skip(f"{TEST_DATABASE_URL_ENV} is not set")
     created: list[str] = []
 

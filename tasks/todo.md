@@ -92,8 +92,8 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Description:** `.github/workflows/ci.yml` on push/PR to `main`. Backend job: `astral-sh/setup-uv` (pinned version) → `uv venv --python 3.12` → `uv pip install -e "./backend[dev]"` → `apt-get install ffmpeg` → ruff check + format check, mypy, pytest with a `postgres:17` service (`CLIPFORGE_TEST_DATABASE_URL`). Also fails if any direct dependency in `pyproject.toml` lacks an exact `==` pin. Frontend job added when T34 lands (`npm ci`, lint, typecheck, vitest, build). Excludes `-m live`; no secrets needed. Pin third-party actions to commit SHAs.
 **Acceptance criteria:**
 - [ ] CI green on a PR containing T01–T02; a deliberate lint/test failure turns it red
-- [ ] Unpinned dependency in `pyproject.toml` detected
-- [ ] No provider/API secrets referenced by the workflow
+- [x] Unpinned dependency in `pyproject.toml` detected
+- [x] No provider/API secrets referenced by the workflow
 **Verification:** `rtk gh run list --limit 3`; `rtk gh run view <id>` shows both jobs passing
 **Dependencies:** T02
 **Files:** `.github/workflows/ci.yml`
