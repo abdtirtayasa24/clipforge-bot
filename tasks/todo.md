@@ -260,15 +260,15 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/media/frames.py`, `backend/clipforge/pipeline/stages/frames.py`, tests
 **Size:** S
 
-### - [ ] T21: Gemini analysis adapter + OpenRouter fallback (windowed)
+### - [x] T21: Gemini analysis adapter + OpenRouter fallback (windowed)
 **Description:** `GeminiAnalysisProvider` (window pass on `gemini-3.5-flash-lite` with `response_schema` structured output; re-rank pass with frames on `gemini-3-flash-preview`, auto-downgrading to flash-lite when its quota is exhausted) and `OpenRouterAnalysisProvider` (OpenAI-compatible chat completions, `nvidia/nemotron-3.5-super-vl:free`, JSON enforced by prompt + Pydantic validation since free models may lack JSON mode) used when Gemini is unavailable or out of quota. Prompts handle Indonesian transcripts and ask for titles in the transcript's language. Windowing (ADR-011): transcript split into ~8–10 min overlapping windows → per-window candidate proposals (structured JSON, Pydantic-validated, one repair retry) → shortlist → re-rank pass with frames for shortlisted ranges (V score). Prompts versioned in code; context includes video title/channel/language. Clamp timestamps to transcript bounds.
 **Acceptance criteria:**
-- [ ] Malformed model output → repair retry → else `TransientError`; out-of-range timestamps clamped/dropped
-- [ ] Recorded-response tests produce valid `ClipCandidate`s; usage recorded per call
-- [ ] Frames sent only for shortlisted windows
-- [ ] Gemini 429/quota-exhausted on window pass → OpenRouter fallback produces schema-valid candidates (recorded responses); both unavailable → `QuotaDeferred`
-- [ ] *(Should-Have: generated titles)* Each candidate has a non-empty `title` (≤ 70 chars, transcript language, grounded in the segment — prompt forbids claims absent from the transcript) and `hook_line`; over-length titles are truncated at a word boundary
-- [ ] Each window call and the re-rank call write `provider_usage` with tokens + estimated cost
+- [x] Malformed model output → repair retry → else `TransientError`; out-of-range timestamps clamped/dropped
+- [x] Recorded-response tests produce valid `ClipCandidate`s; usage recorded per call
+- [x] Frames sent only for shortlisted windows
+- [x] Gemini 429/quota-exhausted on window pass → OpenRouter fallback produces schema-valid candidates (recorded responses); both unavailable → `QuotaDeferred`
+- [x] *(Should-Have: generated titles)* Each candidate has a non-empty `title` (≤ 70 chars, transcript language, grounded in the segment — prompt forbids claims absent from the transcript) and `hook_line`; over-length titles are truncated at a word boundary
+- [x] Each window call and the re-rank call write `provider_usage` with tokens + estimated cost
 **Verification:** standard + `rtk test python -m pytest tests -k analysis`; opt-in live test
 **Dependencies:** T17, T18, T20
 **Files:** `backend/clipforge/ai/adapters/{gemini_analysis,openrouter_analysis}.py`, `backend/clipforge/ai/prompts/analysis.py`, `backend/clipforge/ai/windowing.py`, tests

@@ -10,11 +10,12 @@ import pytest
 import respx
 
 from clipforge.ai.adapters import gemini_client
-from clipforge.ai.adapters.gemini_client import BASE_URL, GeminiClient, ModelUnavailable
+from clipforge.ai.adapters.gemini_client import BASE_URL, GeminiClient
 from clipforge.ai.adapters.gemini_transcription import (
     GeminiAudioSegmentsProvider,
     GeminiTranscriptionProvider,
 )
+from clipforge.ai.errors import ModelUnavailable
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderConfigError
 from clipforge.ai.types import TranscriptResult

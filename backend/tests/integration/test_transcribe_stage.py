@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import delete, select, update
 
 from clipforge.ai.adapters.fake import FakeTranscriptionProvider, spoken_transcript
-from clipforge.ai.adapters.gemini_client import ModelUnavailable
+from clipforge.ai.errors import ModelUnavailable
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderRegistry, snapshot_job_settings
 from clipforge.ai.types import TranscriptResult

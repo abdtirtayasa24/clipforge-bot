@@ -10,10 +10,11 @@ from typing import Any
 
 import httpx
 
+from clipforge.ai.errors import ModelUnavailable
 from clipforge.ai.quota import QuotaGuard, retry_after_seconds
 from clipforge.ai.registry import ProviderConfigError
 from clipforge.ai.usage import ProviderCall, UsageRecorder
-from clipforge.queue.errors import PermanentError, TransientError
+from clipforge.queue.errors import PermanentError
 from clipforge.settings_schema import ProviderSnapshot
 
 logger = logging.getLogger(__name__)
@@ -32,10 +33,6 @@ FILE_POLL_ATTEMPTS = 60
 _RETRYABLE_STATUSES = frozenset({500, 502, 503, 504})
 
 Sleep = Callable[[float], Awaitable[None]]
-
-
-class ModelUnavailable(TransientError):
-    """The model is missing or keeps failing; callers may switch to a fallback model."""
 
 
 def _duration_seconds(value: object) -> float | None:

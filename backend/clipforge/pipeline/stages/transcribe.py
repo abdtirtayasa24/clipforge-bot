@@ -5,7 +5,7 @@ from pathlib import Path
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from clipforge.ai.adapters.gemini_client import ModelUnavailable
+from clipforge.ai.errors import ModelUnavailable
 from clipforge.ai.protocols import TranscriptionProvider
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderRegistry
