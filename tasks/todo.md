@@ -342,21 +342,21 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/notify/telegram.py`, `backend/clipforge/pipeline/stages/notify.py`, tests
 **Size:** S
 
-### - [ ] T28: Workspace cleanup + worker unit
+### - [x] T28: Workspace cleanup + worker unit
 **Description:** Per-job workspace `/var/lib/clipforge-bot/workspace/<job_id>/`; after completion delete source/audio/frames (keep transcript JSON in DB or small artifact); startup GC removes dirs of terminal/missing jobs older than N hours; never delete un-uploaded clips. `clipforge-worker.service` with `MemoryMax=1800M`, `CPUQuota=170%`, `Restart=always`, `RestartSec=10`, hardening as T07.
 **Acceptance criteria:**
 - [x] GC test: only safe-to-delete dirs removed; unverified clip artifacts kept
-- [ ] Worker unit verified on VPS; restart after `kill -9` resumes job
+- [x] Worker unit verified on VPS; restart after `kill -9` resumes job
 **Verification:** standard + `rtk test python -m pytest tests -k cleanup`; VPS: `systemctl status clipforge-worker`
 **Dependencies:** T26
 **Files:** `backend/clipforge/pipeline/cleanup.py`, `deploy/systemd/clipforge-worker.service`, tests
 **Size:** S
 
 ### Checkpoint M4 — spec gate before frontend
-- [ ] One full 60–120 min video end-to-end on VPS: ≤ 3 clips, 720×1280, verified Drive IDs, Telegram notification
-- [ ] `kill -9` worker during upload → no duplicate Drive file after recovery
-- [ ] Peak RAM < 1.8 GB, free disk ≥ 5 GB throughout; record timings
-- [ ] Human review before Phase 5
+- [x] One full 60–120 min video end-to-end on VPS: ≤ 3 clips, 720×1280, verified Drive IDs, Telegram notification
+- [x] `kill -9` worker during upload → no duplicate Drive file after recovery
+- [x] Peak RAM < 1.8 GB, free disk ≥ 5 GB throughout; record timings
+- [x] Human review before Phase 5
 
 ---
 
