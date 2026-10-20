@@ -14,7 +14,7 @@ from clipforge.ingest.download import download
 from clipforge.ingest.uploads import source_path
 from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.runner import PipelineRunner
-from clipforge.pipeline.stages import default_stages
+from clipforge.pipeline.stages.audio import AudioStage
 from clipforge.pipeline.stages.ingest import IngestStage
 from clipforge.queue.errors import PermanentError, TransientError
 from clipforge.queue.repository import JobQueue
@@ -310,7 +310,7 @@ async def test_ingest_stage_verifies_uploaded_sources(
 
 
 @pytest.mark.usefixtures("permitted_domains")
-async def test_default_pipeline_takes_upload_and_url_sources_through_audio(
+async def test_upload_and_url_sources_go_through_ingest_and_audio(
     migrated_database_url: str,
     queue: JobQueue,
     sessions: Sessions,
@@ -333,9 +333,8 @@ async def test_default_pipeline_takes_upload_and_url_sources_through_audio(
             size_bytes=len(data),
         ),
     ]
-    runner = PipelineRunner(
-        queue, default_stages(sessions, workspace_root=tmp_path), workspace_root=tmp_path
-    )
+    stages = [IngestStage(sessions, workspace_root=tmp_path), AudioStage(sessions)]
+    runner = PipelineRunner(queue, stages, workspace_root=tmp_path)
 
     for video_id, asset_id in sources:
         job, _ = await queue.enqueue(video_id, uuid.uuid4().hex, media_asset_id=asset_id)

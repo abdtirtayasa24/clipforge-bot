@@ -1,5 +1,6 @@
 """Server-side viral-potential score (spec "Viral-potential scoring", ADR-010)."""
 
+import uuid
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -30,6 +31,8 @@ class ScoredCandidate:
     candidate: ClipCandidate
     total: Decimal
     rank: int | None = None
+    # Caller's identifier (e.g. a row id), carried through selection unchanged.
+    key: uuid.UUID | None = None
 
     @classmethod
     def of(cls, candidate: ClipCandidate) -> "ScoredCandidate":

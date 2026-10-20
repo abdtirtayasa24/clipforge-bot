@@ -6,14 +6,15 @@ import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from clipforge.db.models import JobEvent, ProcessingJob
+from clipforge.db.models import JobEvent, ProcessingJob, ProviderUsage
 from clipforge.logging import redact
 from clipforge.queue.backoff import retry_delay
 from clipforge.queue.errors import (
@@ -252,6 +253,17 @@ class JobQueue:
         async with self._sessions.begin() as session:
             job = await self._fenced(session, lease, values)
             session.add(self._event(job, event_type, message=message, details=details))
+
+    async def estimated_costs(self, job_id: uuid.UUID) -> dict[str, Decimal]:
+        """The job's total estimated AI cost per currency: the sum of its usage rows (ADR-024)."""
+        async with self._sessions() as session:
+            rows = await session.execute(
+                select(ProviderUsage.currency, func.sum(ProviderUsage.estimated_cost))
+                .where(ProviderUsage.job_id == job_id)
+                .group_by(ProviderUsage.currency)
+                .order_by(ProviderUsage.currency)
+            )
+            return {currency: total for currency, total in rows}
 
     async def cancel_requested(self, job_id: uuid.UUID) -> bool:
         async with self._sessions() as session:

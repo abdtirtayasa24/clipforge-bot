@@ -275,11 +275,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 *(If this grows past M, split the OpenRouter fallback into its own task.)*
 **Size:** M
 
-### - [ ] T22: Wire analysis pipeline stages
+### - [x] T22: Wire analysis pipeline stages
 **Description:** Stages `transcribe → frames → analyze → select` persist transcript (artifact), raw candidates and selected candidates in `clip_candidates` (scores, dims, explanation, generated title + hook line, selected flag). Job total estimated cost = sum of its `provider_usage` rows, exposed via the job repository. No candidate ≥ threshold → `completed_no_clips`. E2E test with fake providers on a generated fixture.
 **Acceptance criteria:**
-- [ ] Fake-provider E2E: job reaches `candidates_selected` with ≤ 3 valid candidates
-- [ ] All-low scores → `completed_no_clips`, no render stage run
+- [x] Fake-provider E2E: job reaches `candidates_selected` with ≤ 3 valid candidates
+- [x] All-low scores → `completed_no_clips`, no render stage run
 **Verification:** standard + `rtk test python -m pytest tests/e2e/test_pipeline_analysis.py`
 **Dependencies:** T19, T21, T14
 **Files:** `backend/clipforge/pipeline/stages/{analyze,select}.py`, `backend/clipforge/pipeline/registry.py`, tests

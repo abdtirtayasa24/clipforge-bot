@@ -8,12 +8,15 @@ import signal
 import socket
 import sys
 
+import httpx
+
+from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import snapshot_job_settings
 from clipforge.config import Settings
 from clipforge.db.session import create_engine, create_session_factory
 from clipforge.logging import configure_logging
+from clipforge.pipeline.registry import default_stages, provider_registry
 from clipforge.pipeline.runner import PipelineRunner
-from clipforge.pipeline.stages import default_stages
 from clipforge.queue.repository import ClaimedJob, JobQueue
 
 logger = logging.getLogger(__name__)
@@ -105,11 +108,18 @@ async def serve(settings: Settings, database_url: str) -> None:
     try:
         sessions = create_session_factory(engine)
         queue = JobQueue(sessions, snapshot_settings=snapshot_job_settings)
-        stages = default_stages(sessions, workspace_root=settings.workspace_dir)
-        runner = PipelineRunner(queue, stages, workspace_root=settings.workspace_dir)
-        worker_id = f"{socket.gethostname()}:{os.getpid()}"
-        logger.info("worker started", extra={"worker_id": worker_id})
-        await Worker(queue, runner, worker_id).run(stop)
+        quota = QuotaGuard(sessions)
+        async with httpx.AsyncClient() as http:
+            stages = default_stages(
+                sessions,
+                workspace_root=settings.workspace_dir,
+                registry=provider_registry(http, quota),
+                quota=quota,
+            )
+            runner = PipelineRunner(queue, stages, workspace_root=settings.workspace_dir)
+            worker_id = f"{socket.gethostname()}:{os.getpid()}"
+            logger.info("worker started", extra={"worker_id": worker_id})
+            await Worker(queue, runner, worker_id).run(stop)
     finally:
         await engine.dispose()
     logger.info("worker stopped")

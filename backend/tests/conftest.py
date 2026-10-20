@@ -4,13 +4,21 @@ import os
 import shutil
 import sys
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
+from pathlib import Path
 
 import psycopg
 import pytest
 from alembic import command
+from sqlalchemy import update
 
+from clipforge.db.models import ProcessingJob
+from clipforge.db.session import create_engine, create_session_factory
+from clipforge.queue.repository import ACTIVE_STATUSES
+from tests.clock import FakeClock
 from tests.db import alembic_config, libpq_url, with_database
+from tests.fixtures.make_media import make_media
+from tests.jobs import Sessions
 
 TEST_DATABASE_URL_ENV = "CLIPFORGE_TEST_DATABASE_URL"
 SUPABASE_API_ROLES = ("anon", "authenticated")
@@ -88,3 +96,34 @@ def require_ffmpeg() -> None:
         if os.environ.get("CI"):
             pytest.fail("ffmpeg and ffprobe must be installed in CI")
         pytest.skip("ffmpeg/ffprobe are not installed")
+
+
+@pytest.fixture
+async def sessions(migrated_database_url: str) -> AsyncIterator[Sessions]:
+    """Sessions on the shared test database with no claimable job left by earlier tests."""
+    engine = create_engine(migrated_database_url, pool_size=3)
+    factory = create_session_factory(engine)
+    async with factory.begin() as session:
+        await session.execute(
+            update(ProcessingJob)
+            .where(ProcessingJob.status.in_(ACTIVE_STATUSES))
+            .values(status="cancelled", lease_token=None, lease_expires_at=None)
+        )
+    yield factory
+    await engine.dispose()
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    return FakeClock()
+
+
+@pytest.fixture(scope="session")
+def media_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return tmp_path_factory.mktemp("media")
+
+
+@pytest.fixture(scope="session")
+def valid_source(media_dir: Path, require_ffmpeg: None) -> Path:
+    """A 31-minute source that passes validation (smallest valid duration plus a margin)."""
+    return make_media(media_dir / "valid.mp4", duration_s=31 * 60)

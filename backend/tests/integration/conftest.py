@@ -1,41 +1,16 @@
-from collections.abc import AsyncIterator, Iterator
-from pathlib import Path
+from collections.abc import Iterator
 
 import psycopg
 import pytest
 import respx
 from psycopg.types.json import Jsonb
-from sqlalchemy import update
 
-from clipforge.db.models import ProcessingJob
-from clipforge.db.session import create_engine, create_session_factory
 from clipforge.discovery.youtube_client import BASE_URL
-from clipforge.queue.repository import ACTIVE_STATUSES, JobQueue
+from clipforge.queue.repository import JobQueue
 from tests.clock import FakeClock
 from tests.db import libpq_url
-from tests.fixtures.make_media import make_media
 from tests.jobs import Sessions
 from tests.youtube import FakeYouTube, fixture_video_ids
-
-
-@pytest.fixture
-async def sessions(migrated_database_url: str) -> AsyncIterator[Sessions]:
-    """Sessions on the shared test database with no claimable job left by earlier tests."""
-    engine = create_engine(migrated_database_url, pool_size=3)
-    factory = create_session_factory(engine)
-    async with factory.begin() as session:
-        await session.execute(
-            update(ProcessingJob)
-            .where(ProcessingJob.status.in_(ACTIVE_STATUSES))
-            .values(status="cancelled", lease_token=None, lease_expires_at=None)
-        )
-    yield factory
-    await engine.dispose()
-
-
-@pytest.fixture
-def clock() -> FakeClock:
-    return FakeClock()
 
 
 @pytest.fixture
@@ -68,14 +43,3 @@ def clean_discovery(migrated_database_url: str) -> Iterator[None]:
         yield
         reset(conn)
         conn.execute("UPDATE app_settings SET value = %s WHERE key = 'discovery'", (Jsonb(row[0]),))
-
-
-@pytest.fixture(scope="session")
-def media_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    return tmp_path_factory.mktemp("media")
-
-
-@pytest.fixture(scope="session")
-def valid_source(media_dir: Path, require_ffmpeg: None) -> Path:
-    """A 31-minute source that passes validation (smallest valid duration plus a margin)."""
-    return make_media(media_dir / "valid.mp4", duration_s=31 * 60)

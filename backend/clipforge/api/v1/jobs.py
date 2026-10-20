@@ -9,7 +9,7 @@ from clipforge.api.deps import DbSession, JobQueueDep
 from clipforge.api.errors import ApiError, Conflict, NotFound
 from clipforge.api.v1.schemas.jobs import CostOut, JobDetail, JobEventOut, JobOut, JobPage
 from clipforge.auth.deps import require_admin
-from clipforge.db.models import JobEvent, MediaAsset, ProcessingJob, ProviderUsage, Video
+from clipforge.db.models import JobEvent, MediaAsset, ProcessingJob, Video
 from clipforge.queue.errors import (
     ActiveJobExists,
     IdempotencyConflict,
@@ -106,26 +106,21 @@ def _decimal_text(value: Decimal) -> str:
 
 
 @router.get("/jobs/{job_id}")
-async def get_job(job_id: uuid.UUID, session: DbSession) -> JobDetail:
+async def get_job(job_id: uuid.UUID, session: DbSession, queue: JobQueueDep) -> JobDetail:
     job = await session.get(ProcessingJob, job_id)
     if job is None:
         raise NotFound("job not found")
     events = await session.scalars(
         select(JobEvent).where(JobEvent.job_id == job_id).order_by(JobEvent.id)
     )
-    costs = await session.execute(
-        select(ProviderUsage.currency, func.sum(ProviderUsage.estimated_cost))
-        .where(ProviderUsage.job_id == job_id)
-        .group_by(ProviderUsage.currency)
-        .order_by(ProviderUsage.currency)
-    )
+    costs = await queue.estimated_costs(job_id)
     return JobDetail.model_validate(
         {
             **JobOut.model_validate(job).model_dump(),
             "events": [JobEventOut.model_validate(event) for event in events],
             "costs": [
                 CostOut(currency=currency, estimated=_decimal_text(total))
-                for currency, total in costs
+                for currency, total in costs.items()
             ],
         }
     )
