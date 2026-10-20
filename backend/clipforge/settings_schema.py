@@ -43,6 +43,7 @@ class SettingsSchema(BaseModel):
         min_length=1,
         max_length=500,
     )
+    telegram_notifications_enabled: bool = True
     discovery: DiscoverySettings = Field(default_factory=DiscoverySettings)
     models: ModelSelection = Field(default_factory=ModelSelection)
 

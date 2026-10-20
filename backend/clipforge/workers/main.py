@@ -15,8 +15,10 @@ from clipforge.ai.registry import snapshot_job_settings
 from clipforge.config import Settings
 from clipforge.db.session import create_engine, create_session_factory
 from clipforge.logging import configure_logging
+from clipforge.notify.telegram import telegram_client
 from clipforge.pipeline.registry import default_stages, drive_client, provider_registry
 from clipforge.pipeline.runner import PipelineRunner
+from clipforge.pipeline.stages.notify import Notifier
 from clipforge.queue.repository import ClaimedJob, JobQueue
 
 logger = logging.getLogger(__name__)
@@ -117,7 +119,12 @@ async def serve(settings: Settings, database_url: str) -> None:
                 quota=quota,
                 drive=drive_client(settings, http, sessions),
             )
-            runner = PipelineRunner(queue, stages, workspace_root=settings.workspace_dir)
+            runner = PipelineRunner(
+                queue,
+                stages,
+                workspace_root=settings.workspace_dir,
+                notifier=Notifier(sessions, telegram_client(settings, http)),
+            )
             worker_id = f"{socket.gethostname()}:{os.getpid()}"
             logger.info("worker started", extra={"worker_id": worker_id})
             await Worker(queue, runner, worker_id).run(stop)

@@ -26,6 +26,8 @@ _KEY_VALUE = re.compile(
     """
 )
 _BEARER = re.compile(r"(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+")
+# The Bot API puts the bot token in the URL path: https://api.telegram.org/bot<token>/method
+_TELEGRAM_BOT_PATH = re.compile(r"(/bot)\d+:[A-Za-z0-9_-]+")
 _URL_QUERY = re.compile(r"(?i)((?:\bhttps?://|(?<![\w/:.])/)[^\s?#\"']*\?)[^\s#\"']+")
 
 _CONTEXT_FIELDS = ("request_id", "job_id", "stage", "attempt")
@@ -42,6 +44,7 @@ _SENSITIVE_EXTRA_KEY = re.compile(rf"(?i)^(?:{_SENSITIVE_KEYS})$")
 
 def redact(text: str) -> str:
     text = _URL_QUERY.sub(rf"\1{REDACTED}", text)
+    text = _TELEGRAM_BOT_PATH.sub(rf"\1{REDACTED}", text)
     text = _KEY_VALUE.sub(rf"\g<key>{REDACTED}", text)
     return _BEARER.sub(rf"\1 {REDACTED}", text)
 

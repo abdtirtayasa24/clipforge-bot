@@ -5,10 +5,14 @@ import asyncio
 import logging
 import sys
 
+import httpx
+
 from clipforge.config import Settings
-from clipforge.db.session import create_engine
+from clipforge.db.session import create_engine, create_session_factory
 from clipforge.discovery.service import DiscoveryAlreadyRunning, run_exclusive
 from clipforge.logging import configure_logging
+from clipforge.notify.telegram import telegram_client
+from clipforge.pipeline.stages.notify import Notifier
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +27,9 @@ async def _run(settings: Settings, database_url: str, api_key: str) -> int:
     )
     try:
         report = await run_exclusive(engine, api_key)
+        async with httpx.AsyncClient() as http:
+            notifier = Notifier(create_session_factory(engine), telegram_client(settings, http))
+            await notifier.discovery_summary(report)
     except DiscoveryAlreadyRunning:
         # Another run (manual or timer) covers this one; skipping is not a failure.
         logger.warning("discovery is already running; skipped")

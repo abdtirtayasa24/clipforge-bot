@@ -1,14 +1,17 @@
 import asyncio
 import contextlib
 import logging
+import uuid
 from collections.abc import Sequence
 from pathlib import Path
 
 from clipforge.logging import log_context
 from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.stage import Stage
+from clipforge.pipeline.stages.notify import Notifier
 from clipforge.queue.errors import LeaseLost
 from clipforge.queue.repository import ClaimedJob, JobQueue, Lease
+from clipforge.storage.drive_oauth import DriveAuthExpired, DriveNotConnected
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,7 @@ class PipelineRunner:
         *,
         workspace_root: Path,
         heartbeat_interval: float = HEARTBEAT_INTERVAL_S,
+        notifier: Notifier | None = None,
     ) -> None:
         if not stages:
             raise ValueError("a pipeline needs at least one stage")
@@ -31,6 +35,7 @@ class PipelineRunner:
         self._stages = list(stages)
         self._workspace_root = workspace_root
         self._heartbeat_interval = heartbeat_interval
+        self._notifier = notifier
 
     def _remaining_stages(self, current: str) -> list[Stage]:
         """Stages still to run for a job whose recorded stage is `current`."""
@@ -93,13 +98,25 @@ class PipelineRunner:
                     await self._queue.complete(lease, no_clips=True)
                     return "completed_no_clips"
             await self._queue.complete(lease)
-            return "completed"
         except LeaseLost:
             logger.warning("lease lost; stage aborted")
             return LEASE_LOST
         except Exception as error:
             try:
-                return await self._queue.handle_error(lease, error)
+                status = await self._queue.handle_error(lease, error)
             except LeaseLost:
                 logger.warning("lease lost while recording an error")
                 return LEASE_LOST
+            await self._notify_error(lease.job_id, status, error)
+            return status
+        if self._notifier:
+            await self._notifier.clips_ready(lease.job_id)
+        return "completed"
+
+    async def _notify_error(self, job_id: uuid.UUID, status: str, error: Exception) -> None:
+        if self._notifier is None:
+            return
+        if isinstance(error, DriveNotConnected | DriveAuthExpired):
+            await self._notifier.drive_disconnected()
+        if status == "failed":
+            await self._notifier.job_failed(job_id)

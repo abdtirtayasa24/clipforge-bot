@@ -333,10 +333,10 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/storage/drive.py`, `backend/clipforge/pipeline/stages/upload.py`, tests
 **Size:** M
 
-### - [ ] T27: Telegram notifications
+### - [x] T27: Telegram notifications
 **Description:** Bot API `sendMessage` to admin chat on: clips ready for review (listing generated titles, scores and job estimated cost), job failed (permanent / retries exhausted), discovery summary, Drive disconnected. Failures to notify are logged, never fail the job. Toggle in settings.
 **Acceptance criteria:**
-- [ ] Message templates contain no secrets/URLs with tokens; notify failure doesn't change job state
+- [x] Message templates contain no secrets/URLs with tokens; notify failure doesn’t change job state
 **Verification:** standard + `rtk test python -m pytest tests -k notify`
 **Dependencies:** T26
 **Files:** `backend/clipforge/notify/telegram.py`, `backend/clipforge/pipeline/stages/notify.py`, tests

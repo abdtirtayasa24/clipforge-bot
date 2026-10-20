@@ -98,6 +98,10 @@ def test_exception_is_serialized(log_stream: io.StringIO) -> None:
         ("password=pa55", "pa55"),
         ('127.0.0.1:5 - "GET /api/v1/x?v=priv HTTP/1.1" 200', "priv"),
         ("Cookie: session=abc123", "abc123"),
+        (
+            'HTTP Request: POST https://api.telegram.org/bot123456:AAH-x_y9/sendMessage "200"',
+            "123456:AAH-x_y9",
+        ),
     ],
 )
 def test_redact_masks_sensitive_values(raw: str, secret: str) -> None:
