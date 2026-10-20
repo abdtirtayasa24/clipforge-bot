@@ -1702,6 +1702,55 @@
           }
         }
       }
+    },
+    "/api/v1/clips/{clip_id}/affiliate-links/rematch": {
+      "post": {
+        "tags": [
+          "affiliate"
+        ],
+        "summary": "Rematch Clip",
+        "description": "Replaces the open suggestions; approved and rejected links are kept.",
+        "operationId": "rematch_clip_api_v1_clips__clip_id__affiliate_links_rematch_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliateLinkList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1805,6 +1854,97 @@
         "type": "object",
         "title": "AdminSettings",
         "description": "What an administrator may set: the spec's bounds, tighter than stored jobs tolerate."
+      },
+      "AffiliateLinkList": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AffiliateLinkOut"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled",
+          "items"
+        ],
+        "title": "AffiliateLinkList"
+      },
+      "AffiliateLinkOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "clip_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Clip Id"
+          },
+          "product": {
+            "$ref": "#/components/schemas/ProductOut"
+          },
+          "relevance_score": {
+            "type": "number",
+            "title": "Relevance Score"
+          },
+          "match_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Match Reason"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "clip_id",
+          "product",
+          "relevance_score",
+          "match_reason",
+          "status",
+          "is_primary",
+          "reviewed_at",
+          "created_at"
+        ],
+        "title": "AffiliateLinkOut"
       },
       "ClipArtifactOut": {
         "properties": {

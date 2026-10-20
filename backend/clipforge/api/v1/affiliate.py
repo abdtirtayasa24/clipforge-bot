@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated, Any, Self
 
+import httpx
 from fastapi import APIRouter, Depends, Query, Response, status
 from pydantic import (
     BaseModel,
@@ -12,19 +13,30 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 
+from clipforge.affiliate.matcher import AffiliateMatcher, EmbeddingSetup
 from clipforge.affiliate.validation import LinkRejected, check_affiliate_url, destination_host
-from clipforge.api.deps import DbSession
-from clipforge.api.errors import NotFound, Unprocessable
+from clipforge.ai.quota import QuotaGuard
+from clipforge.ai.registry import ProviderConfigError, resolve_providers
+from clipforge.ai.usage import usage_recorder
+from clipforge.api.deps import DbSession, SessionsDep
+from clipforge.api.errors import Conflict, NotFound, Unprocessable
 from clipforge.auth.deps import require_admin
-from clipforge.db.models import AffiliateProduct
+from clipforge.db.models import AffiliateProduct, Clip, ClipAffiliateLink
 from clipforge.discovery.regions import ISO_3166_ALPHA2
+from clipforge.pipeline.registry import provider_registry
+from clipforge.pipeline.stages.affiliate import affiliate_links_enabled
 from clipforge.settings_schema import load_settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/affiliate", tags=["affiliate"], dependencies=[Depends(require_admin)])
+clip_links_router = APIRouter(
+    prefix="/clips/{clip_id}/affiliate-links",
+    tags=["affiliate"],
+    dependencies=[Depends(require_admin)],
+)
 
 Text200 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Tag = Annotated[
@@ -184,3 +196,84 @@ async def deactivate_product(product_id: uuid.UUID, session: DbSession) -> Respo
     product.active = False
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+class AffiliateLinkOut(BaseModel):
+    id: uuid.UUID
+    clip_id: uuid.UUID
+    product: ProductOut
+    relevance_score: float
+    match_reason: str | None
+    status: str
+    is_primary: bool
+    reviewed_at: datetime | None
+    created_at: datetime
+
+
+class AffiliateLinkList(BaseModel):
+    enabled: bool
+    items: list[AffiliateLinkOut]
+
+
+async def clip_links(session: DbSession, clip_id: uuid.UUID) -> AffiliateLinkList:
+    """Approved first, then suggestions by relevance; rejected last."""
+    order = case({"approved": 0, "suggested": 1}, value=ClipAffiliateLink.status, else_=2)
+    rows = await session.execute(
+        select(ClipAffiliateLink, AffiliateProduct)
+        .join(AffiliateProduct, AffiliateProduct.id == ClipAffiliateLink.product_id)
+        .where(ClipAffiliateLink.clip_id == clip_id)
+        .order_by(order, ClipAffiliateLink.relevance_score.desc(), ClipAffiliateLink.id)
+    )
+    return AffiliateLinkList(
+        enabled=await affiliate_links_enabled(session),
+        items=[
+            AffiliateLinkOut(
+                id=link.id,
+                clip_id=link.clip_id,
+                product=ProductOut.model_validate(product),
+                relevance_score=float(link.relevance_score),
+                match_reason=link.match_reason,
+                status=link.status,
+                is_primary=link.is_primary,
+                reviewed_at=link.reviewed_at,
+                created_at=link.created_at,
+            )
+            for link, product in rows
+        ],
+    )
+
+
+async def existing_clip(session: DbSession, clip_id: uuid.UUID) -> Clip:
+    clip = await session.get(Clip, clip_id)
+    if clip is None:
+        raise NotFound("clip not found")
+    return clip
+
+
+async def _api_embedding(
+    session: DbSession, sessions: SessionsDep, http: httpx.AsyncClient, job_id: uuid.UUID
+) -> EmbeddingSetup | None:
+    try:
+        snapshot = (await resolve_providers(session, (await load_settings(session)).models))[
+            "embedding"
+        ]
+        provider = provider_registry(http, QuotaGuard(sessions)).embedding(snapshot)
+    except (ProviderConfigError, KeyError) as exc:
+        logger.warning("affiliate embeddings unavailable", extra={"reason": str(exc)})
+        return None
+    record = usage_recorder(sessions, provider=snapshot, job_id=job_id, stage="affiliate_matching")
+    return EmbeddingSetup(provider, snapshot.model, record)
+
+
+@clip_links_router.post("/rematch")
+async def rematch_clip(
+    clip_id: uuid.UUID, session: DbSession, sessions: SessionsDep
+) -> AffiliateLinkList:
+    """Replaces the open suggestions; approved and rejected links are kept."""
+    clip = await existing_clip(session, clip_id)
+    if not await affiliate_links_enabled(session):
+        raise Conflict("affiliate links are disabled")
+    async with httpx.AsyncClient() as http:
+        embedding = await _api_embedding(session, sessions, http, clip.job_id)
+        await AffiliateMatcher(sessions, embedding).match_clip(clip_id, replace_suggested=True)
+    return await clip_links(session, clip_id)

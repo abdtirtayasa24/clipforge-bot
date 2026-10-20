@@ -72,6 +72,8 @@ def candidate(start: float, end: float, level: int, title: str) -> ClipCandidate
         title=title,
         hook_line=f"Pembuka {title}",
         explanation="uji",
+        topic=f"Topik {title}",
+        keywords=[title.lower()],
     )
 
 
@@ -198,6 +200,8 @@ async def test_job_uploads_at_most_three_verified_clips(
         assert 20_000 <= row.end_ms - row.start_ms <= 60_000
         assert row.total_score >= 75
         assert row.hook_line and row.transcript_excerpt
+        assert (row.topic, row.keywords) == (f"Topik {row.title}", [str(row.title).lower()])
+        assert row.language
     assert analysis.reranked_frames, "frames are sent for the shortlist"
     clips = await clip_rows(sessions, job_id)
     assert sorted(clip.title for clip, _ in clips) == ["Dua", "Satu", "Tiga"]

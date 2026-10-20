@@ -5,6 +5,7 @@ from typing import Any, ClassVar
 
 from sqlalchemy import (
     CHAR,
+    REAL,
     BigInteger,
     DateTime,
     ForeignKey,
@@ -189,6 +190,9 @@ class ClipCandidate(Base):
     hook_line: Mapped[str | None]
     explanation: Mapped[str | None]
     transcript_excerpt: Mapped[str | None]
+    topic: Mapped[str | None]
+    keywords: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
+    language: Mapped[str | None]
     selected: Mapped[bool] = mapped_column(server_default="false")
     rank: Mapped[int | None] = mapped_column(SmallInteger)
     created_at: Mapped[datetime] = created_at()
@@ -367,3 +371,16 @@ class AffiliateEvent(Base):
     event_type: Mapped[str]
     details: Mapped[JsonObject] = mapped_column(server_default="{}")
     created_at: Mapped[datetime] = created_at()
+
+
+class AffiliateProductEmbedding(Base):
+    __tablename__ = "affiliate_product_embeddings"
+
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("affiliate_products.id", ondelete="CASCADE"), primary_key=True
+    )
+    model: Mapped[str]
+    content_sha256: Mapped[str] = mapped_column(CHAR(64))
+    embedding: Mapped[list[float]] = mapped_column(ARRAY(REAL))
+    created_at: Mapped[datetime] = created_at()
+    updated_at: Mapped[datetime] = updated_at()

@@ -83,6 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(ai.router, prefix=API_PREFIX)
     app.include_router(integrations.router, prefix=API_PREFIX)
     app.include_router(affiliate.router, prefix=API_PREFIX)
+    app.include_router(affiliate.clip_links_router, prefix=API_PREFIX)
     return app
 
 

@@ -91,10 +91,15 @@ class GeminiClient:
         self._sleep = sleep
 
     async def generate(
-        self, body: dict[str, Any], *, record: UsageRecorder, audio_seconds: float | None = None
+        self,
+        body: dict[str, Any],
+        *,
+        record: UsageRecorder,
+        audio_seconds: float | None = None,
+        method: str = "generateContent",
     ) -> dict[str, Any]:
-        """POSTs generateContent, recording every attempt; raises from the error taxonomy."""
-        url = f"{BASE_URL}/{API_VERSION}/models/{self.provider.model}:generateContent"
+        """POSTs a model method, recording every attempt; raises from the error taxonomy."""
+        url = f"{BASE_URL}/{API_VERSION}/models/{self.provider.model}:{method}"
         model = self.provider.model
         for attempt in range(1, MAX_ATTEMPTS + 1):
             await self._quota.acquire(self.provider)

@@ -47,7 +47,9 @@ def transcript_excerpt(transcript: TranscriptResult, candidate: ClipCandidate) -
     return " ".join(segment.text for segment in excerpt(transcript, candidate))[:EXCERPT_MAX_CHARS]
 
 
-def candidate_row(job_id: object, candidate: ClipCandidate, text: str) -> dict[str, object]:
+def candidate_row(
+    job_id: object, candidate: ClipCandidate, text: str, language: str | None = None
+) -> dict[str, object]:
     scores = candidate.scores
     return {
         "job_id": job_id,
@@ -64,6 +66,9 @@ def candidate_row(job_id: object, candidate: ClipCandidate, text: str) -> dict[s
         "hook_line": candidate.hook_line,
         "explanation": candidate.explanation,
         "transcript_excerpt": text,
+        "topic": candidate.topic or None,
+        "keywords": candidate.keywords,
+        "language": language,
     }
 
 
@@ -123,6 +128,7 @@ class AnalyzeStage:
                             ctx.job.lease.job_id,
                             candidate,
                             transcript_excerpt(artifact.transcript, candidate),
+                            artifact.transcript.language,
                         )
                         for candidate in analysis.candidates
                     ],

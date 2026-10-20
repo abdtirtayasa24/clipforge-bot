@@ -6,6 +6,7 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from clipforge.ai.adapters.gemini_analysis import gemini_analysis_factory
+from clipforge.ai.adapters.gemini_embedding import gemini_embedding_factory
 from clipforge.ai.adapters.gemini_transcription import (
     gemini_audio_segments_factory,
     gemini_transcription_factory,
@@ -15,6 +16,7 @@ from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderRegistry
 from clipforge.config import Settings
 from clipforge.pipeline.stage import Stage
+from clipforge.pipeline.stages.affiliate import AffiliateStage
 from clipforge.pipeline.stages.analyze import AnalyzeStage
 from clipforge.pipeline.stages.audio import AudioStage
 from clipforge.pipeline.stages.ingest import IngestStage
@@ -35,6 +37,7 @@ def provider_registry(http: httpx.AsyncClient, quota: QuotaGuard) -> ProviderReg
             "gemini": gemini_analysis_factory(http, quota),
             "openrouter": openrouter_analysis_factory(http, quota),
         },
+        embedding={"gemini": gemini_embedding_factory(http, quota)},
     )
 
 
@@ -74,4 +77,5 @@ def default_stages(
         SelectStage(sessions),
         RenderStage(sessions),
         UploadStage(sessions, drive),
+        AffiliateStage(sessions, registry),
     ]

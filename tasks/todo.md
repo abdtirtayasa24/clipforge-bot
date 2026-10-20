@@ -395,14 +395,14 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/migrations/sql/007_affiliate_links.sql` (+down), `backend/migrations/versions/0007_*.py`, `backend/clipforge/affiliate/validation.py`, `backend/clipforge/api/v1/affiliate.py`, tests
 **Size:** M
 
-### - [ ] T32: Affiliate matcher + stage + rematch
+### - [x] T32: Affiliate matcher + stage + rematch
 **Description:** Matcher (ADR-020): inputs = clip transcript segment, topic, keywords, title; filter active products by language/region + tag/category; rank by `gemini-embedding-2` cosine similarity (product embeddings cached, recomputed on product edit) else keyword fallback when embeddings are unavailable/out of quota; threshold (default 0.70); ≤ 3 suggestions; top flagged primary-candidate; `match_reason` stored; `affiliate_events` logged. Worker stage runs only if `affiliate_links_enabled` is true at run time. `POST /clips/{id}/affiliate-links/rematch` (409 when disabled).
 **Acceptance criteria:**
-- [ ] Toggle off → stage no-op, rematch rejected, zero new rows
-- [ ] Relevant product suggested; unrelated/inactive excluded; no match → zero suggestions (no invented links)
+- [x] Toggle off → stage no-op, rematch rejected, zero new rows
+- [x] Relevant product suggested; unrelated/inactive excluded; no match → zero suggestions (no invented links)
 **Verification:** standard + `rtk test python -m pytest tests -k affiliate_match`
 **Dependencies:** T31, T17
-**Files:** `backend/clipforge/affiliate/matcher.py`, `backend/clipforge/pipeline/stages/affiliate.py`, `backend/clipforge/api/v1/affiliate.py`, tests
+**Files:** `backend/migrations/sql/008_affiliate_matching.sql` (+down), `backend/clipforge/ai/adapters/gemini_embedding.py`, `backend/clipforge/affiliate/matcher.py`, `backend/clipforge/pipeline/stages/affiliate.py`, `backend/clipforge/api/v1/affiliate.py`, tests
 **Size:** M
 
 ### - [ ] T33: Affiliate link review + caption export
