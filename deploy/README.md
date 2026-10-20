@@ -293,10 +293,87 @@ curl -s "$API/jobs?limit=2" -H "Authorization: Bearer $TOKEN"
 curl -s $API/jobs/<job id> -H "Authorization: Bearer $TOKEN"
 ```
 
-Expected: each job's events show `stage_changed` to `ingesting` and then `validated`. Until the
-Phase 3 stages exist the pipeline ends there, so the jobs finish `completed`. The URL job's media
+Expected: each job's events show `stage_changed` to `ingesting` and then `validated`. From
+Phase 3 on the jobs continue into the AI stages, which need the keys from section 13. The URL job's media
 asset becomes `ready` and both videos turn `"rights_status": "authorized"`. Repeating a `POST
 /videos/{id}/jobs` with the same `Idempotency-Key` returns the same job.
+
+## 13. AI analysis (Checkpoint M3)
+
+Needs `TOKEN`, `API` and one 60–120 minute authorized video that reached `validated` in section
+12 (or upload a new one the same way). On the Gemini free tier (and free OpenRouter models) the
+audio, transcript and frames are used by the provider to improve its products (ADR-027); only
+process media whose creator authorization allows that.
+
+### Keys and quotas
+
+Add the AI keys to `/etc/clipforge-bot/backend.env` (`GEMINI_API_KEY` from Google AI Studio;
+`OPENROUTER_API_KEY` for the analysis fallback) and restart the API:
+
+```bash
+sudo nano /etc/clipforge-bot/backend.env
+sudo systemctl restart clipforge-api
+curl -s https://<your-domain>/api/v1/health/ready          # "ai_providers": "ok"
+curl -s $API/ai/providers -H "Authorization: Bearer $TOKEN"  # selected models, prices, used_today
+```
+
+The seeded `rpm_limit` / `rpd_limit` values are placeholders (ADR-028). Replace them with the
+limits AI Studio shows for your project, in the Supabase SQL editor:
+
+```sql
+UPDATE ai_provider_configs SET rpm_limit = <rpm>, rpd_limit = <rpd>
+WHERE provider = 'gemini' AND model = 'gemini-3.5-transcribe';   -- repeat per model
+```
+
+### Run the job
+
+```bash
+curl -s -X POST $API/videos/$VIDEO/jobs -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $(cat /proc/sys/kernel/random/uuid)"
+# The worker unit arrives in Phase 4; until then run it as a transient unit.
+sudo systemd-run --unit=clipforge-worker-m3 --uid=clipforge \
+  --property=EnvironmentFile=/etc/clipforge-bot/backend.env \
+  --working-directory=/opt/clipforge-bot/backend \
+  /opt/clipforge-bot/backend/.venv/bin/python -m clipforge.workers.main
+journalctl -u clipforge-worker-m3 -f      # Ctrl+C once the job finished
+sudo systemctl stop clipforge-worker-m3
+curl -s $API/jobs/<job id> -H "Authorization: Bearer $TOKEN"
+```
+
+Expected: `stage_changed` events for `audio_extracted`, `transcribed`, `analyzed` and
+`candidates_selected`, then `completed` (rendering arrives in Phase 4), or `completed_no_clips`
+when no candidate scores at least `min_score`. A `quota_deferred` event means a daily quota ran
+out: the job waits for the reset without using an attempt. `costs` shows the estimated total.
+
+### Review the candidates
+
+There is no clips API before Phase 5; inspect the results in the Supabase SQL editor:
+
+```sql
+-- Candidates: selected ones first (≤ 3, each 20–60 s, total ≥ 75)
+SELECT rank, selected, total_score, round((end_ms - start_ms) / 1000.0, 1) AS seconds,
+       to_char(make_interval(secs => start_ms / 1000.0), 'HH24:MI:SS') AS starts_at,
+       title, hook_line, hook_score, emotion_score, clarity_score, relevance_score,
+       visual_score, completeness_score, explanation
+FROM clip_candidates WHERE job_id = '<job id>'
+ORDER BY selected DESC, rank, total_score DESC;
+
+-- Provider calls: latency, tokens or audio seconds, estimated cost per stage
+SELECT stage, provider, model, count(*) AS calls, count(*) FILTER (WHERE NOT success) AS failed,
+       round(avg(latency_ms)) AS avg_ms, sum(audio_seconds) AS audio_s,
+       sum(input_tokens) AS tokens_in, sum(output_tokens) AS tokens_out,
+       sum(estimated_cost) AS cost
+FROM provider_usage WHERE job_id = '<job id>' GROUP BY stage, provider, model ORDER BY stage;
+
+-- Stage durations from the job timeline
+SELECT stage, created_at, created_at - lag(created_at) OVER (ORDER BY id) AS took
+FROM job_events WHERE job_id = '<job id>' AND event_type IN ('claimed', 'stage_changed')
+ORDER BY id;
+```
+
+Watch the selected clips at their `starts_at` times in the source and judge whether they work as
+standalone shorts (hook, completeness, accurate title). Note what should change in the prompts
+or thresholds (`min_score`, `clip_min_s`, `clip_max_s`) before rendering work starts.
 
 ## Updating
 
@@ -324,4 +401,4 @@ The script syncs code, reinstalls, migrates and restarts the API only when somet
 ## After verification
 
 Tick the VPS items in `tasks/todo.md` (T07 and Checkpoint M1 for steps 1–10, T11 and Checkpoint
-M2 for sections 11–12), or send the outputs for review.
+M2 for sections 11–12, Checkpoint M3 for section 13), or send the outputs for review.
