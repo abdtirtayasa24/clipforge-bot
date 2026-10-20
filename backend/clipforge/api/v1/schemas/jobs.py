@@ -1,5 +1,7 @@
 import uuid
+from collections.abc import Mapping
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
@@ -40,6 +42,13 @@ class JobEventOut(BaseModel):
 class CostOut(BaseModel):
     currency: str
     estimated: str
+
+
+def cost_lines(costs: Mapping[str, Decimal]) -> list[CostOut]:
+    return [
+        CostOut(currency=currency, estimated=f"{total.normalize():f}")
+        for currency, total in costs.items()
+    ]
 
 
 class JobDetail(JobOut):

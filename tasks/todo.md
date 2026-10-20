@@ -362,12 +362,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 5 — Review API & Affiliate Backend (M5, backend)
 
-### - [ ] T29: Clips API + review audit
+### - [x] T29: Clips API + review audit
 **Description:** `GET /clips` (filters: status, video, date), `GET /clips/{id}` (generated title + effective title, hook line, candidate scores/explanation, transcript excerpt, Drive link, artifacts, job cost), `POST /clips/{id}/review` (approve/reject + note + optional `title_override`) writing `clip_reviews` and updating `clips.review_status` / `clips.title_override`.
 **Acceptance criteria:**
-- [ ] Review is append-only audit; re-review allowed and recorded
-- [ ] *(Should-Have: generated titles)* Title override is stored and audited; the generated title is never overwritten; effective title = override ?? generated
-- [ ] OpenAPI schema exported to `frontend/src/api/openapi.json` (script)
+- [x] Review is append-only audit; re-review allowed and recorded
+- [x] *(Should-Have: generated titles)* Title override is stored and audited; the generated title is never overwritten; effective title = override ?? generated
+- [x] OpenAPI schema exported to `frontend/src/api/openapi.json` (script)
 **Verification:** standard + `rtk test python -m pytest tests -k clips_api`
 **Dependencies:** T26
 **Files:** `backend/clipforge/api/v1/clips.py`, `backend/clipforge/api/v1/schemas/clips.py`, `backend/scripts/export_openapi.py`, tests

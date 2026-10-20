@@ -1,5 +1,4 @@
 import uuid
-from decimal import Decimal
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Response, status
@@ -7,7 +6,7 @@ from sqlalchemy import and_, func, or_, select
 
 from clipforge.api.deps import DbSession, JobQueueDep
 from clipforge.api.errors import ApiError, Conflict, NotFound
-from clipforge.api.v1.schemas.jobs import CostOut, JobDetail, JobEventOut, JobOut, JobPage
+from clipforge.api.v1.schemas.jobs import JobDetail, JobEventOut, JobOut, JobPage, cost_lines
 from clipforge.auth.deps import require_admin
 from clipforge.db.models import JobEvent, MediaAsset, ProcessingJob, Video
 from clipforge.queue.errors import (
@@ -101,10 +100,6 @@ async def list_jobs(
     )
 
 
-def _decimal_text(value: Decimal) -> str:
-    return f"{value.normalize():f}"
-
-
 @router.get("/jobs/{job_id}")
 async def get_job(job_id: uuid.UUID, session: DbSession, queue: JobQueueDep) -> JobDetail:
     job = await session.get(ProcessingJob, job_id)
@@ -118,10 +113,7 @@ async def get_job(job_id: uuid.UUID, session: DbSession, queue: JobQueueDep) -> 
         {
             **JobOut.model_validate(job).model_dump(),
             "events": [JobEventOut.model_validate(event) for event in events],
-            "costs": [
-                CostOut(currency=currency, estimated=_decimal_text(total))
-                for currency, total in costs.items()
-            ],
+            "costs": cost_lines(costs),
         }
     )
 

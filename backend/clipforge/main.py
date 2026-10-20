@@ -9,6 +9,7 @@ from clipforge.api.middleware import RequestContextMiddleware
 from clipforge.api.v1 import (
     ai,
     auth,
+    clips,
     discovery,
     health,
     integrations,
@@ -73,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(discovery.router, prefix=API_PREFIX)
     app.include_router(uploads.router, prefix=API_PREFIX)
     app.include_router(jobs.router, prefix=API_PREFIX)
+    app.include_router(clips.router, prefix=API_PREFIX)
     app.include_router(ai.router, prefix=API_PREFIX)
     app.include_router(integrations.router, prefix=API_PREFIX)
     return app
