@@ -239,12 +239,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/ai/adapters/gemini_transcription.py`, `backend/clipforge/ai/timestamps.py`, `backend/clipforge/pipeline/stages/transcribe.py`, tests
 **Size:** M
 
-### - [ ] T19: Scoring + candidate selection (pure)
+### - [x] T19: Scoring + candidate selection (pure)
 **Description:** `score(dims) = 0.25H+0.20E+0.20C+0.15R+0.10V+0.10F` (inputs validated 0–100; weights fixed by spec). `select(candidates, transcript, settings)`: drop < `min_score`, snap start/end to segment boundaries, clamp to `clip_min_s`–`clip_max_s` (discard if impossible), greedy by score with pairwise overlap ≤ `max_overlap` of the shorter clip, return ≤ `max_clips`. All thresholds come from the job's settings snapshot (defaults 75 / 20 s / 60 s / 0.20 / 3).
 **Acceptance criteria:**
-- [ ] Table-driven tests: formula, threshold edge (74.99 vs 75), overlap 19 % vs 21 %, duration clamps, max 3
-- [ ] *(Should-Have: configurable thresholds/durations)* Non-default settings (e.g. `min_score=80`, 30–45 s, `max_clips=2`) change the output accordingly
-- [ ] Property test: output never violates duration/overlap/count constraints
+- [x] Table-driven tests: formula, threshold edge (74.99 vs 75), overlap 19 % vs 21 %, duration clamps, max 3
+- [x] *(Should-Have: configurable thresholds/durations)* Non-default settings (e.g. `min_score=80`, 30–45 s, `max_clips=2`) change the output accordingly
+- [x] Property test: output never violates duration/overlap/count constraints
 **Verification:** standard + `rtk test python -m pytest tests/unit/test_scoring.py`
 **Dependencies:** T17 (types only)
 **Files:** `backend/clipforge/scoring/{score,select}.py`, `backend/tests/unit/test_scoring.py`
