@@ -81,6 +81,9 @@ class QuotaGuard:
         self._sleep = sleep
         self._buckets: dict[tuple[str, str], _Bucket] = {}
 
+    def now(self) -> datetime:
+        return self._clock()
+
     async def used_today(self, provider: str, model: str, reset: QuotaReset) -> int:
         since = day_start(self._clock(), reset)
         async with self._sessions() as session:

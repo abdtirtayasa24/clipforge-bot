@@ -28,6 +28,13 @@ class Stage(Protocol):
     async def run(self, ctx: "StageContext") -> StageResult: ...
 
 
+async def write_artifact(path: Path, text: str) -> None:
+    """Writes a stage artifact so readers only ever see a complete file."""
+    partial = path.with_name(path.name + ".part")
+    await asyncio.to_thread(partial.write_text, text, encoding="utf-8")
+    await asyncio.to_thread(partial.replace, path)
+
+
 async def verified_artifact(path: Path, expected_sha256: str | None) -> bool:
     """True when a stage can reuse `path` instead of redoing its work."""
     if expected_sha256 is None:

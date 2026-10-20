@@ -105,12 +105,17 @@ class ProviderRegistry:
         *,
         transcription: Mapping[str, Callable[[ProviderSnapshot, str], TranscriptionProvider]]
         | None = None,
+        transcription_fallback: Mapping[
+            str, Callable[[ProviderSnapshot, str], TranscriptionProvider]
+        ]
+        | None = None,
         analysis: Mapping[str, Callable[[ProviderSnapshot, str], ViralAnalysisProvider]]
         | None = None,
         embedding: Mapping[str, Callable[[ProviderSnapshot, str], EmbeddingProvider]] | None = None,
         environ: Mapping[str, str] = os.environ,
     ) -> None:
         self._transcription = dict(transcription or {})
+        self._transcription_fallback = dict(transcription_fallback or {})
         self._analysis = dict(analysis or {})
         self._embedding = dict(embedding or {})
         self._environ = environ
@@ -132,6 +137,11 @@ class ProviderRegistry:
 
     def transcription(self, snapshot: ProviderSnapshot) -> TranscriptionProvider:
         return self._factory(self._transcription, snapshot)(snapshot, self._secret(snapshot))
+
+    def transcription_fallback(self, snapshot: ProviderSnapshot) -> TranscriptionProvider:
+        """Segment-level transcription through a multimodal model (ADR-027)."""
+        factory = self._factory(self._transcription_fallback, snapshot)
+        return factory(snapshot, self._secret(snapshot))
 
     def analysis(self, snapshot: ProviderSnapshot) -> ViralAnalysisProvider:
         return self._factory(self._analysis, snapshot)(snapshot, self._secret(snapshot))

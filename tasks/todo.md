@@ -227,13 +227,13 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/ai/{types,protocols,registry,usage}.py`, `backend/clipforge/settings_schema.py`, `backend/clipforge/ai/adapters/fake.py`, `backend/clipforge/api/v1/ai.py`, tests
 **Size:** M
 
-### - [ ] T18: Gemini transcription adapter + timestamp normalization
+### - [x] T18: Gemini transcription adapter + timestamp normalization
 **Description:** `GeminiTranscriptionProvider` for `gemini-3.5-transcribe` (file mode, word-level timestamps on, diarization off, language auto-detect with `id-ID` hint) via the official `google-genai` SDK or REST over httpx — pick after checking current docs; upload chunk via Files API if inline size is exceeded. Timeouts, retries mapped to `TransientError`, 429 → quota guard. Chunk length from settings (default 20 min, validated ≤ 28 min). Fallback adapter path: `gemini-3.5-flash-lite` with audio input returning timestamped segments (segment-level timing) when the transcribe model is unavailable. `transcribe` stage: per-chunk calls (sequential), persist each chunk result (resume mid-way), then merge: offset → absolute time, drop overlap duplicates, monotonic timestamps, segments re-built on sentence boundaries.
 **Acceptance criteria:**
-- [ ] Merge unit tests: overlapping chunk words de-duplicated; timestamps monotonic and within media duration
-- [ ] Adapter tested with `respx` recorded responses incl. 429/5xx retry
-- [ ] Restart after 2 of 3 chunks re-calls only chunk 3
-- [ ] One `provider_usage` row per chunk call with audio seconds + estimated cost (retries recorded too)
+- [x] Merge unit tests: overlapping chunk words de-duplicated; timestamps monotonic and within media duration
+- [x] Adapter tested with `respx` recorded responses incl. 429/5xx retry
+- [x] Restart after 2 of 3 chunks re-calls only chunk 3
+- [x] One `provider_usage` row per chunk call with audio seconds + estimated cost (retries recorded too)
 **Verification:** standard + `rtk test python -m pytest tests -k transcri`; opt-in `python -m pytest -m live -k transcri`
 **Dependencies:** T16, T17
 **Files:** `backend/clipforge/ai/adapters/gemini_transcription.py`, `backend/clipforge/ai/timestamps.py`, `backend/clipforge/pipeline/stages/transcribe.py`, tests

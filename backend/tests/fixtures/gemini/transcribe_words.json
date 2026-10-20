@@ -1,0 +1,30 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "audioTranscription": {
+              "languageCode": "id-ID",
+              "words": [
+                {"word": "Halo", "startOffset": "0.120s", "endOffset": "0.480s"},
+                {"word": "semuanya.", "startOffset": "0.520s", "endOffset": "1.100s"},
+                {"word": "Hari", "startOffset": "1.900s", "endOffset": "2.150s"},
+                {"word": "ini", "startOffset": "2.180s", "endOffset": "2.350s"},
+                {"word": "kita", "startOffset": "2.400s", "endOffset": "2.600s"},
+                {"word": "bahas", "startOffset": "2.650s", "endOffset": "3.000s"},
+                {"word": "AI.", "startOffset": "3.050s", "endOffset": "3.500s"},
+                {"word": "", "startOffset": "3.600s", "endOffset": "3.700s"},
+                {"word": "rusak", "startOffset": "bad", "endOffset": "4.000s"}
+              ]
+            }
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP"
+    }
+  ],
+  "usageMetadata": {"promptTokenCount": 38400, "candidatesTokenCount": 2100, "totalTokenCount": 40500},
+  "modelVersion": "gemini-3.5-transcribe"
+}

@@ -1,0 +1,14 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {"text": "{\"language\": \"id\", \"segments\": [{\"start_s\": 4.0, \"end_s\": 7.5, \"text\": \"Kalimat kedua.\"}, {\"start_s\": 0.0, \"end_s\": 3.2, \"text\": \"Kalimat pertama.\"}, {\"start_s\": 598.0, \"end_s\": 640.0, \"text\": \"Melewati akhir.\"}, {\"start_s\": 700.0, \"end_s\": 701.0, \"text\": \"Di luar audio.\"}, {\"start_s\": 9.0, \"end_s\": 9.5, \"text\": \"  \"}]}"}
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP"
+    }
+  ],
+  "usageMetadata": {"promptTokenCount": 19500, "candidatesTokenCount": 300}
+}

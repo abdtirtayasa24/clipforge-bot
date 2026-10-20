@@ -16,7 +16,7 @@ from clipforge.media.audio import (
 )
 from clipforge.media.probe import probe
 from clipforge.pipeline.context import StageContext
-from clipforge.pipeline.stage import StageResult, verified_artifact
+from clipforge.pipeline.stage import StageResult, verified_artifact, write_artifact
 from clipforge.queue.errors import PermanentError
 from clipforge.settings_schema import JobSettings
 
@@ -99,8 +99,6 @@ class AudioStage:
             overlap_s=CHUNK_OVERLAP_S,
             chunks=chunks,
         )
-        partial = path.with_name(path.name + ".part")
-        await asyncio.to_thread(partial.write_text, manifest.model_dump_json(indent=2))
-        await asyncio.to_thread(partial.replace, path)
+        await write_artifact(path, manifest.model_dump_json(indent=2))
         logger.info("audio extracted", extra={"chunks": len(chunks)})
         return StageResult(details={"chunks": len(chunks), "reused": False})
