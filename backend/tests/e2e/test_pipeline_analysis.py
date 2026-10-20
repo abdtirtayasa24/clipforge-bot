@@ -12,8 +12,8 @@ from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderRegistry, snapshot_job_settings
 from clipforge.ai.types import ClipCandidate, DimensionScores
 from clipforge.checksums import file_sha256
+from clipforge.db.models import Clip, ClipArtifact, MediaAsset, ProviderUsage, Video
 from clipforge.db.models import ClipCandidate as ClipCandidateRow
-from clipforge.db.models import MediaAsset, ProviderUsage, Video
 from clipforge.media.probe import probe
 from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.registry import default_stages
@@ -26,20 +26,21 @@ from tests.jobs import Sessions, claim, load_job, stage_events
 
 pytestmark = pytest.mark.usefixtures("require_ffmpeg")
 
-ANALYSIS_STAGES = [
+PIPELINE_STAGES = [
     "ingesting",
     "validated",
     "audio_extracted",
     "transcribed",
     "analyzed",
     "candidates_selected",
+    "rendering",
 ]
 
 
-class RenderSentinel:
-    """Stands in for the Phase 4 render stage to show whether the pipeline reached it."""
+class UploadSentinel:
+    """Stands in for the upload stage to show whether the pipeline reached it."""
 
-    name = "rendering"
+    name = "uploading"
     running_name: str | None = None
 
     def __init__(self) -> None:
@@ -85,7 +86,7 @@ async def run_pipeline(
     source: Path,
     workspace: Path,
     proposals: list[ClipCandidate],
-) -> tuple[str, uuid.UUID, RenderSentinel, FakeAnalysisProvider]:
+) -> tuple[str, uuid.UUID, UploadSentinel, FakeAnalysisProvider]:
     async with sessions.begin() as session:
         video_id = await session.scalar(
             insert(Video)
@@ -117,7 +118,7 @@ async def run_pipeline(
     )
     job, _ = await queue.enqueue(video_id, uuid.uuid4().hex, media_asset_id=asset_id)
     analysis = FakeAnalysisProvider(proposals)
-    sentinel = RenderSentinel()
+    sentinel = UploadSentinel()
     quota = QuotaGuard(sessions, clock=clock)
     stages = [
         *default_stages(
@@ -139,7 +140,17 @@ async def candidate_rows(sessions: Sessions, job_id: uuid.UUID) -> list[ClipCand
         return list(rows)
 
 
-async def test_job_reaches_candidates_selected_with_at_most_three_clips(
+async def clip_rows(sessions: Sessions, job_id: uuid.UUID) -> list[tuple[Clip, ClipArtifact]]:
+    async with sessions() as session:
+        rows = await session.execute(
+            select(Clip, ClipArtifact)
+            .join(ClipArtifact, ClipArtifact.clip_id == Clip.id)
+            .where(Clip.job_id == job_id)
+        )
+        return [(clip, artifact) for clip, artifact in rows]
+
+
+async def test_job_renders_at_most_three_selected_clips(
     sessions: Sessions, clock: FakeClock, valid_source: Path, tmp_path: Path
 ) -> None:
     proposals = [
@@ -155,7 +166,7 @@ async def test_job_reaches_candidates_selected_with_at_most_three_clips(
     )
 
     assert status == "completed"
-    assert (await stage_events(sessions, job_id))[:6] == ANALYSIS_STAGES
+    assert (await stage_events(sessions, job_id))[:7] == PIPELINE_STAGES
     assert sentinel.calls == 1
     rows = await candidate_rows(sessions, job_id)
     selected = [row for row in rows if row.selected]
@@ -166,6 +177,9 @@ async def test_job_reaches_candidates_selected_with_at_most_three_clips(
         assert row.total_score >= 75
         assert row.hook_line and row.transcript_excerpt
     assert analysis.reranked_frames, "frames are sent for the shortlist"
+    clips = await clip_rows(sessions, job_id)
+    assert sorted(clip.title for clip, _ in clips) == ["Dua", "Satu", "Tiga"]
+    assert all(artifact.kind == "video" and artifact.sha256 for _, artifact in clips)
     async with sessions() as session:
         stages = set(
             await session.scalars(select(ProviderUsage.stage).where(ProviderUsage.job_id == job_id))
@@ -177,7 +191,7 @@ async def test_job_reaches_candidates_selected_with_at_most_three_clips(
     assert job.settings_snapshot["providers"]["analysis"]["model"] == "gemini-3.5-flash-lite"
 
 
-async def test_low_scores_complete_without_clips_and_skip_rendering(
+async def test_low_scores_complete_without_clips_or_rendering(
     sessions: Sessions, clock: FakeClock, valid_source: Path, tmp_path: Path
 ) -> None:
     proposals = [candidate(100, 130, 60, "Biasa"), candidate(700, 740, 74, "Hampir")]
@@ -194,3 +208,4 @@ async def test_low_scores_complete_without_clips_and_skip_rendering(
     rows = await candidate_rows(sessions, job_id)
     assert len(rows) == 2
     assert not any(row.selected for row in rows)
+    assert await clip_rows(sessions, job_id) == []

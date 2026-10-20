@@ -34,7 +34,7 @@ cd ~/clipforge-bot
 sudo ./deploy/install.sh
 ```
 
-The first run installs packages (ffmpeg, git, curl, rsync, build tools), uv 0.11.7, the
+The first run installs packages (ffmpeg, the DejaVu subtitle font, git, curl, rsync, build tools), uv 0.11.7, the
 `clipforge` service account and the directories, then copies both env templates into
 `/etc/clipforge-bot/` and stops with `fill in real values and re-run`. That stop is expected.
 

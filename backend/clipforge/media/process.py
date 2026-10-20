@@ -3,6 +3,7 @@ import contextlib
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 MAX_OUTPUT_BYTES = 1024 * 1024
 _READ_CHUNK_BYTES = 64 * 1024
@@ -31,16 +32,20 @@ async def _read_capped(stream: asyncio.StreamReader | None, limit: int) -> bytes
 
 
 async def run_process(
-    args: Sequence[str], *, timeout_s: float, max_output_bytes: int = MAX_OUTPUT_BYTES
+    args: Sequence[str],
+    *,
+    timeout_s: float,
+    max_output_bytes: int = MAX_OUTPUT_BYTES,
+    cwd: Path | None = None,
 ) -> ProcessResult:
     """Runs a media tool without blocking the event loop (ADR-008); output is size-limited."""
     try:
         process = await asyncio.create_subprocess_exec(
-            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            *args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, cwd=cwd
         )
     except NotImplementedError:
         # Windows development only: psycopg needs the selector loop, which has no subprocesses.
-        return await asyncio.to_thread(_run_blocking, args, timeout_s, max_output_bytes)
+        return await asyncio.to_thread(_run_blocking, args, timeout_s, max_output_bytes, cwd)
     try:
         async with asyncio.timeout(timeout_s):
             stdout, stderr, returncode = await asyncio.gather(
@@ -58,10 +63,12 @@ async def run_process(
     return ProcessResult(returncode, stdout, stderr)
 
 
-def _run_blocking(args: Sequence[str], timeout_s: float, max_output_bytes: int) -> ProcessResult:
+def _run_blocking(
+    args: Sequence[str], timeout_s: float, max_output_bytes: int, cwd: Path | None
+) -> ProcessResult:
     try:
         completed = subprocess.run(  # noqa: S603 - argument list, never a shell
-            list(args), capture_output=True, timeout=timeout_s, check=False
+            list(args), capture_output=True, timeout=timeout_s, check=False, cwd=cwd
         )
     except subprocess.TimeoutExpired:
         raise ProcessTimeout(f"{args[0]} timed out after {timeout_s:g} s") from None

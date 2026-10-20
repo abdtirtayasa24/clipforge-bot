@@ -302,11 +302,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/media/subtitles.py`, tests
 **Size:** S
 
-### - [ ] T24: Render stage + output verification
+### - [x] T24: Render stage + output verification
 **Description:** Per selected candidate (sequential): ffmpeg seek (`-ss` before `-i` + accurate trim) → center crop/scale to 720×1280 → burn subtitles → libx264 `-threads 2` + AAC, `+faststart`. ffprobe verifies 720×1280, h264/aac, duration within ±0.5 s; persist `clips` (incl. `title` copied from the candidate) + `clip_artifacts` (size, sha256). Drive file name is derived from a sanitized title + short clip id. Deterministic output path from clip id; skip if verified artifact exists.
 **Acceptance criteria:**
-- [ ] Fixture renders produce compliant files; duration 20–60 s
-- [ ] Restart mid-render re-renders only unfinished clips
+- [x] Fixture renders produce compliant files; duration 20–60 s
+- [x] Restart mid-render re-renders only unfinished clips
 **Verification:** standard + `rtk test python -m pytest tests -k render`
 **Dependencies:** T22, T23
 **Files:** `backend/clipforge/media/render.py`, `backend/clipforge/pipeline/stages/render.py`, tests

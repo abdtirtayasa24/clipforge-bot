@@ -17,6 +17,7 @@ from clipforge.pipeline.stage import Stage
 from clipforge.pipeline.stages.analyze import AnalyzeStage
 from clipforge.pipeline.stages.audio import AudioStage
 from clipforge.pipeline.stages.ingest import IngestStage
+from clipforge.pipeline.stages.render import RenderStage
 from clipforge.pipeline.stages.select import SelectStage
 from clipforge.pipeline.stages.transcribe import TranscribeStage
 
@@ -45,4 +46,5 @@ def default_stages(
         TranscribeStage(sessions, registry, quota),
         AnalyzeStage(sessions, registry, quota),
         SelectStage(sessions),
+        RenderStage(sessions),
     ]
