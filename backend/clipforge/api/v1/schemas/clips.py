@@ -64,6 +64,21 @@ class ClipOut(BaseModel):
     updated_at: datetime
 
 
+class CaptionLinkOut(BaseModel):
+    name: str
+    merchant: str
+    url: str
+    is_primary: bool
+
+
+class CaptionOut(BaseModel):
+    """Copyable draft; links are approved ones only, and none while affiliate links are off."""
+
+    text: str
+    links: list[CaptionLinkOut]
+    disclosure: str | None
+
+
 class ClipDetail(ClipOut):
     hook_line: str | None
     explanation: str | None
@@ -72,6 +87,7 @@ class ClipDetail(ClipOut):
     artifacts: list[ClipArtifactOut]
     reviews: list[ClipReviewOut]
     job_costs: list[CostOut]
+    caption: CaptionOut
 
 
 class ClipPage(BaseModel):

@@ -1751,6 +1751,231 @@
           }
         }
       }
+    },
+    "/api/v1/clips/{clip_id}/affiliate-links": {
+      "get": {
+        "tags": [
+          "affiliate"
+        ],
+        "summary": "List Clip Links",
+        "operationId": "list_clip_links_api_v1_clips__clip_id__affiliate_links_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliateLinkList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "affiliate"
+        ],
+        "summary": "Select Product",
+        "operationId": "select_product_api_v1_clips__clip_id__affiliate_links_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Clip Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualLinkIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliateLinkList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clips/{clip_id}/affiliate-links/{link_id}/review": {
+      "post": {
+        "tags": [
+          "affiliate"
+        ],
+        "summary": "Review Clip Link",
+        "description": "Rejecting works with the toggle off; approving needs it on.",
+        "operationId": "review_clip_link_api_v1_clips__clip_id__affiliate_links__link_id__review_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Clip Id"
+            }
+          },
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Link Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkReviewIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AffiliateLinkList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clips/{clip_id}/affiliate-links/{link_id}": {
+      "delete": {
+        "tags": [
+          "affiliate"
+        ],
+        "summary": "Delete Clip Link",
+        "description": "Removal is allowed even with the toggle off (spec: records kept until removed).",
+        "operationId": "delete_clip_link_api_v1_clips__clip_id__affiliate_links__link_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "clip_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Clip Id"
+            }
+          },
+          {
+            "name": "link_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Link Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1945,6 +2170,68 @@
           "created_at"
         ],
         "title": "AffiliateLinkOut"
+      },
+      "CaptionLinkOut": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "merchant": {
+            "type": "string",
+            "title": "Merchant"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "merchant",
+          "url",
+          "is_primary"
+        ],
+        "title": "CaptionLinkOut"
+      },
+      "CaptionOut": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/CaptionLinkOut"
+            },
+            "type": "array",
+            "title": "Links"
+          },
+          "disclosure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disclosure"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "links",
+          "disclosure"
+        ],
+        "title": "CaptionOut",
+        "description": "Copyable draft; links are approved ones only, and none while affiliate links are off."
       },
       "ClipArtifactOut": {
         "properties": {
@@ -2174,6 +2461,9 @@
             },
             "type": "array",
             "title": "Job Costs"
+          },
+          "caption": {
+            "$ref": "#/components/schemas/CaptionOut"
           }
         },
         "type": "object",
@@ -2200,7 +2490,8 @@
           "scores",
           "artifacts",
           "reviews",
-          "job_costs"
+          "job_costs",
+          "caption"
         ],
         "title": "ClipDetail"
       },
@@ -3239,6 +3530,61 @@
           "offset"
         ],
         "title": "JobPage"
+      },
+      "LinkReviewIn": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "LinkReviewIn"
+      },
+      "ManualLinkIn": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Product Id"
+          },
+          "primary": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "ManualLinkIn"
       },
       "MediaOut": {
         "properties": {

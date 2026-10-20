@@ -5,9 +5,13 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import Select, func, select
 
+from clipforge.affiliate.caption import caption_draft
+from clipforge.affiliate.review import approved_export_links
 from clipforge.api.deps import DbSession, JobQueueDep
 from clipforge.api.errors import NotFound
 from clipforge.api.v1.schemas.clips import (
+    CaptionLinkOut,
+    CaptionOut,
     ClipArtifactOut,
     ClipDetail,
     ClipOut,
@@ -20,6 +24,7 @@ from clipforge.api.v1.schemas.clips import (
 from clipforge.api.v1.schemas.jobs import cost_lines
 from clipforge.auth.deps import CurrentAdmin, require_admin
 from clipforge.db.models import Clip, ClipArtifact, ClipCandidate, ClipReview, Video
+from clipforge.settings_schema import load_settings
 
 router = APIRouter(prefix="/clips", tags=["clips"], dependencies=[Depends(require_admin)])
 
@@ -89,6 +94,7 @@ async def _clip_detail(session: DbSession, queue: JobQueueDep, clip_id: uuid.UUI
     if row is None:
         raise NotFound("clip not found")
     clip, candidate, video_title = row
+    caption = await _caption(session, clip, candidate, video_title)
     artifacts = await session.scalars(
         select(ClipArtifact)
         .where(ClipArtifact.clip_id == clip_id)
@@ -117,7 +123,27 @@ async def _clip_detail(session: DbSession, queue: JobQueueDep, clip_id: uuid.UUI
             "artifacts": [ClipArtifactOut.model_validate(artifact) for artifact in artifacts],
             "reviews": [ClipReviewOut.model_validate(review) for review in reviews],
             "job_costs": cost_lines(await queue.estimated_costs(clip.job_id)),
+            "caption": caption,
         }
+    )
+
+
+async def _caption(
+    session: DbSession, clip: Clip, candidate: ClipCandidate, video_title: str
+) -> CaptionOut:
+    settings = await load_settings(session)
+    draft = caption_draft(
+        title=clip.title_override or clip.title or "",
+        hook_line=candidate.hook_line or "",
+        description=f"From: {video_title}",
+        links=await approved_export_links(session, clip.id),
+        disclosure=settings.affiliate_disclosure_text,
+        affiliate_enabled=settings.affiliate_links_enabled,
+    )
+    return CaptionOut(
+        text=draft.text,
+        links=[CaptionLinkOut(**vars(link)) for link in draft.links],
+        disclosure=draft.disclosure,
     )
 
 

@@ -405,11 +405,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/migrations/sql/008_affiliate_matching.sql` (+down), `backend/clipforge/ai/adapters/gemini_embedding.py`, `backend/clipforge/affiliate/matcher.py`, `backend/clipforge/pipeline/stages/affiliate.py`, `backend/clipforge/api/v1/affiliate.py`, tests
 **Size:** M
 
-### - [ ] T33: Affiliate link review + caption export
+### - [x] T33: Affiliate link review + caption export
 **Description:** `GET /clips/{id}/affiliate-links`, `POST /clips/{id}/affiliate-links/{link_id}/review` (approve/reject, set primary, manual product selection), admin can remove records. Caption/description draft builder (always available; affiliate part only when enabled): effective title + hook line + description + only **approved** links + mandatory disclosure; returns no links when toggle off; wording says "related", never "featured". Exposed in clip detail.
 **Acceptance criteria:**
-- [ ] Rejected or suggested-only links never appear in export; disclosure present whenever ≥ 1 link exported
-- [ ] Toggle off → export contains no affiliate URLs even if approved rows exist
+- [x] Rejected or suggested-only links never appear in export; disclosure present whenever ≥ 1 link exported
+- [x] Toggle off → export contains no affiliate URLs even if approved rows exist
 **Verification:** standard + `rtk test python -m pytest tests -k "affiliate_review or caption"`
 **Dependencies:** T32
 **Files:** `backend/clipforge/affiliate/{review,caption}.py`, `backend/clipforge/api/v1/clips.py`, tests

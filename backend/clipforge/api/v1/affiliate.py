@@ -16,13 +16,22 @@ from pydantic import (
 from sqlalchemy import case, func, select
 
 from clipforge.affiliate.matcher import AffiliateMatcher, EmbeddingSetup
+from clipforge.affiliate.review import (
+    AlreadyLinked,
+    Decision,
+    LinkNotFound,
+    ProductUnavailable,
+    add_manual_link,
+    remove_link,
+    review_link,
+)
 from clipforge.affiliate.validation import LinkRejected, check_affiliate_url, destination_host
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderConfigError, resolve_providers
 from clipforge.ai.usage import usage_recorder
 from clipforge.api.deps import DbSession, SessionsDep
 from clipforge.api.errors import Conflict, NotFound, Unprocessable
-from clipforge.auth.deps import require_admin
+from clipforge.auth.deps import CurrentAdmin, require_admin
 from clipforge.db.models import AffiliateProduct, Clip, ClipAffiliateLink
 from clipforge.discovery.regions import ISO_3166_ALPHA2
 from clipforge.pipeline.registry import provider_registry
@@ -277,3 +286,76 @@ async def rematch_clip(
         embedding = await _api_embedding(session, sessions, http, clip.job_id)
         await AffiliateMatcher(sessions, embedding).match_clip(clip_id, replace_suggested=True)
     return await clip_links(session, clip_id)
+
+
+class LinkReviewIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Decision
+    primary: bool | None = None
+
+    @model_validator(mode="after")
+    def _primary_needs_approval(self) -> Self:
+        if self.primary and self.decision != "approved":
+            raise ValueError("only an approved link can be primary")
+        return self
+
+
+class ManualLinkIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: uuid.UUID
+    primary: bool | None = None
+
+
+@clip_links_router.get("")
+async def list_clip_links(clip_id: uuid.UUID, session: DbSession) -> AffiliateLinkList:
+    await existing_clip(session, clip_id)
+    return await clip_links(session, clip_id)
+
+
+@clip_links_router.post("", status_code=status.HTTP_201_CREATED)
+async def select_product(
+    clip_id: uuid.UUID, body: ManualLinkIn, admin: CurrentAdmin, session: DbSession
+) -> AffiliateLinkList:
+    await existing_clip(session, clip_id)
+    if not await affiliate_links_enabled(session):
+        raise Conflict("affiliate links are disabled")
+    try:
+        await add_manual_link(session, clip_id, body.product_id, admin.id, body.primary)
+    except ProductUnavailable:
+        raise Unprocessable("the product does not exist or is inactive") from None
+    except AlreadyLinked:
+        raise Conflict("the product is already linked to this clip") from None
+    return await clip_links(session, clip_id)
+
+
+@clip_links_router.post("/{link_id}/review")
+async def review_clip_link(
+    clip_id: uuid.UUID,
+    link_id: uuid.UUID,
+    body: LinkReviewIn,
+    admin: CurrentAdmin,
+    session: DbSession,
+) -> AffiliateLinkList:
+    """Rejecting works with the toggle off; approving needs it on."""
+    await existing_clip(session, clip_id)
+    if body.decision == "approved" and not await affiliate_links_enabled(session):
+        raise Conflict("affiliate links are disabled")
+    try:
+        await review_link(session, clip_id, link_id, admin.id, body.decision, body.primary)
+    except LinkNotFound:
+        raise NotFound("affiliate link not found") from None
+    return await clip_links(session, clip_id)
+
+
+@clip_links_router.delete("/{link_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_clip_link(
+    clip_id: uuid.UUID, link_id: uuid.UUID, admin: CurrentAdmin, session: DbSession
+) -> Response:
+    """Removal is allowed even with the toggle off (spec: records kept until removed)."""
+    try:
+        await remove_link(session, clip_id, link_id, admin.id)
+    except LinkNotFound:
+        raise NotFound("affiliate link not found") from None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
