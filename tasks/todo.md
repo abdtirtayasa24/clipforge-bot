@@ -197,9 +197,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Size:** S
 
 ### Checkpoint M2
-- [ ] All tests green; on VPS: timer fires discovery, manual run works, no duplicates across runs
-- [ ] An uploaded file and a permitted URL each reach `validated`; unauthorized/YouTube URLs refused
-- [ ] Review with human
+- [x] All tests green; on VPS: timer fires discovery, manual run works, no duplicates across runs
+- [x] An uploaded file and a permitted URL each reach `validated`; unauthorized/YouTube URLs refused
+- [x] Review with human
 
 ---
 
