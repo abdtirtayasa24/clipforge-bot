@@ -310,7 +310,7 @@ async def test_ingest_stage_verifies_uploaded_sources(
 
 
 @pytest.mark.usefixtures("permitted_domains")
-async def test_default_pipeline_takes_upload_and_url_sources_to_validated(
+async def test_default_pipeline_takes_upload_and_url_sources_through_audio(
     migrated_database_url: str,
     queue: JobQueue,
     sessions: Sessions,
@@ -341,5 +341,5 @@ async def test_default_pipeline_takes_upload_and_url_sources_to_validated(
         job, _ = await queue.enqueue(video_id, uuid.uuid4().hex, media_asset_id=asset_id)
         assert await runner.run(await claim(queue)) == "completed"
         stages = await stage_events(sessions, job.id)
-        assert stages[:2] == ["ingesting", "validated"]
+        assert stages == ["ingesting", "validated", "audio_extracted"]
         assert asset_state(migrated_database_url, asset_id)[0] == "ready"

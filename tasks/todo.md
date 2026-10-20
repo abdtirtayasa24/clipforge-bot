@@ -205,11 +205,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 3 — AI Transcription & Viral Analysis (M3)
 
-### - [ ] T16: Audio extraction + chunking stage
-**Description:** ffmpeg (async subprocess) → mono 16 kHz compressed audio; split into ≤ 10 min chunks with ~2 s overlap; manifest JSON with absolute offsets + checksums persisted as stage artifact.
+### - [x] T16: Audio extraction + chunking stage
+**Description:** ffmpeg (async subprocess) → mono 16 kHz compressed audio (MP3 32 kbps); split into chunks of `audio_chunk_minutes` (ADR-012: default 20, max 28; the 3-chunk check uses 10) with ~2 s overlap; manifest JSON with absolute offsets + checksums persisted as stage artifact.
 **Acceptance criteria:**
-- [ ] 25-min fixture → 3 chunks with correct offsets; each under provider size limit
-- [ ] Re-run reuses manifest when checksums match
+- [x] 25-min fixture → 3 chunks with correct offsets; each under provider size limit
+- [x] Re-run reuses manifest when checksums match
 **Verification:** standard + `rtk test python -m pytest tests -k audio`
 **Dependencies:** T09, T12
 **Files:** `backend/clipforge/media/audio.py`, `backend/clipforge/pipeline/stages/audio.py`, tests
