@@ -7,6 +7,7 @@ import os
 import signal
 import socket
 import sys
+from datetime import timedelta
 
 import httpx
 
@@ -16,6 +17,7 @@ from clipforge.config import Settings
 from clipforge.db.session import create_engine, create_session_factory
 from clipforge.logging import configure_logging
 from clipforge.notify.telegram import telegram_client
+from clipforge.pipeline.cleanup import WorkspaceCleaner
 from clipforge.pipeline.registry import default_stages, drive_client, provider_registry
 from clipforge.pipeline.runner import PipelineRunner
 from clipforge.pipeline.stages.notify import Notifier
@@ -111,6 +113,11 @@ async def serve(settings: Settings, database_url: str) -> None:
         sessions = create_session_factory(engine)
         queue = JobQueue(sessions, snapshot_settings=snapshot_job_settings)
         quota = QuotaGuard(sessions)
+        cleaner = WorkspaceCleaner(sessions, settings.workspace_dir)
+        try:
+            await cleaner.collect_garbage(older_than=timedelta(hours=settings.workspace_gc_hours))
+        except Exception:
+            logger.exception("workspace garbage collection failed")
         async with httpx.AsyncClient() as http:
             stages = default_stages(
                 sessions,
@@ -124,6 +131,7 @@ async def serve(settings: Settings, database_url: str) -> None:
                 stages,
                 workspace_root=settings.workspace_dir,
                 notifier=Notifier(sessions, telegram_client(settings, http)),
+                cleaner=cleaner,
             )
             worker_id = f"{socket.gethostname()}:{os.getpid()}"
             logger.info("worker started", extra={"worker_id": worker_id})

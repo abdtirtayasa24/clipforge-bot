@@ -16,9 +16,9 @@ CONFIG_DIR="/etc/clipforge-bot"
 SYSTEMD_DIR="/etc/systemd/system"
 # fonts-dejavu-core: the burned-in subtitle font (ADR-013).
 APT_PACKAGES=(ffmpeg fonts-dejavu-core git curl ca-certificates rsync build-essential libpq-dev)
-UNITS=(clipforge-api.service clipforge-discovery.service clipforge-discovery.timer)
+UNITS=(clipforge-api.service clipforge-worker.service clipforge-discovery.service clipforge-discovery.timer)
 # Started on first install; the discovery service itself only runs from its timer.
-ENABLE_UNITS=(clipforge-api.service clipforge-discovery.timer)
+ENABLE_UNITS=(clipforge-api.service clipforge-worker.service clipforge-discovery.timer)
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CHANGED=0

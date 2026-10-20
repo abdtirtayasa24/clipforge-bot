@@ -345,7 +345,7 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 ### - [ ] T28: Workspace cleanup + worker unit
 **Description:** Per-job workspace `/var/lib/clipforge-bot/workspace/<job_id>/`; after completion delete source/audio/frames (keep transcript JSON in DB or small artifact); startup GC removes dirs of terminal/missing jobs older than N hours; never delete un-uploaded clips. `clipforge-worker.service` with `MemoryMax=1800M`, `CPUQuota=170%`, `Restart=always`, `RestartSec=10`, hardening as T07.
 **Acceptance criteria:**
-- [ ] GC test: only safe-to-delete dirs removed; unverified clip artifacts kept
+- [x] GC test: only safe-to-delete dirs removed; unverified clip artifacts kept
 - [ ] Worker unit verified on VPS; restart after `kill -9` resumes job
 **Verification:** standard + `rtk test python -m pytest tests -k cleanup`; VPS: `systemctl status clipforge-worker`
 **Dependencies:** T26

@@ -1,0 +1,45 @@
+[Unit]
+Description=ClipForge Bot processing worker (one job at a time)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=clipforge
+Group=clipforge
+WorkingDirectory=/opt/clipforge-bot/backend
+EnvironmentFile=/etc/clipforge-bot/backend.env
+ExecStart=/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.workers.main
+# SIGTERM aborts the current stage; its lease expires and the job resumes after the restart.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+Restart=always
+RestartSec=10
+UMask=0077
+
+# Spec resource limits: 1.8 GB memory ceiling, 170% CPU on the 2 vCPU VPS.
+MemoryMax=1800M
+CPUQuota=170%
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+ReadWritePaths=/var/lib/clipforge-bot
+
+[Install]
+WantedBy=multi-user.target

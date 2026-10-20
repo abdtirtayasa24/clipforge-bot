@@ -15,6 +15,8 @@ class Settings(BaseSettings):
 
     log_level: LogLevel = "INFO"
     workspace_dir: Path = Path("/var/lib/clipforge-bot/workspace")
+    # The worker's startup GC removes workspaces of jobs that ended longer ago than this.
+    workspace_gc_hours: int = Field(default=24, ge=1)
     database_url: SecretStr | None = None
     db_pool_size: int = Field(default=5, ge=1, le=20)
     db_disable_prepared_statements: bool = False

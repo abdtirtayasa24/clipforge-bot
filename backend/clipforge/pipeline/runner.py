@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from clipforge.logging import log_context
+from clipforge.pipeline.cleanup import WorkspaceCleaner, job_workspace
 from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.stage import Stage
 from clipforge.pipeline.stages.notify import Notifier
@@ -28,6 +29,7 @@ class PipelineRunner:
         workspace_root: Path,
         heartbeat_interval: float = HEARTBEAT_INTERVAL_S,
         notifier: Notifier | None = None,
+        cleaner: WorkspaceCleaner | None = None,
     ) -> None:
         if not stages:
             raise ValueError("a pipeline needs at least one stage")
@@ -36,6 +38,7 @@ class PipelineRunner:
         self._workspace_root = workspace_root
         self._heartbeat_interval = heartbeat_interval
         self._notifier = notifier
+        self._cleaner = cleaner
 
     def _remaining_stages(self, current: str) -> list[Stage]:
         """Stages still to run for a job whose recorded stage is `current`."""
@@ -83,7 +86,7 @@ class PipelineRunner:
 
     async def _run_stages(self, job: ClaimedJob) -> str:
         lease = job.lease
-        workspace = self._workspace_root / "jobs" / str(lease.job_id)
+        workspace = job_workspace(self._workspace_root, lease.job_id)
         context = StageContext(job=job, queue=self._queue, workspace=workspace)
         try:
             await asyncio.to_thread(workspace.mkdir, mode=0o700, parents=True, exist_ok=True)
@@ -96,6 +99,7 @@ class PipelineRunner:
                     await self._queue.set_stage(lease, stage.name, details=result.details)
                 if result.no_clips:
                     await self._queue.complete(lease, no_clips=True)
+                    await self._clean(lease.job_id)
                     return "completed_no_clips"
             await self._queue.complete(lease)
         except LeaseLost:
@@ -111,7 +115,17 @@ class PipelineRunner:
             return status
         if self._notifier:
             await self._notifier.clips_ready(lease.job_id)
+        await self._clean(lease.job_id)
         return "completed"
+
+    async def _clean(self, job_id: uuid.UUID) -> None:
+        """Best effort: the job already completed, and the startup GC retries later."""
+        if self._cleaner is None:
+            return
+        try:
+            await self._cleaner.after_completion(job_id)
+        except Exception:
+            logger.warning("workspace cleanup failed", exc_info=True)
 
     async def _notify_error(self, job_id: uuid.UUID, status: str, error: Exception) -> None:
         if self._notifier is None:

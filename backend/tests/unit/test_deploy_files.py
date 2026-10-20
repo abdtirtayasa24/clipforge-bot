@@ -112,3 +112,28 @@ def test_discovery_timer_fires_daily_at_three_and_catches_up() -> None:
     assert timer["Timer"]["Persistent"] == "true"
     assert timer["Timer"]["Unit"] == "clipforge-discovery.service"
     assert timer["Install"]["WantedBy"] == "timers.target"
+
+
+def test_worker_unit_restarts_within_the_resource_limits() -> None:
+    service = unit("clipforge-worker.service")["Service"]
+
+    assert service["User"] == "clipforge"
+    assert service["EnvironmentFile"] == "/etc/clipforge-bot/backend.env"
+    assert (
+        service["ExecStart"]
+        == "/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.workers.main"
+    )
+    assert (service["MemoryMax"], service["CPUQuota"]) == ("1800M", "170%")
+    assert (service["Restart"], service["RestartSec"]) == ("always", "10")
+    assert service["NoNewPrivileges"] == "true"
+    assert service["ProtectSystem"] == "strict"
+    assert service["PrivateTmp"] == "true"
+    assert service["ReadWritePaths"] == "/var/lib/clipforge-bot"
+
+
+def test_install_script_installs_and_enables_the_worker() -> None:
+    script = (DEPLOY_DIR / "install.sh").read_text(encoding="utf-8")
+
+    for name in ("UNITS", "ENABLE_UNITS"):
+        line = next(line for line in script.splitlines() if line.startswith(f"{name}="))
+        assert "clipforge-worker.service" in line, name
