@@ -19,14 +19,19 @@ ModelRole = Literal["transcription", "analysis", "rerank", "analysis_fallback", 
 _HOST_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
 
 
-def download_domain(entry: str) -> str:
-    """A lowercase hostname or `*.suffix`; IPs, schemes, ports, paths and YouTube are refused."""
+def hostname_entry(entry: str) -> str:
+    """A lowercase dotted hostname or `*.suffix`; IPs, schemes, ports and paths are refused."""
     entry = entry.strip().lower().rstrip(".")
-    host = entry.removeprefix("*.")
-    labels = host.split(".")
+    labels = entry.removeprefix("*.").split(".")
     if len(labels) < 2 or labels[-1].isdigit() or not all(map(_HOST_LABEL.match, labels)):
         raise ValueError("entries must be a hostname or *.suffix, without scheme, port or path")
-    if is_youtube_host(host):
+    return entry
+
+
+def download_domain(entry: str) -> str:
+    """A permitted download domain; YouTube and Google video hosts are refused (ADR-018)."""
+    entry = hostname_entry(entry)
+    if is_youtube_host(entry.removeprefix("*.")):
         raise ValueError("YouTube and Google video hosts cannot be permitted download domains")
     return entry
 
@@ -54,6 +59,8 @@ class SettingsSchema(BaseModel):
     permitted_download_domains: list[str] = Field(default_factory=list)
     affiliate_links_enabled: bool = False
     affiliate_min_relevance: float = Field(default=0.7, ge=0, le=1)
+    # Tracking or redirect hosts an affiliate URL may use besides its destination domain.
+    affiliate_merchant_domains: list[str] = Field(default_factory=list, max_length=100)
     affiliate_disclosure_text: str = Field(
         default="Affiliate link — I may earn a commission from qualifying purchases.",
         min_length=1,
@@ -67,6 +74,11 @@ class SettingsSchema(BaseModel):
     @classmethod
     def _download_domains(cls, entries: list[str]) -> list[str]:
         return [download_domain(entry) for entry in entries]
+
+    @field_validator("affiliate_merchant_domains")
+    @classmethod
+    def _merchant_domains(cls, entries: list[str]) -> list[str]:
+        return [hostname_entry(entry) for entry in entries]
 
     @model_validator(mode="after")
     def _clip_range(self) -> Self:

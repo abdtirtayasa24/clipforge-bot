@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from clipforge.api.errors import install_error_handlers
 from clipforge.api.middleware import RequestContextMiddleware
 from clipforge.api.v1 import (
+    affiliate,
     ai,
     auth,
     clips,
@@ -81,6 +82,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(dashboard.router, prefix=API_PREFIX)
     app.include_router(ai.router, prefix=API_PREFIX)
     app.include_router(integrations.router, prefix=API_PREFIX)
+    app.include_router(affiliate.router, prefix=API_PREFIX)
     return app
 
 

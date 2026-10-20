@@ -66,6 +66,7 @@ class SettingsPatch(BaseModel):
     permitted_download_domains: list[str] | None = None
     affiliate_links_enabled: bool | None = None
     affiliate_min_relevance: float | None = None
+    affiliate_merchant_domains: list[str] | None = None
     affiliate_disclosure_text: str | None = None
     telegram_notifications_enabled: bool | None = None
     discovery: DiscoveryPatch | None = None

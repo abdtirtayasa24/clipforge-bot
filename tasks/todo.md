@@ -385,11 +385,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/migrations/sql/006_settings_audit.sql` (+down), `backend/clipforge/settings_service.py`, `backend/clipforge/api/v1/{settings,dashboard}.py`, tests
 **Size:** M
 
-### - [ ] T31: `007_affiliate_links.sql` + catalog API
+### - [x] T31: `007_affiliate_links.sql` + catalog API
 **Description:** Migration exactly per spec (plus `updated_at` trigger, grants/RLS for new tables). `GET/POST /affiliate/products`, `PATCH/DELETE /affiliate/products/{id}` (DELETE = deactivate). Validation: `https://` only, host must equal `destination_domain` or be in merchant allowlist, block IP literals/private ranges/unsafe schemes; no server-side fetching; tracking params preserved but redacted in logs.
 **Acceptance criteria:**
-- [ ] `http://`, `javascript:`, `https://10.0.0.1/…`, domain mismatch → 422
-- [ ] Partial unique index enforces one approved primary link per clip
+- [x] `http://`, `javascript:`, `https://10.0.0.1/…`, domain mismatch → 422
+- [x] Partial unique index enforces one approved primary link per clip
 **Verification:** standard + `rtk test python -m pytest tests -k "affiliate_catalog or migrations"`
 **Dependencies:** T04, T29
 **Files:** `backend/migrations/sql/007_affiliate_links.sql` (+down), `backend/migrations/versions/0007_*.py`, `backend/clipforge/affiliate/validation.py`, `backend/clipforge/api/v1/affiliate.py`, tests

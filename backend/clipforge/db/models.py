@@ -323,3 +323,47 @@ class OauthCredential(Base):
     account_email: Mapped[str | None]
     created_at: Mapped[datetime] = created_at()
     updated_at: Mapped[datetime] = updated_at()
+
+
+class AffiliateProduct(Base):
+    __tablename__ = "affiliate_products"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    name: Mapped[str]
+    merchant: Mapped[str]
+    affiliate_url: Mapped[str]
+    destination_domain: Mapped[str]
+    category: Mapped[str | None]
+    tags: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default="{}")
+    language_code: Mapped[str | None]
+    region_code: Mapped[str | None] = mapped_column(String(2))
+    active: Mapped[bool] = mapped_column(server_default="true")
+    created_at: Mapped[datetime] = created_at()
+    updated_at: Mapped[datetime] = updated_at()
+
+
+class ClipAffiliateLink(Base):
+    __tablename__ = "clip_affiliate_links"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    clip_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clips.id", ondelete="CASCADE"))
+    product_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("affiliate_products.id"))
+    relevance_score: Mapped[Decimal] = mapped_column(Numeric(4, 3))
+    match_reason: Mapped[str | None]
+    status: Mapped[str] = mapped_column(server_default="suggested")
+    is_primary: Mapped[bool] = mapped_column(server_default="false")
+    reviewed_at: Mapped[datetime | None]
+    created_at: Mapped[datetime] = created_at()
+
+
+class AffiliateEvent(Base):
+    __tablename__ = "affiliate_events"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    clip_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("clips.id", ondelete="CASCADE"))
+    affiliate_link_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("clip_affiliate_links.id")
+    )
+    event_type: Mapped[str]
+    details: Mapped[JsonObject] = mapped_column(server_default="{}")
+    created_at: Mapped[datetime] = created_at()
