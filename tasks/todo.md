@@ -293,10 +293,10 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 4 — Rendering, Drive, Notifications (M4)
 
-### - [ ] T23: ASS subtitle generation
+### - [x] T23: ASS subtitle generation
 **Description:** From word timestamps within the clip range, build ASS subtitles (re-based to clip start), max 2 lines, ~32 chars/line, safe-area margins for 720×1280, readable font/outline; escape ASS special characters.
 **Acceptance criteria:**
-- [ ] Golden-file tests for timing re-base, wrapping, escaping
+- [x] Golden-file tests for timing re-base, wrapping, escaping
 **Verification:** standard + `rtk test python -m pytest tests -k subtitles`
 **Dependencies:** T18
 **Files:** `backend/clipforge/media/subtitles.py`, tests

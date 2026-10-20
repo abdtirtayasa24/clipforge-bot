@@ -28,7 +28,7 @@ def parse_offset(value: object) -> float | None:
     return None
 
 
-def _ends_sentence(text: str) -> bool:
+def ends_sentence(text: str) -> bool:
     return text.rstrip(CLOSING_QUOTES).endswith(SENTENCE_END)
 
 
@@ -56,7 +56,7 @@ def segments_from_words(words: Sequence[Word]) -> list[Segment]:
         ):
             flush()
         current.append(word)
-        if _ends_sentence(word.text):
+        if ends_sentence(word.text):
             flush()
     flush()
     return segments
