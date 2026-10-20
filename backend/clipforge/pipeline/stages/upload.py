@@ -8,6 +8,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from clipforge.db.models import Clip, ClipArtifact
+from clipforge.db.models import ClipCandidate as ClipCandidateRow
 from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.stage import StageResult, verified_artifact
 from clipforge.pipeline.stages.render import drive_file_name
@@ -43,8 +44,9 @@ class UploadStage:
                 await session.execute(
                     select(Clip, ClipArtifact)
                     .join(ClipArtifact, ClipArtifact.clip_id == Clip.id)
+                    .join(ClipCandidateRow, ClipCandidateRow.id == Clip.candidate_id)
                     .where(Clip.job_id == ctx.job.lease.job_id, ClipArtifact.kind == "video")
-                    .order_by(Clip.created_at, Clip.id)
+                    .order_by(ClipCandidateRow.rank, Clip.id)
                 )
             )
         if not rows:
