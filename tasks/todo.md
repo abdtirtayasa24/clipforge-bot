@@ -250,11 +250,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/scoring/{score,select}.py`, `backend/tests/unit/test_scoring.py`
 **Size:** S
 
-### - [ ] T20: Frame sampling stage
-**Description:** Extract low-res (e.g. 360 px wide) JPEG keyframes at a fixed interval plus scene-change frames (ffmpeg `select='gt(scene,0.3)'`), capped per minute; index with timestamps; persisted artifact.
+### - [x] T20: Frame sampling stage
+**Description:** Extract low-res (e.g. 360 px wide) JPEG keyframes at a fixed interval plus scene-change frames (ffmpeg `select='gt(scene,0.3)'`), capped per minute; index with timestamps; persisted artifact. *(ADR-006 has no frames job stage, so sampling is a checksum-verified step the analyze stage runs first: `ensure_frames`.)*
 **Acceptance criteria:**
-- [ ] Fixture with scene cuts yields frames near cut times; total frames bounded
-- [ ] Memory stays low (ffmpeg does the work; Python only lists files)
+- [x] Fixture with scene cuts yields frames near cut times; total frames bounded
+- [x] Memory stays low (ffmpeg does the work; Python only lists files)
 **Verification:** standard + `rtk test python -m pytest tests -k frames`
 **Dependencies:** T09
 **Files:** `backend/clipforge/media/frames.py`, `backend/clipforge/pipeline/stages/frames.py`, tests
