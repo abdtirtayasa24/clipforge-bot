@@ -322,12 +322,12 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/storage/drive_oauth.py`, `backend/clipforge/security/crypto.py`, `backend/clipforge/api/v1/integrations.py`, tests
 **Size:** M
 
-### - [ ] T26: Drive resumable upload + reconciliation
+### - [x] T26: Drive resumable upload + reconciliation
 **Description:** Upload stage (ADR-014): look up existing file by `appProperties.clipforge_clip_id` → adopt if size/md5 match; else resume persisted session URI (query offset) or initiate new resumable session, persist URI, stream in chunks; verify `size` + `md5Checksum`; persist `drive_file_id`, `webViewLink`; then delete local clip. Private sharing only. Handle 308/410/5xx per Drive docs.
 **Acceptance criteria:**
-- [ ] Simulated crash after Drive completed but before DB persist → rerun adopts existing file (no duplicate)
-- [ ] Simulated crash mid-upload → resumes from offset
-- [ ] Local file only deleted after verification; mismatch → re-upload, never delete
+- [x] Simulated crash after Drive completed but before DB persist → rerun adopts existing file (no duplicate)
+- [x] Simulated crash mid-upload → resumes from offset
+- [x] Local file only deleted after verification; mismatch → re-upload, never delete
 **Verification:** standard + `rtk test python -m pytest tests -k drive_upload`; opt-in `-m live` against a test folder
 **Dependencies:** T24, T25
 **Files:** `backend/clipforge/storage/drive.py`, `backend/clipforge/pipeline/stages/upload.py`, tests

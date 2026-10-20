@@ -54,11 +54,11 @@ class OAuthExchangeError(Exception):
     pass
 
 
-class DriveNotConnected(Exception):
-    pass
+class DriveNotConnected(TransientError):
+    """No stored Drive credential (or no OAuth client configured); retried after reconnecting."""
 
 
-class DriveAuthExpired(Exception):
+class DriveAuthExpired(TransientError):
     """Google rejected the refresh token (revoked, expired or the client changed)."""
 
 
@@ -244,3 +244,8 @@ class DriveTokens:
             self._clock() + timedelta(seconds=int(body.get("expires_in", 3600))) - EXPIRY_MARGIN
         )
         return self._token
+
+    def invalidate(self) -> None:
+        """Forgets the cached access token after Drive rejected it."""
+        self._token = None
+        self._expires_at = None

@@ -13,6 +13,7 @@ from clipforge.ai.adapters.gemini_transcription import (
 from clipforge.ai.adapters.openrouter_analysis import openrouter_analysis_factory
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderRegistry
+from clipforge.config import Settings
 from clipforge.pipeline.stage import Stage
 from clipforge.pipeline.stages.analyze import AnalyzeStage
 from clipforge.pipeline.stages.audio import AudioStage
@@ -20,6 +21,10 @@ from clipforge.pipeline.stages.ingest import IngestStage
 from clipforge.pipeline.stages.render import RenderStage
 from clipforge.pipeline.stages.select import SelectStage
 from clipforge.pipeline.stages.transcribe import TranscribeStage
+from clipforge.pipeline.stages.upload import UploadStage
+from clipforge.security.crypto import TokenCipher
+from clipforge.storage.drive import DriveClient
+from clipforge.storage.drive_oauth import DriveTokens, OAuthClient
 
 
 def provider_registry(http: httpx.AsyncClient, quota: QuotaGuard) -> ProviderRegistry:
@@ -33,12 +38,33 @@ def provider_registry(http: httpx.AsyncClient, quota: QuotaGuard) -> ProviderReg
     )
 
 
+def drive_client(
+    settings: Settings, http: httpx.AsyncClient, sessions: async_sessionmaker[AsyncSession]
+) -> DriveClient | None:
+    """None until the Google OAuth client and encryption key are configured."""
+    if not (
+        settings.google_client_id
+        and settings.google_client_secret
+        and settings.drive_redirect_uri
+        and settings.token_encryption_key
+    ):
+        return None
+    client = OAuthClient(
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret.get_secret_value(),
+        redirect_uri=settings.drive_redirect_uri,
+    )
+    cipher = TokenCipher(settings.token_encryption_key.get_secret_value())
+    return DriveClient(http, DriveTokens(sessions, http, client, cipher), sessions)
+
+
 def default_stages(
     sessions: async_sessionmaker[AsyncSession],
     *,
     workspace_root: Path,
     registry: ProviderRegistry,
     quota: QuotaGuard,
+    drive: DriveClient | None,
 ) -> list[Stage]:
     return [
         IngestStage(sessions, workspace_root=workspace_root),
@@ -47,4 +73,5 @@ def default_stages(
         AnalyzeStage(sessions, registry, quota),
         SelectStage(sessions),
         RenderStage(sessions),
+        UploadStage(sessions, drive),
     ]

@@ -1,18 +1,20 @@
-"""Ingest → audio → transcribe → analyze (frames) → select with fake AI providers (T22)."""
+"""The pipeline from ingest to Drive upload with fake AI providers and a fake Drive."""
 
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
+import httpx
 import pytest
-from sqlalchemy import insert, select
+import respx
+from sqlalchemy import delete, insert, select
 
 from clipforge.ai.adapters.fake import FakeAnalysisProvider, FakeTranscriptionProvider
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.registry import ProviderRegistry, snapshot_job_settings
 from clipforge.ai.types import ClipCandidate, DimensionScores
 from clipforge.checksums import file_sha256
-from clipforge.db.models import Clip, ClipArtifact, MediaAsset, ProviderUsage, Video
+from clipforge.db.models import AppSetting, Clip, ClipArtifact, MediaAsset, ProviderUsage, Video
 from clipforge.db.models import ClipCandidate as ClipCandidateRow
 from clipforge.media.probe import probe
 from clipforge.pipeline.context import StageContext
@@ -21,7 +23,10 @@ from clipforge.pipeline.runner import PipelineRunner
 from clipforge.pipeline.stage import StageResult
 from clipforge.queue.repository import JobQueue
 from clipforge.settings_schema import ProviderSnapshot
+from clipforge.storage.drive import CLIP_ID_PROPERTY, DriveClient
+from clipforge.storage.drive_oauth import FOLDER_KEY
 from tests.clock import FakeClock
+from tests.drive import FakeDrive, FakeTokens
 from tests.jobs import Sessions, claim, load_job, stage_events
 
 pytestmark = pytest.mark.usefixtures("require_ffmpeg")
@@ -34,13 +39,14 @@ PIPELINE_STAGES = [
     "analyzed",
     "candidates_selected",
     "rendering",
+    "uploading",
 ]
 
 
-class UploadSentinel:
-    """Stands in for the upload stage to show whether the pipeline reached it."""
+class NextStageSentinel:
+    """Stands in for the stage after upload to show whether the pipeline reached it."""
 
-    name = "uploading"
+    name = "affiliate_matching"
     running_name: str | None = None
 
     def __init__(self) -> None:
@@ -80,13 +86,21 @@ def registry(analysis: FakeAnalysisProvider) -> ProviderRegistry:
     )
 
 
+@pytest.fixture
+def drive() -> Iterator[FakeDrive]:
+    fake = FakeDrive()
+    with respx.mock(base_url="https://www.googleapis.com", assert_all_called=False) as router:
+        router.route().mock(side_effect=fake.handle)
+        yield fake
+
+
 async def run_pipeline(
     sessions: Sessions,
     clock: FakeClock,
     source: Path,
     workspace: Path,
     proposals: list[ClipCandidate],
-) -> tuple[str, uuid.UUID, UploadSentinel, FakeAnalysisProvider]:
+) -> tuple[str, uuid.UUID, NextStageSentinel, FakeAnalysisProvider]:
     async with sessions.begin() as session:
         video_id = await session.scalar(
             insert(Video)
@@ -118,15 +132,23 @@ async def run_pipeline(
     )
     job, _ = await queue.enqueue(video_id, uuid.uuid4().hex, media_asset_id=asset_id)
     analysis = FakeAnalysisProvider(proposals)
-    sentinel = UploadSentinel()
+    sentinel = NextStageSentinel()
     quota = QuotaGuard(sessions, clock=clock)
-    stages = [
-        *default_stages(
-            sessions, workspace_root=workspace, registry=registry(analysis), quota=quota
-        ),
-        sentinel,
-    ]
-    status = await PipelineRunner(queue, stages, workspace_root=workspace).run(await claim(queue))
+    async with sessions.begin() as session:
+        await session.execute(delete(AppSetting).where(AppSetting.key == FOLDER_KEY))
+    async with httpx.AsyncClient() as http:
+        stages = [
+            *default_stages(
+                sessions,
+                workspace_root=workspace,
+                registry=registry(analysis),
+                quota=quota,
+                drive=DriveClient(http, FakeTokens(), sessions),
+            ),
+            sentinel,
+        ]
+        runner = PipelineRunner(queue, stages, workspace_root=workspace)
+        status = await runner.run(await claim(queue))
     return status, job.id, sentinel, analysis
 
 
@@ -150,8 +172,8 @@ async def clip_rows(sessions: Sessions, job_id: uuid.UUID) -> list[tuple[Clip, C
         return [(clip, artifact) for clip, artifact in rows]
 
 
-async def test_job_renders_at_most_three_selected_clips(
-    sessions: Sessions, clock: FakeClock, valid_source: Path, tmp_path: Path
+async def test_job_uploads_at_most_three_verified_clips(
+    sessions: Sessions, clock: FakeClock, valid_source: Path, tmp_path: Path, drive: FakeDrive
 ) -> None:
     proposals = [
         candidate(100, 130, 90, "Satu"),
@@ -166,7 +188,7 @@ async def test_job_renders_at_most_three_selected_clips(
     )
 
     assert status == "completed"
-    assert (await stage_events(sessions, job_id))[:7] == PIPELINE_STAGES
+    assert (await stage_events(sessions, job_id))[:8] == PIPELINE_STAGES
     assert sentinel.calls == 1
     rows = await candidate_rows(sessions, job_id)
     selected = [row for row in rows if row.selected]
@@ -179,7 +201,11 @@ async def test_job_renders_at_most_three_selected_clips(
     assert analysis.reranked_frames, "frames are sent for the shortlist"
     clips = await clip_rows(sessions, job_id)
     assert sorted(clip.title for clip, _ in clips) == ["Dua", "Satu", "Tiga"]
-    assert all(artifact.kind == "video" and artifact.sha256 for _, artifact in clips)
+    for clip, artifact in clips:
+        [remote] = drive.live_files(**{CLIP_ID_PROPERTY: str(clip.id)})
+        assert (artifact.upload_state, clip.drive_file_id) == ("verified", remote["id"])
+        assert remote["md5Checksum"] == artifact.md5
+        assert artifact.local_deleted_at is not None
     async with sessions() as session:
         stages = set(
             await session.scalars(select(ProviderUsage.stage).where(ProviderUsage.job_id == job_id))
@@ -192,7 +218,7 @@ async def test_job_renders_at_most_three_selected_clips(
 
 
 async def test_low_scores_complete_without_clips_or_rendering(
-    sessions: Sessions, clock: FakeClock, valid_source: Path, tmp_path: Path
+    sessions: Sessions, clock: FakeClock, valid_source: Path, tmp_path: Path, drive: FakeDrive
 ) -> None:
     proposals = [candidate(100, 130, 60, "Biasa"), candidate(700, 740, 74, "Hampir")]
 
@@ -209,3 +235,4 @@ async def test_low_scores_complete_without_clips_or_rendering(
     assert len(rows) == 2
     assert not any(row.selected for row in rows)
     assert await clip_rows(sessions, job_id) == []
+    assert drive.requests == []
