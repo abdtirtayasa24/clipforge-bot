@@ -312,11 +312,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/media/render.py`, `backend/clipforge/pipeline/stages/render.py`, tests
 **Size:** M
 
-### - [ ] T25: Google Drive OAuth + status
+### - [x] T25: Google Drive OAuth + status
 **Description:** `GET /integrations/drive/connect` (admin) → Google auth URL with single-use `state` stored server-side; `GET /integrations/drive/callback` (unauthenticated but state-validated) exchanges code, encrypts refresh token (Fernet key from env) into `oauth_credentials`; `GET /integrations/drive/status` reports connected/expired/scope + target folder. Token refresh helper. Scope `drive.file`.
 **Acceptance criteria:**
-- [ ] Invalid/reused state → 400; token stored encrypted (DB value ≠ plaintext)
-- [ ] Status never returns token material
+- [x] Invalid/reused state → 400; token stored encrypted (DB value ≠ plaintext)
+- [x] Status never returns token material
 **Verification:** standard + `rtk test python -m pytest tests -k drive_oauth` (Google endpoints mocked)
 **Dependencies:** T05
 **Files:** `backend/clipforge/storage/drive_oauth.py`, `backend/clipforge/security/crypto.py`, `backend/clipforge/api/v1/integrations.py`, tests

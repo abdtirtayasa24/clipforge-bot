@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     init_data_max_age_seconds: int = Field(default=3600, ge=60, le=86400)
     auth_max_failures: int = Field(default=10, ge=1)
     auth_failure_window_seconds: int = Field(default=300, ge=1)
+    # Google Drive OAuth (ADR-015): a "Web application" OAuth client and the Fernet key that
+    # encrypts the stored refresh token.
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    drive_redirect_uri: str | None = None
+    token_encryption_key: SecretStr | None = None
     # Third-party keys keep their standard names, without the CLIPFORGE_ prefix.
     youtube_api_key: SecretStr | None = Field(
         default=None, validation_alias=AliasChoices("YOUTUBE_API_KEY", "youtube_api_key")

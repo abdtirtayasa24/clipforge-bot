@@ -6,7 +6,17 @@ from fastapi import FastAPI
 
 from clipforge.api.errors import install_error_handlers
 from clipforge.api.middleware import RequestContextMiddleware
-from clipforge.api.v1 import ai, auth, discovery, health, jobs, sources, uploads, videos
+from clipforge.api.v1 import (
+    ai,
+    auth,
+    discovery,
+    health,
+    integrations,
+    jobs,
+    sources,
+    uploads,
+    videos,
+)
 from clipforge.auth.rate_limit import FailedAttemptLimiter
 from clipforge.config import Settings, get_settings
 from clipforge.db.session import create_engine, create_session_factory
@@ -64,6 +74,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(uploads.router, prefix=API_PREFIX)
     app.include_router(jobs.router, prefix=API_PREFIX)
     app.include_router(ai.router, prefix=API_PREFIX)
+    app.include_router(integrations.router, prefix=API_PREFIX)
     return app
 
 
