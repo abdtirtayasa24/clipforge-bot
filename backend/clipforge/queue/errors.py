@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 class PermanentError(Exception):
     """Rights, validation or unsupported media: the job fails and is never retried (ADR-007)."""
 
@@ -28,3 +31,11 @@ class JobNotFound(Exception):
 
 class InvalidJobTransition(Exception):
     """The requested admin action does not apply to the job's current status."""
+
+
+class QuotaDeferred(Exception):
+    """A provider's quota is used up: the job waits until `until` without using an attempt."""
+
+    def __init__(self, message: str, *, until: datetime) -> None:
+        super().__init__(message)
+        self.until = until

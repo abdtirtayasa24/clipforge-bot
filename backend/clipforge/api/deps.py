@@ -21,13 +21,18 @@ async def get_db_session(request: Request) -> AsyncIterator[AsyncSession]:
         yield session
 
 
-def get_job_queue(request: Request) -> JobQueue:
+def get_session_factory(request: Request) -> async_sessionmaker[AsyncSession]:
     sessions: async_sessionmaker[AsyncSession] | None = request.app.state.session_factory
     if sessions is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "database is not configured")
-    return JobQueue(sessions)
+    return sessions
+
+
+def get_job_queue(request: Request) -> JobQueue:
+    return JobQueue(get_session_factory(request))
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 JobQueueDep = Annotated[JobQueue, Depends(get_job_queue)]
+SessionsDep = Annotated[async_sessionmaker[AsyncSession], Depends(get_session_factory)]

@@ -6,11 +6,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from clipforge.ai.registry import ProviderConfigError, missing_secrets, resolve_providers
 from clipforge.api.deps import SettingsDep
 from clipforge.db.models import AppSetting
+from clipforge.settings_schema import load_settings
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,25 @@ async def _check_database(
     return True, reserve if isinstance(reserve, int) else DEFAULT_RESERVED_DISK_BYTES
 
 
+async def _check_ai_providers(sessions: async_sessionmaker[AsyncSession] | None) -> bool:
+    """Every selected model is configured and its secret env var is set."""
+    if sessions is None:
+        return False
+    try:
+        async with asyncio.timeout(DATABASE_CHECK_TIMEOUT_S), sessions() as session:
+            providers = await resolve_providers(session, (await load_settings(session)).models)
+    except (ProviderConfigError, ValidationError) as exc:
+        logger.warning("AI provider configuration is invalid", extra={"reason": str(exc)})
+        return False
+    except Exception:
+        logger.warning("readiness AI provider check failed", exc_info=True)
+        return False
+    missing = missing_secrets(providers)
+    if missing:
+        logger.warning("AI provider secrets are not set", extra={"missing_env_vars": missing})
+    return not missing
+
+
 def _check_workspace(workspace: Path) -> bool:
     try:
         with tempfile.TemporaryFile(dir=workspace):
@@ -72,6 +94,7 @@ async def ready(request: Request, settings: SettingsDep) -> JSONResponse:
         "workspace": await asyncio.to_thread(_check_workspace, workspace),
         "disk": await asyncio.to_thread(_check_disk, workspace, reserved_bytes),
         "ffmpeg": _check_media_binaries(),
+        "ai_providers": await _check_ai_providers(request.app.state.session_factory),
     }
     failing = [name for name, ok in checks.items() if not ok]
     if failing:

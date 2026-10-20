@@ -9,7 +9,6 @@ from clipforge.checksums import file_sha256
 from clipforge.db.models import MediaAsset
 from clipforge.media.audio import (
     CHUNK_OVERLAP_S,
-    DEFAULT_CHUNK_MINUTES,
     AudioChunk,
     AudioManifest,
     extract_chunk,
@@ -19,6 +18,7 @@ from clipforge.media.probe import probe
 from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.stage import StageResult, verified_artifact
 from clipforge.queue.errors import PermanentError
+from clipforge.settings_schema import JobSettings
 
 logger = logging.getLogger(__name__)
 
@@ -65,8 +65,7 @@ class AudioStage:
         source = Path(asset.local_path) if asset.local_path else None
         if source is None or asset.sha256 is None or not await asyncio.to_thread(source.is_file):
             raise PermanentError("the validated source file is missing")
-        minutes = ctx.job.settings_snapshot.get("audio_chunk_minutes", DEFAULT_CHUNK_MINUTES)
-        chunk_s = float(minutes) * 60
+        chunk_s = JobSettings.of(ctx.job.settings_snapshot).audio_chunk_minutes * 60.0
 
         audio_dir = ctx.workspace / AUDIO_DIR
         path = manifest_path(ctx.workspace)

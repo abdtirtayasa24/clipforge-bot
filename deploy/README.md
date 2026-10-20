@@ -65,7 +65,7 @@ sudo nano /etc/clipforge-bot/backend.env
 ```
 
 Set `CLIPFORGE_DATABASE_URL` (the `clipforge_app_prod` login created in step 6; choose its
-password now), `CLIPFORGE_TELEGRAM_BOT_TOKEN`, `CLIPFORGE_SESSION_SECRET` and `YOUTUBE_API_KEY`. The script refuses to
+password now), `CLIPFORGE_TELEGRAM_BOT_TOKEN`, `CLIPFORGE_SESSION_SECRET`, `YOUTUBE_API_KEY`, `GEMINI_API_KEY` and `OPENROUTER_API_KEY`. The script refuses to
 continue while any `CHANGE_ME` remains.
 
 ## 5. Install and migrate
@@ -315,6 +315,7 @@ The script syncs code, reinstalls, migrates and restarts the API only when somet
 | `failing: ["workspace"]` | `/var/lib/clipforge-bot/workspace` missing or not owned by `clipforge`; re-run `install.sh`. |
 | `failing: ["disk"]` | Less free space than `app_settings.reserved_disk_bytes` (5 GB). |
 | `failing: ["ffmpeg"]` | ffmpeg/ffprobe not on `PATH`; re-run `install.sh`. |
+| `failing: ["ai_providers"]` | A selected model (`app_settings.models`) is missing or disabled in `ai_provider_configs`, or its key env var is unset; `journalctl -u clipforge-api` names the missing variable. Add it to `backend.env` and restart. |
 | `YOUTUBE_API_KEY is not set` (discovery exits 2) / `YouTube API key is not configured` (503) | Add `YOUTUBE_API_KEY` to `backend.env` and restart `clipforge-api`. |
 | `failed_sources` not empty / `quotaExceeded` | Check the key and its API restriction; the daily quota resets at midnight Pacific time. |
 | `auth is not configured` (503) | `CLIPFORGE_TELEGRAM_BOT_TOKEN` or `CLIPFORGE_SESSION_SECRET` (≥ 32 chars) missing. |

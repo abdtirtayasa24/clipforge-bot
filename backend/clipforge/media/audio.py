@@ -13,7 +13,6 @@ from clipforge.queue.errors import TransientError
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CHUNK_MINUTES = 20
 MAX_CHUNK_MINUTES = 28
 CHUNK_OVERLAP_S = 2.0
 SAMPLE_RATE_HZ = 16000

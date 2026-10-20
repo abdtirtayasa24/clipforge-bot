@@ -8,6 +8,7 @@ import signal
 import socket
 import sys
 
+from clipforge.ai.registry import snapshot_job_settings
 from clipforge.config import Settings
 from clipforge.db.session import create_engine, create_session_factory
 from clipforge.logging import configure_logging
@@ -103,7 +104,7 @@ async def serve(settings: Settings, database_url: str) -> None:
     )
     try:
         sessions = create_session_factory(engine)
-        queue = JobQueue(sessions)
+        queue = JobQueue(sessions, snapshot_settings=snapshot_job_settings)
         stages = default_stages(sessions, workspace_root=settings.workspace_dir)
         runner = PipelineRunner(queue, stages, workspace_root=settings.workspace_dir)
         worker_id = f"{socket.gethostname()}:{os.getpid()}"

@@ -3,7 +3,7 @@
 import logging
 import random
 import uuid
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -24,6 +24,7 @@ from clipforge.queue.errors import (
     JobNotFound,
     LeaseLost,
     PermanentError,
+    QuotaDeferred,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ _CLEARED_LEASE = {"lease_token": None, "lease_expires_at": None, "leased_by": No
 _system_random = random.SystemRandom()
 
 Clock = Callable[[], datetime]
+SettingsSnapshot = Callable[[AsyncSession], Awaitable[dict[str, Any]]]
 
 
 def utc_now() -> datetime:
@@ -73,10 +75,13 @@ class JobQueue:
         *,
         clock: Clock = utc_now,
         jitter: Callable[[], float] = _system_random.random,
+        snapshot_settings: SettingsSnapshot | None = None,
     ) -> None:
+        """`snapshot_settings` resolves the settings a job keeps for its whole run (ADR-026)."""
         self._sessions = sessions
         self._clock = clock
         self._jitter = jitter
+        self._snapshot_settings = snapshot_settings
 
     async def enqueue(
         self,
@@ -168,6 +173,8 @@ class JobQueue:
         *,
         reclaimed: bool,
     ) -> ClaimedJob:
+        if self._snapshot_settings is not None and not job.settings_snapshot:
+            job.settings_snapshot = await self._snapshot_settings(session)
         lease = Lease(job.id, uuid.uuid4(), job.lease_version + 1, now + LEASE_DURATION)
         job.status = "running"
         job.attempts += 1
@@ -310,8 +317,27 @@ class JobQueue:
         )
         return event_type
 
+    async def defer(self, lease: Lease, error: QuotaDeferred) -> str:
+        """Waits for provider quota; the attempt is given back (ADR-028)."""
+        message = _error_text(error)
+        async with self._sessions.begin() as session:
+            job = await self._fenced(session, lease, {"last_error": message})
+            job.status = "retry_scheduled"
+            job.next_attempt_at = error.until
+            job.attempts = max(0, job.attempts - 1)
+            job.lease_token = job.lease_expires_at = job.leased_by = None
+            details = {"until": error.until.isoformat()}
+            session.add(self._event(job, "quota_deferred", message=message, details=details))
+        logger.info(
+            "job deferred for quota",
+            extra={"job_id": str(lease.job_id), "until": error.until.isoformat()},
+        )
+        return "retry_scheduled"
+
     async def handle_error(self, lease: Lease, error: BaseException) -> str:
         """Ends the attempt according to ADR-007 and returns the job's new status."""
+        if isinstance(error, QuotaDeferred):
+            return await self.defer(lease, error)
         if isinstance(error, PermanentError):
             await self.fail(lease, error)
             return "failed"

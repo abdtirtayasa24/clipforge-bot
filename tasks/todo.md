@@ -215,13 +215,13 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/media/audio.py`, `backend/clipforge/pipeline/stages/audio.py`, tests
 **Size:** S
 
-### - [ ] T17: AI provider protocols, registry, settings snapshot, cost tracking
+### - [x] T17: AI provider protocols, registry, settings snapshot, cost tracking
 **Description:** `TranscriptResult` (segments + words with absolute seconds, language), `ClipCandidate` (start, end, six dimension scores, title, hook_line, topic, keywords, explanation). Protocols per spec + `EmbeddingProvider`. `SettingsSchema` (ADR-026) resolves `app_settings` + selected model per capability from `ai_provider_configs` + env secret refs; the resolved settings **and prices** are snapshotted into `processing_jobs.settings_snapshot` at claim. `record_usage(ctx, call)` writes `provider_usage` (job, stage, provider, model, latency, input/output tokens or audio seconds, `estimated_cost` = usage × snapshot price) — ADR-024. `FakeTranscriptionProvider`/`FakeAnalysisProvider` report deterministic usage. **Quota guard (ADR-028):** per provider+model RPM token bucket + daily request count from `provider_usage` against `rpd_limit`, reset per `quota_reset`; `reserve(n_calls)` before a stage, else `QuotaDeferred(next_reset)` → job rescheduled (not an attempt); 429 honors `Retry-After`. `GET /ai/providers` lists providers, models, capabilities, enabled flag, prices and today's quota usage (never secrets).
 **Acceptance criteria:**
-- [ ] *(Should-Have: configurable models)* Changing the selected model or thresholds mid-job doesn't affect the running job; the next job uses the new values
-- [ ] *(Should-Have: cost tracking)* Cost math unit-tested for token-priced and audio-minute-priced providers; editing a price later doesn't change existing `provider_usage` rows
-- [ ] Missing secret env var for a selected provider → clear config error at readiness, not a mid-job crash; `/ai/providers` contains no secret values
-- [ ] Quota guard: with `rpd_limit` reached, the job moves to the next reset time without consuming an attempt; Pacific-midnight reset computed correctly across DST (clock injected)
+- [x] *(Should-Have: configurable models)* Changing the selected model or thresholds mid-job doesn't affect the running job; the next job uses the new values
+- [x] *(Should-Have: cost tracking)* Cost math unit-tested for token-priced and audio-minute-priced providers; editing a price later doesn't change existing `provider_usage` rows
+- [x] Missing secret env var for a selected provider → clear config error at readiness, not a mid-job crash; `/ai/providers` contains no secret values
+- [x] Quota guard: with `rpd_limit` reached, the job moves to the next reset time without consuming an attempt; Pacific-midnight reset computed correctly across DST (clock injected)
 **Verification:** standard + `rtk test python -m pytest tests -k "providers or usage or cost or settings_snapshot"`
 **Dependencies:** T08
 **Files:** `backend/clipforge/ai/{types,protocols,registry,usage}.py`, `backend/clipforge/settings_schema.py`, `backend/clipforge/ai/adapters/fake.py`, `backend/clipforge/api/v1/ai.py`, tests

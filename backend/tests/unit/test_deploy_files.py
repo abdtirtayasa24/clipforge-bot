@@ -8,6 +8,7 @@ from pydantic import AliasChoices
 from clipforge.config import Settings
 
 DEPLOY_DIR = Path(__file__).resolve().parents[3] / "deploy"
+MIGRATIONS_SQL_DIR = Path(__file__).resolve().parents[2] / "migrations" / "sql"
 SECRET_FIELDS = {"database_url", "telegram_bot_token", "session_secret"}
 
 
@@ -34,8 +35,14 @@ def known_env_names() -> set[str]:
     return names
 
 
+def seeded_ai_secret_refs() -> set[str]:
+    """Env var names the seeded `ai_provider_configs` rows read their API keys from."""
+    sql = (MIGRATIONS_SQL_DIR / "005_settings.sql").read_text(encoding="utf-8")
+    return set(re.findall(r"'([A-Z][A-Z0-9_]*_API_KEY)'", sql))
+
+
 def test_backend_env_example_only_sets_known_settings() -> None:
-    known = known_env_names()
+    known = known_env_names() | seeded_ai_secret_refs()
 
     assert set(env_example("backend.env.example")) <= known
 
@@ -46,6 +53,9 @@ def test_backend_env_example_holds_placeholders_only() -> None:
     for field in SECRET_FIELDS:
         assert "CHANGE_ME" in values[f"CLIPFORGE_{field.upper()}"], field
     assert values["YOUTUBE_API_KEY"] == "CHANGE_ME"
+    assert seeded_ai_secret_refs() == {"GEMINI_API_KEY", "OPENROUTER_API_KEY"}
+    for name in seeded_ai_secret_refs():
+        assert values[name] == "CHANGE_ME", name
 
 
 def test_runtime_env_never_carries_migration_credentials() -> None:
