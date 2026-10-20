@@ -375,13 +375,149 @@ Watch the selected clips at their `starts_at` times in the source and judge whet
 standalone shorts (hook, completeness, accurate title). Note what should change in the prompts
 or thresholds (`min_score`, `clip_min_s`, `clip_max_s`) before rendering work starts.
 
+## 14. Rendering, Google Drive and notifications (Checkpoint M4)
+
+Needs `TOKEN`, `API`, the AI keys from section 13 and one 60–120 minute authorized video that
+reached `validated` (section 12).
+
+### Google Drive OAuth client
+
+In Google Cloud console (any project you own):
+
+1. **APIs & Services → Library**: enable the **Google Drive API**.
+2. **OAuth consent screen**: user type External, add your Google account as a test user, add the
+   scope `https://www.googleapis.com/auth/drive.file`. Then **Publish app** (status "In
+   production"): while the app is in "Testing", Google expires its refresh tokens after 7 days
+   and Drive would need reconnecting every week. `drive.file` is a non-sensitive scope, so no
+   verification is needed.
+3. **Credentials → Create credentials → OAuth client ID**: type "Web application", authorized
+   redirect URI `https://<your-domain>/api/v1/integrations/drive/callback`.
+
+Add the four Drive settings to `/etc/clipforge-bot/backend.env` (see `backend.env.example`):
+
+```bash
+python3 -c "import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"  # CLIPFORGE_TOKEN_ENCRYPTION_KEY
+sudo nano /etc/clipforge-bot/backend.env
+```
+
+Back up `CLIPFORGE_TOKEN_ENCRYPTION_KEY` (for example in your password manager): without it the
+stored refresh token cannot be decrypted and Drive has to be connected again.
+
+### Install the worker unit
+
+```bash
+sudo systemctl stop clipforge-worker-m2 clipforge-worker-m3 2>/dev/null   # earlier transient workers
+cd ~/clipforge-bot && git pull && sudo ./deploy/install.sh   # subtitle font + clipforge-worker.service
+sudo systemctl restart clipforge-api
+sudo systemctl enable --now clipforge-worker
+systemctl status clipforge-worker          # active (running), Memory max 1.8G
+journalctl -u clipforge-worker -n 20       # "worker started"
+```
+
+### Connect Drive
+
+```bash
+curl -s $API/integrations/drive/connect -H "Authorization: Bearer $TOKEN"   # {"auth_url": ...}
+```
+
+Open the `auth_url` in a browser signed in to the Google account that should own the clips,
+allow access, and wait for "Google Drive is connected". The link works once and for 10 minutes;
+call `connect` again for a new one. Then:
+
+```bash
+curl -s $API/integrations/drive/status -H "Authorization: Bearer $TOKEN"
+# "status": "connected", "scopes": [".../drive.file"], "account_email": ..., no token values
+```
+
+The app creates its own folder **ClipForge Bot** on the first upload (`target_folder_id` is
+filled in after that); with the `drive.file` scope it cannot see any other Drive files.
+
+### Run the job and record resources
+
+Start a resource log in a second terminal before queueing the job:
+
+```bash
+while sleep 10; do
+  printf '%s mem=%s peak=%s free=%s\n' "$(date +%T)" \
+    "$(systemctl show clipforge-worker -p MemoryCurrent --value)" \
+    "$(systemctl show clipforge-worker -p MemoryPeak --value)" \
+    "$(df -B1 --output=avail /var/lib/clipforge-bot | tail -1)"
+done | tee ~/m4-resources.log
+```
+
+```bash
+curl -s -X POST $API/videos/$VIDEO/jobs -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $(cat /proc/sys/kernel/random/uuid)"
+journalctl -u clipforge-worker -f          # "clip rendered", "clip uploaded"
+curl -s $API/jobs/<job id> -H "Authorization: Bearer $TOKEN"
+```
+
+Expected: after `candidates_selected` the stages `rendering` and `uploading`, then `completed`,
+and a Telegram message "N clips ready for review" listing the titles, scores and estimated AI
+cost. In Drive, the **ClipForge Bot** folder holds one private MP4 per clip, named after its
+title plus a short clip id. Check the files in the Supabase SQL editor:
+
+```sql
+SELECT c.title, c.drive_file_id, a.upload_state, a.size_bytes, a.md5, a.local_deleted_at,
+       round((c.end_ms - c.start_ms) / 1000.0, 1) AS seconds
+FROM clips c JOIN clip_artifacts a ON a.clip_id = c.id AND a.kind = 'video'
+WHERE c.job_id = '<job id>';
+```
+
+Every row should be `verified` with a Drive id and `local_deleted_at` set. Download one clip and
+confirm 720×1280, burned subtitles and sound (`ffprobe -v error -show_streams clip.mp4`). Stage
+timings come from the `job_events` query in section 13. From `~/m4-resources.log`, the largest
+`peak` must stay below 1.8 GB (1932735283 bytes) and the smallest `free` at or above 5 GB
+(5368709120 bytes).
+
+### Kill the worker during the upload
+
+Queue a second job (another video, or the same one after the first completed). While it is in
+`uploading`, which this query shows as `uploading` rows:
+
+```sql
+SELECT a.upload_state, count(*) FROM clip_artifacts a JOIN clips c ON c.id = a.clip_id
+WHERE c.job_id = '<job id>' GROUP BY 1;
+```
+
+kill the worker without a clean shutdown:
+
+```bash
+sudo systemctl kill -s SIGKILL clipforge-worker
+journalctl -u clipforge-worker -f   # restarted after 10 s; the job is reclaimed once its
+                                    # 5-minute lease expires, then "clip uploaded"
+```
+
+Expected: the job completes and each clip has exactly one Drive file. Confirm there is no
+duplicate:
+
+```sql
+SELECT c.id, c.drive_file_id, a.upload_state FROM clips c
+JOIN clip_artifacts a ON a.clip_id = c.id AND a.kind = 'video' WHERE c.job_id = '<job id>';
+```
+
+The **ClipForge Bot** folder must show one file per clip id (the file names end with the first 8
+characters of the clip id), with nothing extra in Drive's trash other than copies the worker
+replaced after a checksum mismatch.
+
+### Notifications
+
+Failures and a disconnected Drive also notify the admin chat. Turn notifications off or on in
+the Supabase SQL editor until the settings screen exists:
+
+```sql
+INSERT INTO app_settings (key, value) VALUES ('telegram_notifications_enabled', 'false')
+ON CONFLICT (key) DO UPDATE SET value = excluded.value;
+```
+
 ## Updating
 
 ```bash
 cd ~/clipforge-bot && git pull && sudo ./deploy/install.sh
 ```
 
-The script syncs code, reinstalls, migrates and restarts the API only when something changed.
+The script syncs code, reinstalls, migrates and restarts the API and the worker only when
+something changed.
 
 ## Troubleshooting
 
@@ -396,9 +532,13 @@ The script syncs code, reinstalls, migrates and restarts the API only when somet
 | `YOUTUBE_API_KEY is not set` (discovery exits 2) / `YouTube API key is not configured` (503) | Add `YOUTUBE_API_KEY` to `backend.env` and restart `clipforge-api`. |
 | `failed_sources` not empty / `quotaExceeded` | Check the key and its API restriction; the daily quota resets at midnight Pacific time. |
 | `auth is not configured` (503) | `CLIPFORGE_TELEGRAM_BOT_TOKEN` or `CLIPFORGE_SESSION_SECRET` (≥ 32 chars) missing. |
+| Drive status `expired` / Telegram "Google Drive is disconnected" | The refresh token was revoked or expired (an app left in "Testing" expires them after 7 days). Reconnect (section 14), then `POST /jobs/{id}/retry` for jobs that failed in `uploading`. |
+| `Google OAuth is not configured` (503) | One of `CLIPFORGE_GOOGLE_CLIENT_ID`, `CLIPFORGE_GOOGLE_CLIENT_SECRET`, `CLIPFORGE_DRIVE_REDIRECT_URI` missing; add it and restart `clipforge-api` and `clipforge-worker`. |
+| Subtitles missing or in a fallback font | `fonts-dejavu-core` not installed; re-run `install.sh`. |
 | Migration fails with permission errors | `migration.env` must use the Supabase `postgres` user, not `clipforge_app_prod`. |
 
 ## After verification
 
 Tick the VPS items in `tasks/todo.md` (T07 and Checkpoint M1 for steps 1–10, T11 and Checkpoint
-M2 for sections 11–12, Checkpoint M3 for section 13), or send the outputs for review.
+M2 for sections 11–12, Checkpoint M3 for section 13, T28 and Checkpoint M4 for section 14), or
+send the outputs for review.
