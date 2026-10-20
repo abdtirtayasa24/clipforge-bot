@@ -46,8 +46,10 @@ FALLBACK_SCHEMA = {
 
 
 def _words(body: dict[str, Any]) -> tuple[list[Word], str | None]:
+    """Words in spoken order; times that go backwards are clamped forward (the model does that)."""
     words: list[Word] = []
     language = None
+    previous_start = 0.0
     for candidate in body.get("candidates") or []:
         for part in (candidate.get("content") or {}).get("parts") or []:
             transcription = part.get("audioTranscription") or {}
@@ -59,7 +61,10 @@ def _words(body: dict[str, Any]) -> tuple[list[Word], str | None]:
                 )
                 text = str(item.get("word") or "").strip()
                 if text and start is not None and end is not None and end >= start >= 0:
-                    words.append(Word(text=text, start_s=start, end_s=end))
+                    previous_start = max(start, previous_start)
+                    words.append(
+                        Word(text=text, start_s=previous_start, end_s=max(end, previous_start))
+                    )
         break
     return words, language
 

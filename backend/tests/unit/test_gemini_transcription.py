@@ -394,3 +394,20 @@ async def test_live_transcription_of_a_generated_tone(tmp_path: Path) -> None:
             path, duration_s=5, language_hint=None, record=Recorder()
         )
     assert all(0 <= w.start_s <= w.end_s <= 6 for w in result.words)
+
+
+async def test_word_times_that_go_backwards_are_made_monotonic(
+    http: respx.MockRouter, clock: FakeClock, sleeps: Sleeps, audio: Path
+) -> None:
+    timed = [("Bene", "470.2s", "470.5s"), ("mau", "470.6s", "470.9s"), ("Oke.", "468.8s", "469s")]
+    words = [{"word": w, "startOffset": s, "endOffset": e} for w, s, e in timed]
+    body = {"candidates": [{"content": {"parts": [{"audioTranscription": {"words": words}}]}}]}
+    http.post(TRANSCRIBE_URL).respond(200, json=body)
+
+    result = await transcribe(client(clock, sleeps), audio, Recorder())
+
+    assert [s.text for s in result.segments] == ["Bene mau Oke."]
+    starts = [word.start_s for word in result.words]
+    assert starts == sorted(starts)
+    assert all(word.end_s >= word.start_s for word in result.words)
+    assert result.segments[0].end_s >= result.segments[0].start_s
