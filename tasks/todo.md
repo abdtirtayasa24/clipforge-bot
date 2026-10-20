@@ -286,8 +286,8 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Size:** M
 
 ### Checkpoint M3
-- [ ] One real 60–120 min authorized video → valid, timestamped, scored candidates; cost and per-stage latency in `provider_usage`/`job_events`
-- [ ] Human spot-check of candidate quality; tune prompts/thresholds before rendering work
+- [x] One real 60–120 min authorized video → valid, timestamped, scored candidates; cost and per-stage latency in `provider_usage`/`job_events`
+- [x] Human spot-check of candidate quality; tune prompts/thresholds before rendering work
 
 ---
 
