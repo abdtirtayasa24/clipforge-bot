@@ -9,13 +9,14 @@ from datetime import datetime
 from typing import Any
 
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from clipforge.db.models import AppSetting, Video, VideoSource, YoutubeSource
 from clipforge.discovery.duration import parse_iso8601_duration
+from clipforge.discovery.regions import ISO_3166_ALPHA2
 from clipforge.discovery.youtube_client import (
     ChartNotFound,
     VideoItem,
@@ -43,6 +44,13 @@ class DiscoverySettings(BaseModel):
     per_category_results: int = Field(default=50, ge=1, le=50)
     max_new_eligible_per_run: int = Field(default=20, ge=1, le=50)
     excluded_category_ids: list[str] = Field(default_factory=list)
+
+    @field_validator("region_code")
+    @classmethod
+    def _iso_region(cls, value: str) -> str:
+        if value not in ISO_3166_ALPHA2:
+            raise ValueError("region_code must be an ISO 3166-1 alpha-2 code")
+        return value
 
 
 @dataclass

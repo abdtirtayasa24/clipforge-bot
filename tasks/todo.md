@@ -373,26 +373,26 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/api/v1/clips.py`, `backend/clipforge/api/v1/schemas/clips.py`, `backend/scripts/export_openapi.py`, tests
 **Size:** M
 
-### - [ ] T30: Settings, cost and dashboard API
+### - [x] T30: Settings, cost and dashboard API
 **Description:** `GET/PATCH /settings` backed by `SettingsSchema` (ADR-026): scoring threshold, clip durations, max clips, overlap, models per capability, per-provider prices, timeouts/retry limits, notifications, discovery config, affiliate toggle/threshold/disclosure; unknown keys rejected; each change audited (old → new, admin, time) in an `app_settings` history/event. `GET /dashboard`: counts by job status, clips awaiting review, last discovery run, disk free, and **AI cost** (estimated) for 7 and 30 days broken down by day, provider/model and stage, plus average cost per completed job.
 **Acceptance criteria:**
-- [ ] `permitted_download_domains` entries validated (hostname or `*.suffix`, no IPs, no schemes/paths, YouTube/Google-video hosts refused); discovery `region_code` is ISO 3166-1 alpha-2
-- [ ] *(Should-Have: configurable)* Invalid values → 422: `clip_min_s > clip_max_s`, durations outside 20–60 s (spec bounds), `max_clips` outside 1–3, `min_score` outside 0–100, `max_overlap` outside 0–0.20, model not present/enabled in `ai_provider_configs` for that capability
-- [ ] *(Should-Have: cost tracking)* Cost aggregates match the sum of `provider_usage` rows in a seeded test
-- [ ] Dashboard query is a bounded number of SQL statements
+- [x] `permitted_download_domains` entries validated (hostname or `*.suffix`, no IPs, no schemes/paths, YouTube/Google-video hosts refused); discovery `region_code` is ISO 3166-1 alpha-2
+- [x] *(Should-Have: configurable)* Invalid values → 422: `clip_min_s > clip_max_s`, durations outside 20–60 s (spec bounds), `max_clips` outside 1–3, `min_score` outside 0–100, `max_overlap` outside 0–0.20, model not present/enabled in `ai_provider_configs` for that capability
+- [x] *(Should-Have: cost tracking)* Cost aggregates match the sum of `provider_usage` rows in a seeded test
+- [x] Dashboard query is a bounded number of SQL statements
 **Verification:** standard + `rtk test python -m pytest tests -k "settings or dashboard"`
 **Dependencies:** T17, T29
-**Files:** `backend/clipforge/settings_service.py`, `backend/clipforge/api/v1/{settings,dashboard}.py`, tests
+**Files:** `backend/migrations/sql/006_settings_audit.sql` (+down), `backend/clipforge/settings_service.py`, `backend/clipforge/api/v1/{settings,dashboard}.py`, tests
 **Size:** M
 
-### - [ ] T31: `006_affiliate_links.sql` + catalog API
+### - [ ] T31: `007_affiliate_links.sql` + catalog API
 **Description:** Migration exactly per spec (plus `updated_at` trigger, grants/RLS for new tables). `GET/POST /affiliate/products`, `PATCH/DELETE /affiliate/products/{id}` (DELETE = deactivate). Validation: `https://` only, host must equal `destination_domain` or be in merchant allowlist, block IP literals/private ranges/unsafe schemes; no server-side fetching; tracking params preserved but redacted in logs.
 **Acceptance criteria:**
 - [ ] `http://`, `javascript:`, `https://10.0.0.1/…`, domain mismatch → 422
 - [ ] Partial unique index enforces one approved primary link per clip
 **Verification:** standard + `rtk test python -m pytest tests -k "affiliate_catalog or migrations"`
 **Dependencies:** T04, T29
-**Files:** `backend/migrations/sql/006_affiliate_links.sql` (+down), `backend/migrations/versions/0006_*.py`, `backend/clipforge/affiliate/validation.py`, `backend/clipforge/api/v1/affiliate.py`, tests
+**Files:** `backend/migrations/sql/007_affiliate_links.sql` (+down), `backend/migrations/versions/0007_*.py`, `backend/clipforge/affiliate/validation.py`, `backend/clipforge/api/v1/affiliate.py`, tests
 **Size:** M
 
 ### - [ ] T32: Affiliate matcher + stage + rematch

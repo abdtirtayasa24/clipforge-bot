@@ -236,7 +236,7 @@ Require Telegram admin authentication on privileged routes; verify signed `initD
 
 **Matching inputs:** Clip transcript segment, AI topic summary, keywords, and suggested title. First filter active catalog products by language/region and relevant tags/categories, then rank by semantic similarity (provider adapter or keyword fallback). Apply a configurable minimum relevance score (default `0.70`), and exclude unrelated or prohibited products. Never invent a link if there is no match. Treat scores as ranking heuristics, not conversion predictions.
 
-**Schema addition (migration `006_affiliate_links.sql`):**
+**Schema addition (migration `007_affiliate_links.sql`; `006_settings_audit.sql` holds the settings audit trail):**
 
 ```sql
 CREATE TABLE affiliate_products (

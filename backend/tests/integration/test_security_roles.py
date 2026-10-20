@@ -81,6 +81,8 @@ def test_app_role_can_read_every_app_table(as_app: psycopg.Connection) -> None:
         "SELECT * FROM alembic_version",
         "DELETE FROM clip_reviews",
         "UPDATE clip_reviews SET note = 'x'",
+        "DELETE FROM app_setting_events",
+        "UPDATE app_setting_events SET setting_key = 'x'",
     ],
 )
 def test_app_role_has_no_ddl_or_privileged_access(

@@ -45,6 +45,11 @@ class Conflict(ApiError):
     code = "conflict"
 
 
+class Unprocessable(ApiError):
+    status_code = 422
+    code = "validation_error"
+
+
 class PayloadTooLarge(ApiError):
     status_code = 413
     code = "payload_too_large"

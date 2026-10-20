@@ -23,7 +23,7 @@ clipforge-bot/
 │   ├── migrations/
 │   │   ├── env.py
 │   │   ├── versions/             # thin Alembic revisions, one per SQL file
-│   │   └── sql/                  # 001_initial.sql … 006_affiliate_links.sql (+ *_down.sql)
+│   │   └── sql/                  # 001_initial.sql … 007_affiliate_links.sql (+ *_down.sql)
 │   ├── clipforge/
 │   │   ├── main.py               # FastAPI app  -> clipforge.main:app
 │   │   ├── config.py             # pydantic-settings, env-driven
@@ -165,7 +165,7 @@ Detailed tasks with acceptance criteria and verification live in `tasks/todo.md`
 ### Phase 5 — Review API & Affiliate Backend (M5 backend half)
 - T29 Clips API: list/detail/review with audit trail
 - T30 Settings (validated, audited), AI cost aggregates, dashboard API
-- T31 `006_affiliate_links.sql` + affiliate catalog API with link validation
+- T31 `007_affiliate_links.sql` + affiliate catalog API with link validation
 - T32 Affiliate matcher stage + rematch + toggle gating + events
 - T33 Clip affiliate-link review + caption/description export with disclosure
 

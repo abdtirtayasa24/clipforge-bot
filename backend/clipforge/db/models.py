@@ -300,6 +300,19 @@ class AppSetting(Base):
     updated_at: Mapped[datetime] = updated_at()
 
 
+class AppSettingEvent(Base):
+    __tablename__ = "app_setting_events"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    setting_key: Mapped[str]
+    old_value: Mapped[Any] = mapped_column(JSONB, nullable=True)
+    new_value: Mapped[Any] = mapped_column(JSONB, nullable=True)
+    admin_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("admin_users.id", ondelete="RESTRICT")
+    )
+    created_at: Mapped[datetime] = created_at()
+
+
 class OauthCredential(Base):
     __tablename__ = "oauth_credentials"
 

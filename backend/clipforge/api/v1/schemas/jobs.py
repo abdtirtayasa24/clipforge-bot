@@ -44,9 +44,13 @@ class CostOut(BaseModel):
     estimated: str
 
 
+def decimal_text(value: Decimal) -> str:
+    return f"{value.normalize():f}"
+
+
 def cost_lines(costs: Mapping[str, Decimal]) -> list[CostOut]:
     return [
-        CostOut(currency=currency, estimated=f"{total.normalize():f}")
+        CostOut(currency=currency, estimated=decimal_text(total))
         for currency, total in costs.items()
     ]
 

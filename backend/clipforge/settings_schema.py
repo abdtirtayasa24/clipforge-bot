@@ -1,18 +1,34 @@
 """Typed tunable settings and the per-job snapshot taken at claim (ADR-026, ADR-024)."""
 
+import re
 from decimal import Decimal
 from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clipforge.db.models import AppSetting
 from clipforge.discovery.service import DiscoverySettings
 from clipforge.queue.errors import PermanentError
+from clipforge.security.url_guard import is_youtube_host
 
 QuotaReset = Literal["pacific_midnight", "utc_midnight"]
 ModelRole = Literal["transcription", "analysis", "rerank", "analysis_fallback", "embedding"]
+
+_HOST_LABEL = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$")
+
+
+def download_domain(entry: str) -> str:
+    """A lowercase hostname or `*.suffix`; IPs, schemes, ports, paths and YouTube are refused."""
+    entry = entry.strip().lower().rstrip(".")
+    host = entry.removeprefix("*.")
+    labels = host.split(".")
+    if len(labels) < 2 or labels[-1].isdigit() or not all(map(_HOST_LABEL.match, labels)):
+        raise ValueError("entries must be a hostname or *.suffix, without scheme, port or path")
+    if is_youtube_host(host):
+        raise ValueError("YouTube and Google video hosts cannot be permitted download domains")
+    return entry
 
 
 class ModelSelection(BaseModel):
@@ -47,11 +63,24 @@ class SettingsSchema(BaseModel):
     discovery: DiscoverySettings = Field(default_factory=DiscoverySettings)
     models: ModelSelection = Field(default_factory=ModelSelection)
 
+    @field_validator("permitted_download_domains")
+    @classmethod
+    def _download_domains(cls, entries: list[str]) -> list[str]:
+        return [download_domain(entry) for entry in entries]
+
     @model_validator(mode="after")
     def _clip_range(self) -> Self:
         if self.clip_min_s >= self.clip_max_s:
             raise ValueError("clip_min_s must be below clip_max_s")
         return self
+
+
+class AdminSettings(SettingsSchema):
+    """What an administrator may set: the spec's bounds, tighter than stored jobs tolerate."""
+
+    clip_min_s: float = Field(default=20, ge=20, le=60)
+    clip_max_s: float = Field(default=60, ge=20, le=60)
+    max_overlap: float = Field(default=0.2, ge=0, le=0.2)
 
 
 class PriceSnapshot(BaseModel):

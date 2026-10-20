@@ -1226,6 +1226,103 @@
         }
       }
     },
+    "/api/v1/settings": {
+      "get": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Get Settings",
+        "operationId": "get_settings_api_v1_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSettings"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "settings"
+        ],
+        "summary": "Patch Settings",
+        "operationId": "patch_settings_api_v1_settings_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSettings"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": [
+          "dashboard"
+        ],
+        "summary": "Get Dashboard",
+        "description": "A fixed handful of statements regardless of data size.",
+        "operationId": "get_dashboard_api_v1_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOut"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/ai/providers": {
       "get": {
         "tags": [
@@ -1390,6 +1487,98 @@
   },
   "components": {
     "schemas": {
+      "AdminSettings": {
+        "properties": {
+          "min_score": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Min Score",
+            "default": 75
+          },
+          "clip_min_s": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 20.0,
+            "title": "Clip Min S",
+            "default": 20
+          },
+          "clip_max_s": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 20.0,
+            "title": "Clip Max S",
+            "default": 60
+          },
+          "max_clips": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Max Clips",
+            "default": 3
+          },
+          "max_overlap": {
+            "type": "number",
+            "maximum": 0.2,
+            "minimum": 0.0,
+            "title": "Max Overlap",
+            "default": 0.2
+          },
+          "audio_chunk_minutes": {
+            "type": "integer",
+            "maximum": 28.0,
+            "minimum": 1.0,
+            "title": "Audio Chunk Minutes",
+            "default": 20
+          },
+          "reserved_disk_bytes": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Reserved Disk Bytes",
+            "default": 5368709120
+          },
+          "permitted_download_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Permitted Download Domains"
+          },
+          "affiliate_links_enabled": {
+            "type": "boolean",
+            "title": "Affiliate Links Enabled",
+            "default": false
+          },
+          "affiliate_min_relevance": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Affiliate Min Relevance",
+            "default": 0.7
+          },
+          "affiliate_disclosure_text": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Affiliate Disclosure Text",
+            "default": "Affiliate link — I may earn a commission from qualifying purchases."
+          },
+          "telegram_notifications_enabled": {
+            "type": "boolean",
+            "title": "Telegram Notifications Enabled",
+            "default": true
+          },
+          "discovery": {
+            "$ref": "#/components/schemas/DiscoverySettings"
+          },
+          "models": {
+            "$ref": "#/components/schemas/ModelSelection"
+          }
+        },
+        "type": "object",
+        "title": "AdminSettings",
+        "description": "What an administrator may set: the spec's bounds, tighter than stored jobs tolerate."
+      },
       "ClipArtifactOut": {
         "properties": {
           "id": {
@@ -1995,6 +2184,273 @@
         ],
         "title": "CostOut"
       },
+      "CostWindow": {
+        "properties": {
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/CostOut"
+            },
+            "type": "array",
+            "title": "Totals"
+          },
+          "by_day": {
+            "items": {
+              "$ref": "#/components/schemas/DayCost"
+            },
+            "type": "array",
+            "title": "By Day"
+          },
+          "by_model": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCost"
+            },
+            "type": "array",
+            "title": "By Model"
+          },
+          "by_stage": {
+            "items": {
+              "$ref": "#/components/schemas/StageCost"
+            },
+            "type": "array",
+            "title": "By Stage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "totals",
+          "by_day",
+          "by_model",
+          "by_stage"
+        ],
+        "title": "CostWindow"
+      },
+      "DashboardCosts": {
+        "properties": {
+          "last_7_days": {
+            "$ref": "#/components/schemas/CostWindow"
+          },
+          "last_30_days": {
+            "$ref": "#/components/schemas/CostWindow"
+          },
+          "average_per_completed_job": {
+            "items": {
+              "$ref": "#/components/schemas/CostOut"
+            },
+            "type": "array",
+            "title": "Average Per Completed Job"
+          },
+          "completed_jobs": {
+            "type": "integer",
+            "title": "Completed Jobs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "last_7_days",
+          "last_30_days",
+          "average_per_completed_job",
+          "completed_jobs"
+        ],
+        "title": "DashboardCosts",
+        "description": "Estimated AI cost (ADR-024) from `provider_usage`; days are UTC."
+      },
+      "DashboardOut": {
+        "properties": {
+          "jobs_by_status": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Jobs By Status"
+          },
+          "clips_awaiting_review": {
+            "type": "integer",
+            "title": "Clips Awaiting Review"
+          },
+          "last_discovery_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Discovery Run At"
+          },
+          "disk_free_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disk Free Bytes"
+          },
+          "costs": {
+            "$ref": "#/components/schemas/DashboardCosts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobs_by_status",
+          "clips_awaiting_review",
+          "last_discovery_run_at",
+          "disk_free_bytes",
+          "costs"
+        ],
+        "title": "DashboardOut"
+      },
+      "DayCost": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "estimated": {
+            "type": "string",
+            "title": "Estimated"
+          },
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "estimated",
+          "day"
+        ],
+        "title": "DayCost"
+      },
+      "DiscoveryPatch": {
+        "properties": {
+          "region_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region Code"
+          },
+          "top_categories": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Categories"
+          },
+          "chart_pages": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chart Pages"
+          },
+          "per_category_results": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Category Results"
+          },
+          "max_new_eligible_per_run": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max New Eligible Per Run"
+          },
+          "excluded_category_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Excluded Category Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DiscoveryPatch"
+      },
+      "DiscoverySettings": {
+        "properties": {
+          "region_code": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "title": "Region Code",
+            "default": "ID"
+          },
+          "top_categories": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Top Categories",
+            "default": 5
+          },
+          "chart_pages": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Chart Pages",
+            "default": 4
+          },
+          "per_category_results": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Per Category Results",
+            "default": 50
+          },
+          "max_new_eligible_per_run": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Max New Eligible Per Run",
+            "default": 20
+          },
+          "excluded_category_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded Category Ids"
+          }
+        },
+        "type": "object",
+        "title": "DiscoverySettings"
+      },
       "DriveStatus": {
         "properties": {
           "status": {
@@ -2485,6 +2941,135 @@
         ],
         "title": "MediaRegistration"
       },
+      "ModelCost": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "estimated": {
+            "type": "string",
+            "title": "Estimated"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "estimated",
+          "provider",
+          "model"
+        ],
+        "title": "ModelCost"
+      },
+      "ModelSelection": {
+        "properties": {
+          "transcription": {
+            "type": "string",
+            "title": "Transcription",
+            "default": "gemini-3.5-transcribe"
+          },
+          "analysis": {
+            "type": "string",
+            "title": "Analysis",
+            "default": "gemini-3.5-flash-lite"
+          },
+          "rerank": {
+            "type": "string",
+            "title": "Rerank",
+            "default": "gemini-3-flash-preview"
+          },
+          "analysis_fallback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Fallback",
+            "default": "openrouter:nvidia/nemotron-3.5-super-vl:free"
+          },
+          "embedding": {
+            "type": "string",
+            "title": "Embedding",
+            "default": "gemini-embedding-2"
+          }
+        },
+        "type": "object",
+        "title": "ModelSelection",
+        "description": "Selected model per role; a value is `model` or `provider:model`."
+      },
+      "ModelsPatch": {
+        "properties": {
+          "transcription": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcription"
+          },
+          "analysis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis"
+          },
+          "rerank": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rerank"
+          },
+          "analysis_fallback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Fallback"
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ModelsPatch"
+      },
       "PermissionEvidence": {
         "properties": {
           "type": {
@@ -2623,6 +3208,114 @@
         ],
         "title": "ProviderOut"
       },
+      "ProviderPatch": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "rpm_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rpm Limit"
+          },
+          "rpd_limit": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rpd Limit"
+          },
+          "price_input_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Input Per Mtok"
+          },
+          "price_output_per_mtok": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Output Per Mtok"
+          },
+          "price_per_audio_minute": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Per Audio Minute"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{3}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ProviderPatch",
+        "description": "Prices and quota limits of one `ai_provider_configs` row; null limit = unlimited."
+      },
       "QuotaOut": {
         "properties": {
           "rpm_limit": {
@@ -2689,6 +3382,177 @@
           "expires_at"
         ],
         "title": "SessionResponse"
+      },
+      "SettingsPatch": {
+        "properties": {
+          "min_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Score"
+          },
+          "clip_min_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clip Min S"
+          },
+          "clip_max_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clip Max S"
+          },
+          "max_clips": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Clips"
+          },
+          "max_overlap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Overlap"
+          },
+          "audio_chunk_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Chunk Minutes"
+          },
+          "reserved_disk_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reserved Disk Bytes"
+          },
+          "permitted_download_domains": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permitted Download Domains"
+          },
+          "affiliate_links_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affiliate Links Enabled"
+          },
+          "affiliate_min_relevance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affiliate Min Relevance"
+          },
+          "affiliate_disclosure_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affiliate Disclosure Text"
+          },
+          "telegram_notifications_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Notifications Enabled"
+          },
+          "discovery": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DiscoveryPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "models": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelsPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderPatch"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Providers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SettingsPatch",
+        "description": "Only the keys sent are changed; bounds are enforced on the merged result."
       },
       "SourceCreate": {
         "properties": {
@@ -2875,6 +3739,36 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SourceUpdate"
+      },
+      "StageCost": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "estimated": {
+            "type": "string",
+            "title": "Estimated"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "estimated",
+          "stage"
+        ],
+        "title": "StageCost"
       },
       "TelegramAuthRequest": {
         "properties": {
