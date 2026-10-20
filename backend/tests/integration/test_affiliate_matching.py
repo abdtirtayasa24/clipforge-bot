@@ -272,6 +272,7 @@ def test_rematch_replaces_suggestions_and_keeps_reviewed_links(
         )
     execute(database_url, "UPDATE affiliate_products SET active = false WHERE id = %s", stale)
     seed_product(database_url, "New shoes", ["running shoes"])
+    seed_product(database_url, "Desk lamp", ["lighting"])
 
     response = client.post(f"/api/v1/clips/{clip}/affiliate-links/rematch")
 
@@ -283,3 +284,16 @@ def test_rematch_replaces_suggestions_and_keeps_reviewed_links(
         ("New shoes", "suggested"),
     ]
     assert client.post(f"/api/v1/clips/{uuid.uuid4()}/affiliate-links/rematch").status_code == 404
+
+
+def test_rematch_without_a_match_suggests_nothing(client: TestClient, database_url: str) -> None:
+    enable(database_url)
+    clip, _ = seed_clip(database_url)
+    seed_product(database_url, "Desk lamp", ["lighting"])
+
+    response = client.post(f"/api/v1/clips/{clip}/affiliate-links/rematch")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["items"] == []
+    caption = client.get(f"/api/v1/clips/{clip}").json()["caption"]
+    assert caption["links"] == [] and "https://" not in caption["text"]

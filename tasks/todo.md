@@ -416,8 +416,8 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Size:** M
 
 ### Checkpoint: API complete
-- [ ] Every endpoint in the spec API table implemented and admin-guarded (route-table test asserts this)
-- [ ] Spec affiliate acceptance rules pass as API tests; OpenAPI exported
+- [x] Every endpoint in the spec API table implemented and admin-guarded (route-table test asserts this)
+- [x] Spec affiliate acceptance rules pass as API tests; OpenAPI exported
 
 ---
 
