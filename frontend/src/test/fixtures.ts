@@ -1,4 +1,4 @@
-import type { DashboardOut, JobDetail, JobOut, VideoOut } from "../api/types";
+import type { ClipDetail, ClipOut, DashboardOut, JobDetail, JobOut, VideoOut } from "../api/types";
 
 export function jobFixture(overrides: Partial<JobOut> = {}): JobOut {
   return {
@@ -92,6 +92,43 @@ export function videoFixture(overrides: Partial<VideoOut> = {}): VideoOut {
     rights_status: "unverified",
     source_status: "awaiting_source",
     discovered_at: "2026-10-21T06:00:00Z",
+    ...overrides,
+  };
+}
+
+export function clipFixture(overrides: Partial<ClipOut> = {}): ClipOut {
+  return {
+    id: "55555555-5555-5555-5555-555555555555",
+    job_id: "11111111-1111-1111-1111-111111111111",
+    video_id: "44444444-4444-4444-4444-444444444444",
+    video_title: "Long podcast episode",
+    start_ms: 754_000,
+    end_ms: 799_500,
+    review_status: "pending_review",
+    title: "Why sleep beats caffeine",
+    title_override: null,
+    effective_title: "Why sleep beats caffeine",
+    total_score: 82.5,
+    rank: 1,
+    drive_file_id: "drive-1",
+    drive_web_view_link: "https://drive.google.com/file/d/drive-1/view",
+    created_at: "2026-10-21T11:00:00Z",
+    updated_at: "2026-10-21T11:00:00Z",
+    ...overrides,
+  };
+}
+
+export function clipDetailFixture(overrides: Partial<ClipDetail> = {}): ClipDetail {
+  return {
+    ...clipFixture(),
+    hook_line: "You are drinking coffee wrong.",
+    explanation: "Strong hook and a complete argument.",
+    transcript_excerpt: "So the thing about caffeine is...",
+    scores: { hook: 90, emotion: 70, clarity: 85, relevance: 80, visual: 60, completeness: 88, total: 82.5 },
+    artifacts: [],
+    reviews: [],
+    job_costs: [{ currency: "USD", estimated: "0.012" }],
+    caption: { text: "Why sleep beats caffeine\n\nYou are drinking coffee wrong.", links: [], disclosure: null },
     ...overrides,
   };
 }

@@ -3,6 +3,8 @@ import { type ReactNode, useState } from "react";
 import { NavLink, Route, Routes } from "react-router";
 import { ApiError } from "./api/client";
 import { useTelegramAuth } from "./auth/telegram";
+import ClipDetail from "./pages/ClipDetail";
+import Clips from "./pages/Clips";
 import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
 import Jobs from "./pages/Jobs";
@@ -13,6 +15,7 @@ import { useTelegramBackButton } from "./telegram/webApp";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard" },
+  { to: "/clips", label: "Clips" },
   { to: "/jobs", label: "Jobs" },
   { to: "/videos", label: "Videos" },
   { to: "/sources", label: "Sources" },
@@ -53,6 +56,8 @@ function AppShell() {
       <main className="page">
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/clips" element={<Clips />} />
+          <Route path="/clips/:clipId" element={<ClipDetail />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:jobId" element={<JobDetail />} />
           <Route path="/videos" element={<Videos />} />

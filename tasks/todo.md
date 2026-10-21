@@ -449,9 +449,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `frontend/src/pages/{Sources,Videos,VideoDetail}.tsx`, `frontend/src/upload/{chunkedUpload.ts,hashWorker.ts}`
 **Size:** L (split upload into its own PR if it grows)
 
-### - [ ] T37: Clip preview & review
+### - [x] T37: Clip preview & review
 **Description:** Clip list (awaiting review first, showing effective titles), detail with "Open in Google Drive" button (`Telegram.WebApp.openLink(webViewLink)`, ADR-029; hint that the admin must be signed in to the uploading Google account), generated title with inline edit (sent as `title_override` on review), hook line, scores breakdown + explanation, transcript excerpt, approve/reject with note.
-**Acceptance criteria:** [ ] Review persists and list updates; [ ] edited title shown everywhere, original visible as "AI suggestion"; [ ] "Open in Google Drive" opens the clip externally on Telegram iOS and Android
+**Acceptance criteria:** [x] Review persists and list updates; [x] edited title shown everywhere, original visible as "AI suggestion"; [ ] "Open in Google Drive" opens the clip externally on Telegram iOS and Android *(uses `Telegram.WebApp.openLink`; on-device check pending)*
 **Verification:** standard frontend checks; manual on device
 **Dependencies:** T35
 **Files:** `frontend/src/pages/{Clips,ClipDetail}.tsx`, `frontend/src/api/clips.ts`

@@ -242,3 +242,19 @@ dd {
   text-decoration: none;
   display: block;
 }
+
+blockquote {
+  margin: 8px 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--button);
+}
+
+fieldset {
+  border: 1px solid var(--separator);
+  border-radius: 8px;
+  margin: 0 0 10px;
+}
+
+progress {
+  width: 100%;
+}
