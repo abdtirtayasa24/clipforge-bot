@@ -1,11 +1,13 @@
 import asyncio
 import uuid
+from collections.abc import AsyncIterator
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert
 
-from clipforge.db.models import ProcessingJob
+from clipforge.db.models import AppSetting, ProcessingJob
 from clipforge.db.session import create_engine, create_session_factory
 from clipforge.queue.errors import (
     ActiveJobExists,
@@ -15,7 +17,7 @@ from clipforge.queue.errors import (
     PermanentError,
     TransientError,
 )
-from clipforge.queue.repository import LEASE_DURATION, JobQueue
+from clipforge.queue.repository import DAILY_JOB_CAP_KEY, LEASE_DURATION, JobQueue
 from tests.clock import FakeClock
 from tests.jobs import (
     Sessions,
@@ -342,3 +344,37 @@ async def test_attaching_a_source_queues_waiting_jobs(
     assert (await claim(queue)).media_asset_id == asset_id
     assert await queue.attach_source(video_id, asset_id) == 0
     assert (await event_types(sessions, job.id))[:2] == ["created", "source_attached"]
+
+
+@pytest.fixture
+async def daily_cap(sessions: Sessions, clock: FakeClock) -> AsyncIterator[None]:
+    """A cap of 2 jobs per 24 h, on a clock far from jobs that other tests started."""
+    clock.advance(timedelta(days=3650))
+    async with sessions.begin() as session:
+        await session.execute(
+            insert(AppSetting)
+            .values(key=DAILY_JOB_CAP_KEY, value=2)
+            .on_conflict_do_update(index_elements=["key"], set_={"value": 2})
+        )
+    yield
+    async with sessions.begin() as session:
+        await session.execute(delete(AppSetting).where(AppSetting.key == DAILY_JOB_CAP_KEY))
+
+
+@pytest.mark.usefixtures("daily_cap")
+async def test_daily_cap_holds_new_jobs_but_lets_started_ones_finish(
+    queue: JobQueue, sessions: Sessions, clock: FakeClock
+) -> None:
+    job_ids = [await make_queued_job(queue, sessions) for _ in range(3)]
+    done, retrying = await claim(queue), await claim(queue)
+    await queue.complete(done.lease)
+    await queue.schedule_retry(retrying.lease, TransientError("timeout"))
+    [waiting] = set(job_ids) - {done.lease.job_id, retrying.lease.job_id}
+
+    clock.advance(timedelta(hours=1))
+    assert (await claim(queue)).lease.job_id == retrying.lease.job_id, "started jobs may retry"
+    assert await queue.claim_next("worker-a") is None
+    assert (await load_job(sessions, waiting)).status == "queued"
+
+    clock.advance(timedelta(hours=23))
+    assert (await claim(queue)).lease.job_id == waiting

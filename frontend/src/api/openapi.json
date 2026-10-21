@@ -2078,6 +2078,19 @@
             "title": "Reserved Disk Bytes",
             "default": 5368709120
           },
+          "daily_job_cap": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Job Cap"
+          },
           "permitted_download_domains": {
             "items": {
               "type": "string"
@@ -4567,6 +4580,17 @@
               }
             ],
             "title": "Reserved Disk Bytes"
+          },
+          "daily_job_cap": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Job Cap"
           },
           "permitted_download_domains": {
             "anyOf": [

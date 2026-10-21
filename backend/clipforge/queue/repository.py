@@ -14,6 +14,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from clipforge.db.app_settings import get_setting
 from clipforge.db.models import JobEvent, ProcessingJob, ProviderUsage
 from clipforge.logging import redact
 from clipforge.queue.backoff import retry_delay
@@ -31,6 +32,8 @@ from clipforge.queue.errors import (
 logger = logging.getLogger(__name__)
 
 LEASE_DURATION = timedelta(minutes=5)
+DAILY_JOB_CAP_KEY = "daily_job_cap"
+DAILY_CAP_WINDOW = timedelta(hours=24)
 ACTIVE_STATUSES = ("awaiting_source", "queued", "running", "retry_scheduled")
 LAST_ERROR_MAX_CHARS = 2000
 _ONE_ACTIVE_JOB_PER_VIDEO = "processing_jobs_one_active_per_video"
@@ -139,6 +142,9 @@ class JobQueue:
             and_(ProcessingJob.status == "running", ProcessingJob.lease_expires_at < now),
         )
         async with self._sessions.begin() as session:
+            if await self._daily_cap_reached(session, now):
+                # Started jobs still finish; new ones wait in the queue until the window frees up.
+                eligible = and_(eligible, ProcessingJob.started_at.is_not(None))
             while True:
                 job = await session.scalar(
                     select(ProcessingJob)
@@ -155,6 +161,19 @@ class JobQueue:
                     await session.flush()
                     continue
                 return await self._lease(session, job, worker_id, now, reclaimed=reclaimed)
+
+    @staticmethod
+    async def _daily_cap_reached(session: AsyncSession, now: datetime) -> bool:
+        """`daily_job_cap` limits jobs started in the last 24 hours; unset means no limit."""
+        cap = await get_setting(session, DAILY_JOB_CAP_KEY)
+        if not isinstance(cap, int):
+            return False
+        started = await session.scalar(
+            select(func.count())
+            .select_from(ProcessingJob)
+            .where(ProcessingJob.started_at > now - DAILY_CAP_WINDOW)
+        )
+        return (started or 0) >= cap
 
     def _fail_exhausted(self, session: AsyncSession, job: ProcessingJob, now: datetime) -> None:
         message = "lease expired on the last attempt"

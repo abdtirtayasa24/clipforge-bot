@@ -63,6 +63,7 @@ class SettingsPatch(BaseModel):
     max_overlap: float | None = None
     audio_chunk_minutes: int | None = None
     reserved_disk_bytes: int | None = None
+    daily_job_cap: int | None = None
     permitted_download_domains: list[str] | None = None
     affiliate_links_enabled: bool | None = None
     affiliate_min_relevance: float | None = None

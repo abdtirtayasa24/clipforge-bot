@@ -56,6 +56,8 @@ class SettingsSchema(BaseModel):
     max_overlap: float = Field(default=0.2, ge=0, le=1)
     audio_chunk_minutes: int = Field(default=20, ge=1, le=28)
     reserved_disk_bytes: int = Field(default=5 * 1024**3, ge=0)
+    # Jobs started per rolling 24 hours (T42 benchmark); None means no limit.
+    daily_job_cap: int | None = Field(default=None, ge=1, le=100)
     permitted_download_domains: list[str] = Field(default_factory=list)
     affiliate_links_enabled: bool = False
     affiliate_min_relevance: float = Field(default=0.7, ge=0, le=1)

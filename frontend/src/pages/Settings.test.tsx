@@ -104,6 +104,23 @@ describe("Settings sections", () => {
     expect(await screen.findByText("Settings saved.")).toBeInTheDocument();
   });
 
+  it("sets and clears the daily job cap", async () => {
+    const calls = server();
+    renderSection("clips");
+
+    const cap = await screen.findByLabelText("Daily job cap (1–100, blank = no limit)");
+    expect(cap).toHaveValue(null);
+    await userEvent.type(cap, "10");
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+    expect(await screen.findByText("Settings saved.")).toBeInTheDocument();
+    // The form re-renders from the saved settings, so look the field up again.
+    await userEvent.clear(screen.getByLabelText("Daily job cap (1–100, blank = no limit)"));
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    const patches = calls.filter((c) => c.method === "PATCH").map((c) => c.body);
+    expect(patches).toEqual([{ daily_job_cap: 10 }, { daily_job_cap: null }]);
+  });
+
   it("turns Telegram notifications off", async () => {
     const calls = server();
     renderSection("notifications");

@@ -338,6 +338,7 @@ export interface AdminSettings {
   max_overlap: number;
   audio_chunk_minutes: number;
   reserved_disk_bytes: number;
+  daily_job_cap: number | null;
   permitted_download_domains: string[];
   affiliate_links_enabled: boolean;
   affiliate_min_relevance: number;

@@ -104,10 +104,9 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Authorization: Bearer forged' \
 # 4. Log audit after a full day of use (login, Drive connect, at least one completed job).
 #    Each secret value is read from the env file, never typed; prints only the variable name
 #    and a match count.
-sudo bash -c 'set -a; . /etc/clipforge-bot/backend.env; set +a
-for name in CLIPFORGE_TELEGRAM_BOT_TOKEN CLIPFORGE_SESSION_SECRET CLIPFORGE_GOOGLE_CLIENT_SECRET \
+sudo bash -c 'for name in CLIPFORGE_TELEGRAM_BOT_TOKEN CLIPFORGE_SESSION_SECRET CLIPFORGE_GOOGLE_CLIENT_SECRET \
             CLIPFORGE_TOKEN_ENCRYPTION_KEY YOUTUBE_API_KEY GEMINI_API_KEY OPENROUTER_API_KEY; do
-  value="${!name}"; [ -n "$value" ] || continue
+  value=$(grep -m1 "^$name=" /etc/clipforge-bot/backend.env | cut -d= -f2-); [ -n "$value" ] || continue
   count=$(journalctl -u "clipforge-*" --since "-2 days" -o cat | grep -cF -- "$value")
   echo "$name: $count"
 done

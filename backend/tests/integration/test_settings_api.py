@@ -230,3 +230,16 @@ def test_settings_require_admin(database_url: str) -> None:
         anonymous.headers.pop("Authorization")
         assert anonymous.get(SETTINGS).status_code == 401
         assert anonymous.patch(SETTINGS, json={"min_score": 80}).status_code == 401
+
+
+def test_daily_job_cap_is_off_by_default_and_can_be_set_or_cleared(
+    client: TestClient, database_url: str
+) -> None:
+    assert client.get(SETTINGS).json()["daily_job_cap"] is None
+
+    assert client.patch(SETTINGS, json={"daily_job_cap": 10}).json()["daily_job_cap"] == 10
+    assert query(database_url, "SELECT value FROM app_settings WHERE key = 'daily_job_cap'") == [
+        (10,)
+    ]
+    assert client.patch(SETTINGS, json={"daily_job_cap": 0}).status_code == 422
+    assert client.patch(SETTINGS, json={"daily_job_cap": None}).json()["daily_job_cap"] is None

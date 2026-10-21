@@ -499,7 +499,7 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ### - [ ] T42: Resource benchmark + metrics
 **Description:** Script to run N authorized videos and collect per-stage latency, CPU, peak RSS, peak disk, upload duration, AI cost from `job_events`/`provider_usage`/systemd accounting; report sustainable videos/day (5/10/20).
-**Acceptance criteria:** [ ] Report produced with numbers for at least 5 real videos; [ ] recommended daily cap set in settings
+**Acceptance criteria:** [ ] Report produced with numbers for at least 5 real videos; [ ] recommended daily cap set in settings *(tool `clipforge.tools.benchmark_report` and the `daily_job_cap` setting (API + Mini App) are done and tested; both criteria need the VPS run in `docs/benchmark-report.md`)*
 **Verification:** `python -m clipforge.tools.benchmark_report`; review `docs/benchmark-report.md`
 **Dependencies:** T40
 **Files:** `backend/clipforge/tools/benchmark_report.py`, `docs/benchmark-report.md`

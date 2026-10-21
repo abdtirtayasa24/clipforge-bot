@@ -71,6 +71,7 @@ const DISCOVERY_FIELDS: { key: DiscoveryNumberKey; label: string; min: number; m
 
 interface Draft {
   numbers: Record<NumberField["key"], string>;
+  dailyCap: string;
   notifications: boolean;
   domains: string;
   region: string;
@@ -88,6 +89,7 @@ function toDraft(settings: AdminSettings): Draft {
       max_clips: String(settings.max_clips),
       max_overlap: String(settings.max_overlap),
     },
+    dailyCap: settings.daily_job_cap === null ? "" : String(settings.daily_job_cap),
     notifications: settings.telegram_notifications_enabled,
     domains: settings.permitted_download_domains.join("\n"),
     region: settings.discovery.region_code,
@@ -112,6 +114,10 @@ function buildPatch(settings: AdminSettings, draft: Draft): SettingsPatch {
     if (value !== settings[field.key]) {
       patch[field.key] = value;
     }
+  }
+  const dailyCap = draft.dailyCap.trim() === "" ? null : Number(draft.dailyCap);
+  if (dailyCap !== settings.daily_job_cap) {
+    patch.daily_job_cap = dailyCap;
   }
   if (draft.notifications !== settings.telegram_notifications_enabled) {
     patch.telegram_notifications_enabled = draft.notifications;
@@ -178,7 +184,7 @@ interface SectionInfo {
 
 const SECTIONS: Record<FormSection | "drive", SectionInfo> = {
   models: { title: "AI providers", subtitle: "Models, prices and quotas", icon: "sparkles", tone: "purple" },
-  clips: { title: "Clip generation", subtitle: "Duration, quality and scoring", icon: "scissors", tone: "blue" },
+  clips: { title: "Clip generation", subtitle: "Duration, scoring and daily cap", icon: "scissors", tone: "blue" },
   discovery: { title: "YouTube discovery", subtitle: "Region, categories and limits", icon: "trending", tone: "red" },
   downloads: { title: "Downloads", subtitle: "Permitted download domains", icon: "download", tone: "green" },
   drive: { title: "Google Drive", subtitle: "Clip storage", icon: "cloud", tone: "blue" },
@@ -290,6 +296,21 @@ function SettingsForm({
               <FieldError errors={errors} name={field.key} />
             </div>
           ))}
+          <div>
+            <label>
+              <span>Daily job cap (1–100, blank = no limit)</span>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                step={1}
+                value={draft.dailyCap}
+                onChange={(event) => setDraft({ ...draft, dailyCap: event.target.value })}
+              />
+            </label>
+            <p className="hint">New jobs beyond the cap wait until a slot frees up within 24 hours.</p>
+            <FieldError errors={errors} name="daily_job_cap" />
+          </div>
           <FieldError errors={errors} name="" />
         </Section>
       )}

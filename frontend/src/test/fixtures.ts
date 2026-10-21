@@ -185,6 +185,7 @@ export function settingsFixture(overrides: Partial<AdminSettings> = {}): AdminSe
     max_overlap: 0.2,
     audio_chunk_minutes: 20,
     reserved_disk_bytes: 5368709120,
+    daily_job_cap: null,
     permitted_download_domains: ["cdn.example.com"],
     affiliate_links_enabled: false,
     affiliate_min_relevance: 0.7,
