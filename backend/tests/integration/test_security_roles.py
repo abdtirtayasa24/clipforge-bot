@@ -7,6 +7,8 @@ from psycopg import sql
 
 from tests.db import libpq_url
 
+pytestmark = pytest.mark.security
+
 APP_ROLE = "clipforge_app"
 APP_LOGIN_ROLE = "clipforge_app_login_test"
 

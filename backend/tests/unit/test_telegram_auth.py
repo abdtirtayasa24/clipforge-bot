@@ -13,6 +13,8 @@ from clipforge.auth.session import (
 from clipforge.auth.telegram import InvalidInitData, verify_init_data
 from tests.telegram import BOT_TOKEN, sign_init_data
 
+pytestmark = pytest.mark.security
+
 NOW = datetime(2026, 10, 19, 12, 0, tzinfo=UTC)
 MAX_AGE = timedelta(hours=1)
 SECRET = "s" * 32

@@ -80,6 +80,9 @@ require_env_file() {
     if grep -q "CHANGE_ME" "${target}"; then
         fail "${target} still contains CHANGE_ME placeholders"
     fi
+    # Editing or copying the file can widen its permissions; secrets stay unreadable to others.
+    chown "root:${owner}" "${target}"
+    chmod "${mode}" "${target}"
 }
 
 sync_backend() {

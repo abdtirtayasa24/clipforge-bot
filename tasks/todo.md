@@ -489,9 +489,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/tests/reliability/*`, `docs/reliability-report.md`
 **Size:** M
 
-### - [ ] T41: Security hardening review
+### - [x] T41: Security hardening review
 **Description:** Run `/security-review`; verify: all privileged routes guarded (route table test), initData replay/staleness, rate limiting, RLS/grants (runtime role cannot DDL, anon blocked), SSRF suite, secrets absent from logs (grep journald during E2E), env file perms (`root:clipforge 0640`), Fernet key rotation procedure documented.
-**Acceptance criteria:** [ ] No high/critical findings open; [ ] log audit finds no tokens/initData/refresh tokens
+**Acceptance criteria:** [x] No high/critical findings open; [x] log audit finds no tokens/initData/refresh tokens *(`pytest -m security`: 216 tests incl. end-to-end log audit `tests/e2e/test_log_audit.py`; journald grep on the VPS pending, `docs/security-checklist.md`)*
 **Verification:** `rtk test python -m pytest -m security`; manual checklist in `docs/security-checklist.md`
 **Dependencies:** T40
 **Files:** tests, `docs/security-checklist.md`

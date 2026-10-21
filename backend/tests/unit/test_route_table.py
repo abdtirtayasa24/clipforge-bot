@@ -3,8 +3,12 @@
 import re
 from pathlib import Path
 
+import pytest
+
 from clipforge.config import Settings
 from clipforge.main import API_PREFIX, create_app
+
+pytestmark = pytest.mark.security
 
 SPEC = Path(__file__).resolve().parents[3] / "docs" / "SPEC-001-ClipForge-Bot.md"
 _ROW = re.compile(r"^\| (?P<methods>[A-Z/]+) \| `(?P<path>/[^`]*)` \|")

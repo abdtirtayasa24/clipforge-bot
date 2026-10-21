@@ -7,6 +7,8 @@ import pytest
 
 from clipforge.logging import REDACTED, JsonFormatter, configure_logging, log_context, redact
 
+pytestmark = pytest.mark.security
+
 
 @pytest.fixture
 def log_stream() -> Iterator[io.StringIO]:

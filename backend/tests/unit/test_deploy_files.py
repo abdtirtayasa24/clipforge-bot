@@ -7,6 +7,8 @@ from pydantic import AliasChoices
 
 from clipforge.config import Settings
 
+pytestmark = pytest.mark.security
+
 DEPLOY_DIR = Path(__file__).resolve().parents[3] / "deploy"
 MIGRATIONS_SQL_DIR = Path(__file__).resolve().parents[2] / "migrations" / "sql"
 SECRET_FIELDS = {"database_url", "telegram_bot_token", "session_secret"}
@@ -137,3 +139,27 @@ def test_install_script_installs_and_enables_the_worker() -> None:
     for name in ("UNITS", "ENABLE_UNITS"):
         line = next(line for line in script.splitlines() if line.startswith(f"{name}="))
         assert "clipforge-worker.service" in line, name
+
+
+def test_install_script_keeps_env_files_private() -> None:
+    script = (DEPLOY_DIR / "install.sh").read_text(encoding="utf-8")
+    body = script.split("require_env_file() {", 1)[1].split("\n}\n", 1)[0]
+
+    assert 'chown "root:${owner}" "${target}"' in body
+    assert 'chmod "${mode}" "${target}"' in body
+    assert 'require_env_file backend.env "${SERVICE_USER}" 0640' in script
+    assert "require_env_file migration.env root 0600" in script
+
+
+def test_nginx_site_sends_security_headers_on_every_response() -> None:
+    conf = (DEPLOY_DIR / "nginx" / "clipforge-bot.conf").read_text(encoding="utf-8")
+    https = conf.split("listen 443", 1)[1]
+    server_level = https.split("location", 1)[0]
+    locations = https.split("location", 1)[1]
+
+    for header in ("Strict-Transport-Security", "X-Content-Type-Options", "Referrer-Policy"):
+        assert f"add_header {header}" in server_level
+    assert "server_tokens off;" in server_level
+    assert "X-Frame-Options" not in server_level.replace("No X-Frame-Options", "")
+    # An add_header inside a location would silently drop the server-level headers there.
+    assert "add_header" not in locations

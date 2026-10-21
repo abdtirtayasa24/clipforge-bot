@@ -18,7 +18,7 @@ from clipforge.ingest import disk
 from clipforge.queue.errors import QuotaDeferred, TransientError
 from tests.db import libpq_url
 from tests.jobs import claim, event_types, load_job
-from tests.reliability.conftest import BOT_TOKEN, PROPOSALS, SEND_URL, Pipeline
+from tests.pipeline import BOT_TOKEN, PROPOSALS, SEND_URL, Pipeline
 
 GIB = 1024**3
 NEXT_DAY = timedelta(days=1)

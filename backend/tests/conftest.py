@@ -20,6 +20,8 @@ from tests.db import alembic_config, libpq_url, with_database
 from tests.fixtures.make_media import make_media
 from tests.jobs import Sessions
 
+pytest_plugins = ["tests.pipeline"]
+
 TEST_DATABASE_URL_ENV = "CLIPFORGE_TEST_DATABASE_URL"
 SUPABASE_API_ROLES = ("anon", "authenticated")
 

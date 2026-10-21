@@ -22,6 +22,8 @@ from tests.db import libpq_url
 from tests.jobs import Sessions, claim, stage_events
 from tests.youtube import MONITORED_CHANNEL
 
+pytestmark = pytest.mark.security
+
 ALLOW = ["media.example.com", "*.cdn.example.com"]
 URL = "https://media.example.com/source.mp4"
 EVIDENCE = {

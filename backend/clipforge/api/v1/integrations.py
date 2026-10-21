@@ -12,7 +12,7 @@ from clipforge.config import Settings
 from clipforge.db.app_settings import get_setting
 from clipforge.db.models import OauthCredential
 from clipforge.queue.errors import TransientError
-from clipforge.security.crypto import DecryptionError, TokenCipher
+from clipforge.security.crypto import TokenCipher
 from clipforge.storage.drive_oauth import (
     FOLDER_KEY,
     FOLDER_NAME,
@@ -111,7 +111,7 @@ async def _connection_status(
         cipher = token_cipher(settings)
         async with httpx.AsyncClient() as http:
             await DriveTokens(sessions, http, client, cipher).access_token()
-    except (DriveAuthExpired, DecryptionError):
+    except DriveAuthExpired:
         return "expired"
     except (TransientError, HTTPException):
         return "unavailable"

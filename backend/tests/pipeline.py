@@ -1,5 +1,5 @@
 """The production pipeline with fake AI providers, an in-memory Drive and a captured Telegram
-chat: each reliability scenario must end recovered or visibly failed, never silently."""
+chat, for end-to-end scenarios (reliability, log audit). Registered in tests/conftest.py."""
 
 import json
 import uuid
@@ -28,7 +28,7 @@ from clipforge.pipeline.stage import Stage
 from clipforge.pipeline.stages.notify import NOTIFICATIONS_KEY, Notifier
 from clipforge.queue.repository import JobQueue
 from clipforge.settings_schema import ProviderSnapshot
-from clipforge.storage.drive import CLIP_ID_PROPERTY, DriveClient
+from clipforge.storage.drive import CLIP_ID_PROPERTY, DriveClient, TokenSource
 from clipforge.storage.drive_oauth import FOLDER_KEY
 from tests.clock import FakeClock
 from tests.db import libpq_url
@@ -93,6 +93,7 @@ class Pipeline:
     queue: JobQueue
     drive: FakeDrive
     telegram: respx.Route
+    router: respx.MockRouter
     http: httpx.AsyncClient
     workspace: Path
     source: Path
@@ -110,8 +111,8 @@ class Pipeline:
             environ={"GEMINI_API_KEY": "test", "OPENROUTER_API_KEY": "test"},
         )
 
-    def drive_client(self) -> DriveClient:
-        return DriveClient(self.http, FakeTokens(), self.sessions)
+    def drive_client(self, tokens: TokenSource | None = None) -> DriveClient:
+        return DriveClient(self.http, tokens or FakeTokens(), self.sessions)
 
     def stages(self, drive: DriveClient | None = None) -> list[Stage]:
         return default_stages(
@@ -217,27 +218,27 @@ def admin_chat(migrated_database_url: str) -> Iterator[int]:
 
 
 @pytest.fixture
-def network() -> Iterator[tuple[FakeDrive, respx.Route]]:
-    """Drive and Telegram are faked; any other outbound request fails the test."""
+def network() -> Iterator[tuple[FakeDrive, respx.Route, respx.MockRouter]]:
+    """Drive and Telegram are faked; any other unrouted outbound request fails the test."""
     drive = FakeDrive()
     with respx.mock(assert_all_called=False) as router:
         router.route(host="www.googleapis.com").mock(side_effect=drive.handle)
         telegram = router.post(SEND_URL).respond(json={"ok": True, "result": {}})
-        yield drive, telegram
+        yield drive, telegram, router
 
 
 @pytest.fixture
 async def pipeline(
     sessions: Sessions,
     clock: FakeClock,
-    network: tuple[FakeDrive, respx.Route],
+    network: tuple[FakeDrive, respx.Route, respx.MockRouter],
     admin_chat: int,
     valid_source: Path,
     tmp_path: Path,
 ) -> AsyncIterator[Pipeline]:
     async with sessions.begin() as session:
         await session.execute(delete(AppSetting).where(AppSetting.key == FOLDER_KEY))
-    drive, telegram = network
+    drive, telegram, router = network
     queue = JobQueue(
         sessions, clock=clock, jitter=lambda: 0.0, snapshot_settings=snapshot_job_settings
     )
@@ -248,6 +249,7 @@ async def pipeline(
             queue=queue,
             drive=drive,
             telegram=telegram,
+            router=router,
             http=http,
             workspace=tmp_path / "workspace",
             source=valid_source,

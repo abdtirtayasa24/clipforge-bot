@@ -15,6 +15,8 @@ from tests.api import SESSION_SECRET, api_settings, client_for
 from tests.db import libpq_url
 from tests.telegram import sign_init_data
 
+pytestmark = pytest.mark.security
+
 AUTH_URL = "/api/v1/auth/telegram"
 PRIVATE_URL = "/api/v1/_test/private"
 

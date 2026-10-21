@@ -4,7 +4,7 @@ import pytest
 
 from clipforge.pipeline.stages import render
 from tests.jobs import claim, event_types, load_job
-from tests.reliability.conftest import Pipeline
+from tests.pipeline import Pipeline
 
 
 async def test_cancel_mid_render_stops_after_the_current_clip(

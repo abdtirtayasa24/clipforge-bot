@@ -17,7 +17,7 @@ from clipforge.storage.drive import DriveClient, RemoteFile
 from tests.db import libpq_url
 from tests.drive import FakeTokens
 from tests.jobs import claim, event_types, load_job
-from tests.reliability.conftest import PROPOSALS, Pipeline
+from tests.pipeline import PROPOSALS, Pipeline
 
 PIPELINE_STAGES = [
     "validated",

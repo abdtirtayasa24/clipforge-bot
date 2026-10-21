@@ -12,9 +12,21 @@ from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 
 from clipforge.security.crypto import TokenCipher
-from clipforge.storage.drive_oauth import ABOUT_URL, AUTH_URL, DRIVE_SCOPE, STATE_KEY, TOKEN_URL
+from clipforge.storage.drive_oauth import (
+    ABOUT_URL,
+    AUTH_URL,
+    DRIVE_SCOPE,
+    STATE_KEY,
+    TOKEN_URL,
+    DriveAuthExpired,
+    DriveTokens,
+    OAuthClient,
+)
 from tests.api import admin_client
 from tests.db import libpq_url
+from tests.jobs import Sessions
+
+pytestmark = pytest.mark.security
 
 CONNECT = "/api/v1/integrations/drive/connect"
 CALLBACK = "/api/v1/integrations/drive/callback"
@@ -196,3 +208,36 @@ def test_status_reports_a_revoked_refresh_token_as_expired(
     google.post(TOKEN_URL).respond(400, json={"error": "invalid_grant"})
 
     assert client.get(STATUS).json()["status"] == "expired"
+
+
+def test_status_after_an_encryption_key_change_is_expired(
+    client: TestClient, google: respx.MockRouter, migrated_database_url: str
+) -> None:
+    sealed_with_old_key = TokenCipher(Fernet.generate_key().decode()).encrypt(REFRESH_TOKEN)
+    execute(
+        migrated_database_url,
+        "INSERT INTO oauth_credentials (provider, encrypted_refresh_token) VALUES (%s, %s)",
+        "google_drive",
+        sealed_with_old_key,
+    )
+
+    assert client.get(STATUS).json()["status"] == "expired"
+    assert not google.calls, "an undecryptable token is never sent to Google"
+
+
+async def test_worker_treats_an_undecryptable_token_as_a_disconnected_drive(
+    sessions: Sessions, migrated_database_url: str, clean_drive: None
+) -> None:
+    sealed_with_old_key = TokenCipher(Fernet.generate_key().decode()).encrypt(REFRESH_TOKEN)
+    execute(
+        migrated_database_url,
+        "INSERT INTO oauth_credentials (provider, encrypted_refresh_token) VALUES (%s, %s)",
+        "google_drive",
+        sealed_with_old_key,
+    )
+    client = OAuthClient("client-id", "client-secret", REDIRECT_URI)
+    async with httpx.AsyncClient() as http:
+        tokens = DriveTokens(sessions, http, client, TokenCipher(ENCRYPTION_KEY))
+
+        with pytest.raises(DriveAuthExpired, match="reconnect Drive"):
+            await tokens.access_token()

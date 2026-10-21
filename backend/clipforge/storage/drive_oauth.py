@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from clipforge.db.models import AppSetting, OauthCredential
 from clipforge.queue.errors import TransientError
 from clipforge.queue.repository import Clock, utc_now
-from clipforge.security.crypto import TokenCipher
+from clipforge.security.crypto import DecryptionError, TokenCipher
 
 logger = logging.getLogger(__name__)
 
@@ -225,10 +225,17 @@ class DriveTokens:
             )
         if encrypted is None:
             raise DriveNotConnected("Google Drive is not connected")
+        try:
+            refresh_token = self._cipher.decrypt(encrypted)
+        except DecryptionError:
+            # Expected after rotating the encryption key: reconnecting stores a fresh token.
+            raise DriveAuthExpired(
+                "the stored Drive credential uses another encryption key; reconnect Drive"
+            ) from None
         response = await _post_token(
             self._http,
             {
-                "refresh_token": self._cipher.decrypt(encrypted),
+                "refresh_token": refresh_token,
                 "client_id": self._client.client_id,
                 "client_secret": self._client.client_secret,
                 "grant_type": "refresh_token",

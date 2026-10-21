@@ -3,6 +3,8 @@ from cryptography.fernet import Fernet
 
 from clipforge.security.crypto import DecryptionError, TokenCipher
 
+pytestmark = pytest.mark.security
+
 
 def test_round_trip_never_stores_the_plaintext() -> None:
     cipher = TokenCipher(Fernet.generate_key().decode())

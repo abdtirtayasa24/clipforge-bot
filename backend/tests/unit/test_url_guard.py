@@ -15,6 +15,8 @@ from clipforge.security.url_guard import (
     is_youtube_host,
 )
 
+pytestmark = pytest.mark.security
+
 ALLOW = ["media.example.com", "*.cdn.example.org"]
 
 
