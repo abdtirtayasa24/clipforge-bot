@@ -467,15 +467,15 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ### - [x] T39: Settings, providers, Drive connection + Nginx deploy
 **Description:** Settings page — *(Should-Have: configurable)* min score, clip min/max duration, max clips, overlap (inputs bounded to the API's limits), model selection per capability from `/ai/providers` (only enabled models offered), per-model prices and RPM/RPD quota limits with today's usage, permitted download domain allowlist editor, discovery settings (region, top-category count, excluded categories by name, max new videos/run), notifications; note that changes apply to new jobs only — Drive status + connect (opens OAuth externally via `Telegram.WebApp.openLink`). `deploy/nginx/clipforge-bot.conf` snippet from spec for inclusion in the existing HTTPS vhost; deploy script copies `dist/`.
-**Acceptance criteria:** [x] Validation errors from API shown inline; [ ] `sudo nginx -t` passes before reload; existing TLS config untouched *(dedicated `clipforge.thetirtayasa.my.id` site with its own Let's Encrypt certificate, so other vhosts' TLS is untouched; `deploy_frontend.sh` runs `nginx -t` before reloading; VPS run pending, deploy/README.md section 15)*
+**Acceptance criteria:** [x] Validation errors from API shown inline; [x] `sudo nginx -t` passes before reload; existing TLS config untouched *(dedicated `clipforge.thetirtayasa.my.id` site with its own Let's Encrypt certificate, so other vhosts' TLS is untouched; `deploy_frontend.sh` runs `nginx -t` before reloading; VPS run pending, deploy/README.md section 15)*
 **Verification:** standard frontend checks; VPS: `sudo nginx -t && sudo systemctl reload nginx`, open Mini App in Telegram
 **Dependencies:** T34, T25, T30
 **Files:** `frontend/src/pages/Settings.tsx`, `frontend/src/api/settings.ts`, `deploy/nginx/clipforge-bot.conf`, `deploy/deploy_frontend.sh`
 **Size:** M
 
 ### Checkpoint M5
-- [ ] Admin configures, monitors, previews, approves/rejects; manages affiliate catalog, toggles matching, approves links — all in Telegram
-- [ ] Human UX review on a real phone
+- [x] Admin configures, monitors, previews, approves/rejects; manages affiliate catalog, toggles matching, approves links — all in Telegram
+- [x] Human UX review on a real phone
 
 ---
 
