@@ -1,0 +1,1 @@
+DROP INDEX media_assets_one_receiving_upload;

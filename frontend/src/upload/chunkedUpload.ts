@@ -25,6 +25,7 @@ export interface UploadOptions {
   sha256: string;
   transport?: UploadTransport;
   store?: ResumeStore;
+  onStarted?: (upload: UploadOut) => void;
   onProgress?: (sentBytes: number, totalBytes: number) => void;
   chunkBytes?: number;
   maxRetries?: number;
@@ -133,6 +134,7 @@ export async function uploadFile(options: UploadOptions): Promise<UploadOut> {
       sha256: options.sha256,
     }));
   store.set(key, upload.id);
+  options.onStarted?.(upload);
 
   let offset = upload.received_bytes;
   let failures = 0;

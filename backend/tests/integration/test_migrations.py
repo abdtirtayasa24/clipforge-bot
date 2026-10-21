@@ -78,6 +78,38 @@ def test_clip_duration_defaults_move_to_60_90_unless_changed(
     assert clip_range(default_url) == [60, 20]
 
 
+def insert_receiving_upload(conn: psycopg.Connection, video_id: object, age: str) -> object:
+    row = conn.execute(
+        "INSERT INTO media_assets (video_id, kind, permission_evidence, state, created_at) "
+        "VALUES (%s, 'upload', '{}', 'receiving', now() - %s::interval) RETURNING id",
+        (video_id, age),
+    ).fetchone()
+    assert row is not None
+    return row[0]
+
+
+def test_only_the_newest_receiving_upload_survives_and_one_at_a_time_is_enforced(
+    create_database: Callable[[], str],
+) -> None:
+    url = create_database()
+    command.upgrade(alembic_config(url), "0009")
+    with psycopg.connect(libpq_url(url), autocommit=True) as conn:
+        video_id = insert_video(conn, "vid00000010")
+        older = insert_receiving_upload(conn, video_id, "2 hours")
+        newer = insert_receiving_upload(conn, video_id, "1 hour")
+
+    command.upgrade(alembic_config(url), "head")
+
+    with psycopg.connect(libpq_url(url), autocommit=True) as conn:
+        states = dict(conn.execute("SELECT id, state FROM media_assets").fetchall())
+        assert states == {older: "failed", newer: "receiving"}
+        with pytest.raises(psycopg.errors.UniqueViolation):
+            insert_receiving_upload(conn, video_id, "0 seconds")
+    command.downgrade(alembic_config(url), "0009")
+    with psycopg.connect(libpq_url(url), autocommit=True) as conn:
+        insert_receiving_upload(conn, video_id, "0 seconds")
+
+
 def insert_video(conn: psycopg.Connection, youtube_video_id: str) -> object:
     row = conn.execute(
         "INSERT INTO videos (youtube_video_id, title, channel_id) "

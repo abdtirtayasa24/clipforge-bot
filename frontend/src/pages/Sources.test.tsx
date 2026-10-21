@@ -28,6 +28,15 @@ describe("Sources", () => {
     expect(await screen.findByText("No sources yet.")).toBeInTheDocument();
   });
 
+  it("links to the uploads page with a summary of the queue", async () => {
+    mockApi({ "GET /api/v1/sources": { body: { items: [] } } });
+    renderPage(<Sources />);
+
+    const row = await screen.findByRole("link", { name: /Uploads/ });
+    expect(row).toHaveAttribute("href", "/uploads");
+    expect(row).toHaveTextContent("No uploads");
+  });
+
   it("creates a channel source with its channel id", async () => {
     const calls = mockApi({
       "GET /api/v1/sources": { body: { items: [] } },

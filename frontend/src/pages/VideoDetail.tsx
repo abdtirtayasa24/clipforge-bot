@@ -2,15 +2,15 @@ import { type FormEvent, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { isActiveJob } from "../api/jobs";
-import { useInvalidateVideoData, useQueueJob, useRegisterMediaUrl, useVideo, useVideoJobs } from "../api/videos";
+import { useQueueJob, useRegisterMediaUrl, useVideo, useVideoJobs } from "../api/videos";
 import { copyText } from "../clipboard";
 import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { StatusPill } from "../components/StatusPill";
+import { UploadEntry } from "../components/UploadEntry";
 import { formatBytes, formatDateTime, formatDuration } from "../format";
-import { UploadInterrupted, uploadFile } from "../upload/chunkedUpload";
-import { sha256InWorker } from "../upload/sha256";
+import { isOpen, uploadQueue, useUploads } from "../upload/uploadQueue";
 import { youtubeWatchUrl } from "../youtube";
 import { openExternalLink } from "../telegram/webApp";
 
@@ -76,81 +76,49 @@ function RegisterUrlForm({ videoId }: { videoId: string }) {
   );
 }
 
-type UploadPhase =
-  | { kind: "idle" }
-  | { kind: "hashing"; done: number; total: number }
-  | { kind: "uploading"; done: number; total: number }
-  | { kind: "complete" }
-  | { kind: "interrupted"; error: UploadInterrupted }
-  | { kind: "failed"; error: unknown };
-
-function UploadForm({ videoId }: { videoId: string }) {
-  const invalidate = useInvalidateVideoData();
+function UploadForm({ videoId, videoTitle }: { videoId: string; videoTitle: string }) {
+  const uploads = useUploads();
   const [file, setFile] = useState<File | null>(null);
-  const [phase, setPhase] = useState<UploadPhase>({ kind: "idle" });
-  const busy = phase.kind === "hashing" || phase.kind === "uploading";
-
-  async function start() {
-    if (!file) {
-      return;
-    }
-    try {
-      setPhase({ kind: "hashing", done: 0, total: file.size });
-      const sha256 = await sha256InWorker(file, (done, total) => setPhase({ kind: "hashing", done, total }));
-      setPhase({ kind: "uploading", done: 0, total: file.size });
-      await uploadFile({
-        file,
-        filename: file.name,
-        videoId,
-        sha256,
-        onProgress: (done, total) => setPhase({ kind: "uploading", done, total }),
-      });
-      setPhase({ kind: "complete" });
-      invalidate();
-    } catch (error) {
-      setPhase(error instanceof UploadInterrupted ? { kind: "interrupted", error } : { kind: "failed", error });
-    }
-  }
+  const [inputKey, setInputKey] = useState(0);
+  const mine = uploads.filter((item) => item.videoId === videoId);
+  const queueBusy = uploads.some(isOpen);
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    void start();
+    if (file) {
+      uploadQueue.add(videoId, videoTitle, file);
+      setFile(null);
+      setInputKey((key) => key + 1);
+    }
   }
 
   return (
     <form className="card" aria-label="Upload file" onSubmit={submit}>
       <h2>Upload a file</h2>
-      <p className="hint">Sent in 8 MiB chunks; an interrupted upload resumes where it stopped.</p>
+      <p className="hint">
+        Sent in 8 MiB chunks, one file at a time; an interrupted upload resumes where it stopped.
+      </p>
+      {mine.map((item) => (
+        <UploadEntry key={item.id} item={item} />
+      ))}
       <label>
         <span>Video file</span>
         <input
+          key={inputKey}
           type="file"
           accept="video/*"
-          disabled={busy}
-          onChange={(event) => {
-            setFile(event.target.files?.[0] ?? null);
-            setPhase({ kind: "idle" });
-          }}
+          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />
       </label>
       {file && <p className="hint">{formatBytes(file.size)}</p>}
-
-      {(phase.kind === "hashing" || phase.kind === "uploading") && (
-        <div role="status">
-          <span>{phase.kind === "hashing" ? "Checking file…" : "Uploading…"}</span>
-          <progress max={phase.total} value={phase.done} aria-label={phase.kind === "hashing" ? "Hashing" : "Upload"} />
-          <span className="hint">
-            {formatBytes(phase.done)} / {formatBytes(phase.total)}
-          </span>
-        </div>
-      )}
-      {phase.kind === "complete" && <p role="status">Upload complete.</p>}
-      {phase.kind === "interrupted" && <ErrorMessage error={phase.error} />}
-      {phase.kind === "failed" && <ErrorMessage error={phase.error} />}
-
-      <button type="submit" className="block" disabled={busy || !file}>
-        {phase.kind === "interrupted" ? "Resume upload" : "Upload"}
+      <button type="submit" className="block" disabled={!file}>
+        {queueBusy ? "Add to upload queue" : "Upload"}
       </button>
+      {uploads.length > 0 && (
+        <p className="hint">
+          <Link to="/uploads">View all uploads</Link>
+        </p>
+      )}
     </form>
   );
 }
@@ -235,7 +203,7 @@ export default function VideoDetail() {
       {data.source_status === "awaiting_source" && (
         <>
           <RegisterUrlForm videoId={videoId} />
-          <UploadForm videoId={videoId} />
+          <UploadForm videoId={videoId} videoTitle={data.title} />
         </>
       )}
     </>

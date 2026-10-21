@@ -8,6 +8,7 @@ import { IconTile, ListGroup, ListRow } from "../components/ListRow";
 import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { formatDateTime } from "../format";
+import { summarizeUploads, useUploads } from "../upload/uploadQueue";
 
 function fieldErrors(error: unknown): Record<string, string> {
   return error instanceof ApiError ? error.fieldErrors() : {};
@@ -153,6 +154,7 @@ function SourceItem({ source }: { source: SourceOut }) {
 export default function Sources() {
   const sources = useSources();
   const discovery = useRunDiscovery();
+  const uploads = useUploads();
   const [kind, setKind] = useState<KindFilter>("all");
   const [adding, setAdding] = useState(false);
   const shown = sources.data?.filter((source) => kind === "all" || source.kind === kind) ?? [];
@@ -206,6 +208,7 @@ export default function Sources() {
 
       <ListGroup label="Library">
         <ListRow to="/videos" icon="video" tone="orange" title="All videos" subtitle="Everything discovered or uploaded" />
+        <ListRow to="/uploads" icon="upload" tone="blue" title="Uploads" subtitle={summarizeUploads(uploads)} />
       </ListGroup>
     </>
   );

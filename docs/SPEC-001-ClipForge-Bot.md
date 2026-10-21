@@ -34,7 +34,7 @@ YouTube Data API provides discovery metadata, **not permission or an API for arb
 - **REQ-002:** Monitor configured YouTube channels.
 - **REQ-003:** Run discovery once daily and on demand.
 - **REQ-004:** Deduplicate videos and processing jobs.
-- **REQ-005:** Ingest authorized file uploads and permitted download URLs.
+- **REQ-005:** Ingest authorized file uploads and permitted download URLs. One file uploads at a time; further files wait in the Mini App's upload queue (ADR-032).
 - **REQ-006:** Verify media formats and available disk. No permission evidence is collected; the administrator is responsible for having the right to process each source (ADR-031).
 - **REQ-007:** Transcribe audio through a configurable cloud AI provider.
 - **REQ-008:** Analyze transcript and sampled scenes to rank highlight candidates.
@@ -202,8 +202,10 @@ All endpoints start with `/api/v1`.
 | POST | `/discovery/run` | Manual discovery |
 | GET | `/videos` | Discovered videos |
 | POST | `/videos/{id}/media` | Register permitted URL |
-| POST | `/uploads` | Initialize file upload |
+| POST | `/uploads` | Initialize file upload; refused while another upload is receiving (ADR-032) |
+| GET | `/uploads/active` | The upload currently receiving, if any |
 | PATCH | `/uploads/{id}` | Upload chunk |
+| DELETE | `/uploads/{id}` | Cancel an upload and free its staging file |
 | POST | `/uploads/{id}/complete` | Validate completed upload |
 | POST | `/videos/{id}/jobs` | Queue processing, idempotently |
 | GET | `/jobs` | List jobs |

@@ -9,8 +9,10 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 from httpx import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from clipforge.ingest import disk
+from clipforge.db.models import MediaAsset
+from clipforge.ingest import disk, uploads
 from tests.api import admin_client
 from tests.db import libpq_url
 from tests.fixtures.make_media import make_media
@@ -33,6 +35,15 @@ def fake_disk(free: int, total: int = 100 * GIB) -> Callable[[object], FakeUsage
 @pytest.fixture(autouse=True)
 def plenty_of_disk(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(disk.shutil, "disk_usage", fake_disk(50 * GIB))
+
+
+@pytest.fixture(autouse=True)
+def no_upload_in_progress(migrated_database_url: str) -> None:
+    """The shared database allows one receiving upload; earlier tests may have left one."""
+    with psycopg.connect(libpq_url(migrated_database_url), autocommit=True) as conn:
+        conn.execute(
+            "UPDATE media_assets SET state = 'failed' WHERE kind = 'upload' AND state = 'receiving'"
+        )
 
 
 @pytest.fixture
@@ -297,6 +308,73 @@ def test_staging_directory_is_private(client: TestClient, video_id: str, workspa
     created(init_upload(client, video_id, b"x" * 10))
 
     assert (workspace / "uploads").stat().st_mode & 0o777 == 0o700
+
+
+def test_second_upload_is_refused_while_one_is_receiving(client: TestClient, video_id: str) -> None:
+    upload_id = created(init_upload(client, video_id, b"x" * 10))
+
+    response = init_upload(client, video_id, b"y" * 10)
+
+    assert response.status_code == 409
+    assert response.json()["error"]["details"] == {"upload_id": upload_id, "video_id": video_id}
+
+
+def test_simultaneous_start_is_refused_by_the_database(
+    client: TestClient, video_id: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    upload_id = created(init_upload(client, video_id, b"x" * 10))
+    real_active_upload = uploads.active_upload
+    calls = 0
+
+    async def misses_the_first_check(session: AsyncSession) -> MediaAsset | None:
+        nonlocal calls
+        calls += 1
+        return None if calls == 1 else await real_active_upload(session)
+
+    monkeypatch.setattr(uploads, "active_upload", misses_the_first_check)
+    response = init_upload(client, video_id, b"y" * 10)
+
+    assert response.status_code == 409
+    assert response.json()["error"]["details"] == {"upload_id": upload_id, "video_id": video_id}
+
+
+def test_active_upload_is_reported_until_it_completes(
+    client: TestClient, valid_source: Path, video_id: str
+) -> None:
+    assert client.get(f"{UPLOADS}/active").json() is None
+    data = valid_source.read_bytes()
+    upload_id = created(init_upload(client, video_id, data))
+
+    active = client.get(f"{UPLOADS}/active").json()
+    upload_all(client, upload_id, data)
+    assert client.post(f"{UPLOADS}/{upload_id}/complete").status_code == 200
+
+    assert (active["id"], active["state"]) == (upload_id, "receiving")
+    assert client.get(f"{UPLOADS}/active").json() is None
+    assert init_upload(client, video_id, b"y" * 10).status_code == 201
+
+
+def test_cancel_frees_the_slot_and_removes_staging(
+    client: TestClient, migrated_database_url: str, video_id: str, workspace: Path
+) -> None:
+    upload_id = created(init_upload(client, video_id, b"x" * 10))
+    assert send_chunk(client, upload_id, b"x" * 5, 0, 10).status_code == 200
+
+    response = client.delete(f"{UPLOADS}/{upload_id}")
+
+    assert response.status_code == 200
+    assert response.json()["state"] == "failed"
+    asset = asset_row(migrated_database_url, upload_id)
+    assert (asset["state"], asset["failure_reason"]) == ("failed", "cancelled")
+    assert not (workspace / "uploads" / upload_id).exists()
+    assert client.get(f"{UPLOADS}/active").json() is None
+    assert send_chunk(client, upload_id, b"x" * 5, 5, 10).status_code == 409
+    assert client.delete(f"{UPLOADS}/{upload_id}").status_code == 409
+    assert init_upload(client, video_id, b"y" * 10).status_code == 201
+
+
+def test_cancel_unknown_upload_is_not_found(client: TestClient) -> None:
+    assert client.delete(f"{UPLOADS}/{uuid.uuid4()}").status_code == 404
 
 
 def test_disk_admission_rejects_or_defers(

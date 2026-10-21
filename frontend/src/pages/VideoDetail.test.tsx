@@ -6,6 +6,7 @@ import { jobFixture, videoFixture } from "../test/fixtures";
 import { renderPage } from "../test/render";
 import { installTelegram, removeTelegram } from "../test/telegramStub";
 import { UploadInterrupted, uploadFile } from "../upload/chunkedUpload";
+import { uploadQueue } from "../upload/uploadQueue";
 import { youtubeWatchUrl } from "../youtube";
 import VideoDetail from "./VideoDetail";
 
@@ -18,13 +19,17 @@ vi.mock("../upload/chunkedUpload", async (importOriginal) => ({
 const VIDEO = videoFixture().id;
 const route = { route: `/videos/${VIDEO}`, path: "/videos/:videoId" };
 const noJobs = { body: { items: [], total: 0, limit: 20, offset: 0 } };
+const noActiveUpload = { body: null };
 
 beforeEach(() => {
   vi.mocked(uploadFile).mockReset();
 });
 
-afterEach(() => {
+afterEach(async () => {
   removeTelegram();
+  for (const item of uploadQueue.snapshot()) {
+    await uploadQueue.remove(item.id);
+  }
 });
 
 describe("VideoDetail", () => {
@@ -73,7 +78,11 @@ describe("VideoDetail", () => {
   });
 
   it("enables upload once a file is chosen, then uploads with progress", async () => {
-    mockApi({ [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() }, "GET /api/v1/jobs": noJobs });
+    mockApi({
+      [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() },
+      "GET /api/v1/jobs": noJobs,
+      "GET /api/v1/uploads/active": noActiveUpload,
+    });
     vi.mocked(uploadFile).mockImplementation(async (options) => {
       options.onProgress?.(4, 8);
       return {
@@ -102,7 +111,11 @@ describe("VideoDetail", () => {
   });
 
   it("offers to resume an interrupted upload", async () => {
-    mockApi({ [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() }, "GET /api/v1/jobs": noJobs });
+    mockApi({
+      [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() },
+      "GET /api/v1/jobs": noJobs,
+      "GET /api/v1/uploads/active": noActiveUpload,
+    });
     vi.mocked(uploadFile).mockRejectedValueOnce(new UploadInterrupted("u1", 4, new TypeError("offline")));
     renderPage(<VideoDetail />, route);
     await userEvent.upload(await screen.findByLabelText("Video file"), new File(["01234567"], "talk.mp4", { type: "video/mp4" }));
@@ -111,6 +124,29 @@ describe("VideoDetail", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Upload paused");
     expect(screen.getByRole("button", { name: "Resume upload" })).toBeEnabled();
+  });
+
+  it("keeps showing an upload after leaving the page and coming back", async () => {
+    mockApi({
+      [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() },
+      "GET /api/v1/jobs": noJobs,
+      "GET /api/v1/uploads/active": noActiveUpload,
+    });
+    vi.mocked(uploadFile).mockImplementation(async (options) => {
+      options.onProgress?.(4, 8);
+      return new Promise(() => undefined);
+    });
+    const first = renderPage(<VideoDetail />, route);
+    await userEvent.upload(await screen.findByLabelText("Video file"), new File(["01234567"], "talk.mp4", { type: "video/mp4" }));
+    await userEvent.click(screen.getByRole("button", { name: "Upload" }));
+    await screen.findByText("Uploading…");
+    first.unmount();
+
+    renderPage(<VideoDetail />, route);
+
+    expect(await screen.findByText("Uploading…")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add to upload queue" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "View all uploads" })).toHaveAttribute("href", "/uploads");
   });
 
   it("queues a job with an Idempotency-Key and lists the video's jobs", async () => {

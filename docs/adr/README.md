@@ -37,3 +37,4 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-029](adr-029.md) | Clip preview via external Google Drive link | Accepted |
 | [ADR-030](adr-030.md) | Continuous integration on GitHub Actions | Accepted |
 | [ADR-031](adr-031.md) | Source registration without permission evidence | Accepted |
+| [ADR-032](adr-032.md) | One upload at a time, queued in the Mini App | Accepted |

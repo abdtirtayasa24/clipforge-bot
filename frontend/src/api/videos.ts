@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { api } from "./client";
 import { jobKeys } from "./jobs";
 import type { Eligibility, JobOut, MediaOut, Page, RightsStatus, SourceStatus, VideoOut } from "./types";
@@ -31,11 +32,11 @@ export function useVideoJobs(videoId: string) {
 /** A new source or job changes video status, job lists and dashboard counts. */
 export function useInvalidateVideoData() {
   const queryClient = useQueryClient();
-  return () => {
+  return useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["videos"] });
     void queryClient.invalidateQueries({ queryKey: jobKeys.all });
     void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-  };
+  }, [queryClient]);
 }
 
 export function useRegisterMediaUrl(videoId: string) {

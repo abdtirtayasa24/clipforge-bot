@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clipforge.checksums import file_sha256
@@ -23,6 +24,7 @@ from clipforge.queue.errors import PermanentError
 logger = logging.getLogger(__name__)
 
 MAX_CHUNK_BYTES = 8 * 1024 * 1024
+_ONE_RECEIVING_UPLOAD = "media_assets_one_receiving_upload"
 _CONTENT_RANGE = re.compile(r"^bytes (\d+)-(\d+)/(\d+)$")
 
 
@@ -41,6 +43,10 @@ class InvalidChunk(Exception):
 
 
 class ChecksumMismatch(Exception):
+    pass
+
+
+class UploadInProgress(Exception):
     pass
 
 
@@ -136,11 +142,24 @@ async def create_upload(
         state="receiving",
     )
     session.add(asset)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError as exc:
+        constraint = getattr(getattr(exc.orig, "diag", None), "constraint_name", None)
+        if constraint == _ONE_RECEIVING_UPLOAD:
+            raise UploadInProgress("another upload is in progress") from None
+        raise
     await asyncio.to_thread(_create_staging_file, staging)
     await session.commit()
     logger.info("upload started", extra={"upload_id": str(upload_id), "size_bytes": size_bytes})
     return asset
+
+
+async def active_upload(session: AsyncSession) -> MediaAsset | None:
+    """The one upload still receiving bytes, if any (ADR-032)."""
+    return await session.scalar(
+        select(MediaAsset).where(MediaAsset.kind == "upload", MediaAsset.state == "receiving")
+    )
 
 
 async def _locked_upload(session: AsyncSession, upload_id: uuid.UUID) -> MediaAsset:
@@ -180,6 +199,14 @@ async def _fail(session: AsyncSession, asset: MediaAsset, reason: str) -> None:
     await asyncio.to_thread(_remove, Path(str(asset.local_path)))
     await session.commit()
     logger.warning("upload failed", extra={"upload_id": str(asset.id), "reason": reason})
+
+
+async def cancel_upload(session: AsyncSession, upload_id: uuid.UUID) -> MediaAsset:
+    """Stops an upload and frees its staging file so the next upload can start."""
+    asset = await _locked_upload(session, upload_id)
+    _require_receiving(asset)
+    await _fail(session, asset, "cancelled")
+    return asset
 
 
 async def complete_upload(

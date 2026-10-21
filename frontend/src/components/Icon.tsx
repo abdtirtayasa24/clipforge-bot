@@ -74,6 +74,7 @@ const SHAPES = {
     </>
   ),
   download: <path d="M12 3v12M7 10l5 5 5-5M4 20h16" />,
+  upload: <path d="M12 21V9M7 14l5-5 5 5M4 4h16" />,
   bell: <path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9zM10 20a2 2 0 0 0 4 0" />,
   cloud: <path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z" />,
   refresh: <path d="M20 11a8 8 0 0 0-14.9-4M4 4v4h4M4 13a8 8 0 0 0 14.9 4M20 20v-4h-4" />,

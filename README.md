@@ -107,7 +107,7 @@ The scoring weights, clip rules and output format are defined in the
   - The Drive refresh token is encrypted at rest (ADR-015). Logs are structured JSON with
     secrets redacted (ADR-022).
 
-Decisions and their reasoning live in [`docs/adr/`](docs/adr/README.md) (31 ADRs).
+Decisions and their reasoning live in [`docs/adr/`](docs/adr/README.md) (32 ADRs).
 
 ## Tech stack
 

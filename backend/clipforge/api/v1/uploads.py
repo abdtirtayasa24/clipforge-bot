@@ -76,12 +76,22 @@ def _conflict(error: uploads.UploadConflict) -> Conflict:
     return Conflict(str(error), details={"received_bytes": error.received_bytes})
 
 
+def _in_progress(active: MediaAsset | None) -> Conflict:
+    details = (
+        None if active is None else {"upload_id": str(active.id), "video_id": str(active.video_id)}
+    )
+    return Conflict("another upload is in progress", details=details)
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def start_upload(
     body: UploadInit, session: DbSession, settings: SettingsDep, admin: CurrentAdmin
 ) -> UploadOut:
     if await session.get(Video, body.video_id) is None:
         raise NotFound("video not found")
+    active = await uploads.active_upload(session)
+    if active is not None:
+        raise _in_progress(active)
     staging_dir = uploads.staging_path(settings.workspace_dir, uuid.uuid4()).parent
     await asyncio.to_thread(uploads.ensure_private_dir, staging_dir)
     decision = decide_admission(
@@ -95,15 +105,36 @@ async def start_upload(
         raise PayloadTooLarge("source is too large for this server's disk", details=details)
     if decision.verdict is Admission.DEFER:
         raise InsufficientStorage("not enough free disk right now; retry later", details=details)
-    asset = await uploads.create_upload(
-        session,
-        settings.workspace_dir,
-        video_id=body.video_id,
-        filename=body.filename,
-        size_bytes=body.size_bytes,
-        sha256=body.sha256,
-        evidence=uploads.evidence_record(admin.id),
-    )
+    try:
+        asset = await uploads.create_upload(
+            session,
+            settings.workspace_dir,
+            video_id=body.video_id,
+            filename=body.filename,
+            size_bytes=body.size_bytes,
+            sha256=body.sha256,
+            evidence=uploads.evidence_record(admin.id),
+        )
+    except uploads.UploadInProgress:
+        await session.rollback()
+        raise _in_progress(await uploads.active_upload(session)) from None
+    return UploadOut.of(asset)
+
+
+@router.get("/active")
+async def get_active_upload(session: DbSession) -> UploadOut | None:
+    asset = await uploads.active_upload(session)
+    return None if asset is None else UploadOut.of(asset)
+
+
+@router.delete("/{upload_id}")
+async def cancel_upload(upload_id: uuid.UUID, session: DbSession) -> UploadOut:
+    try:
+        asset = await uploads.cancel_upload(session, upload_id)
+    except uploads.UploadNotFound:
+        raise NotFound("upload not found") from None
+    except uploads.UploadConflict as exc:
+        raise _conflict(exc) from None
     return UploadOut.of(asset)
 
 

@@ -1,7 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { type ReactNode, useEffect, useState } from "react";
 import { Link, Route, Routes, useLocation } from "react-router";
 import { ApiError } from "./api/client";
+import { uploadKeys } from "./api/uploads";
+import { useInvalidateVideoData } from "./api/videos";
 import { useTelegramAuth } from "./auth/telegram";
 import Affiliate from "./pages/Affiliate";
 import AffiliateProductForm from "./pages/AffiliateProductForm";
@@ -12,15 +14,17 @@ import JobDetail from "./pages/JobDetail";
 import Settings, { SettingsSection } from "./pages/Settings";
 import Jobs from "./pages/Jobs";
 import Sources from "./pages/Sources";
+import Uploads from "./pages/Uploads";
 import VideoDetail from "./pages/VideoDetail";
 import Videos from "./pages/Videos";
 import { Icon, type IconName } from "./components/Icon";
 import { useTelegramBackButton } from "./telegram/webApp";
+import { uploadQueue } from "./upload/uploadQueue";
 
 /** Bottom tabs; `prefixes` keeps a tab highlighted on the screens pushed from it. */
 const NAV_ITEMS: { to: string; label: string; icon: IconName; prefixes: string[] }[] = [
   { to: "/", label: "Home", icon: "home", prefixes: [] },
-  { to: "/sources", label: "Sources", icon: "sources", prefixes: ["/sources", "/videos"] },
+  { to: "/sources", label: "Sources", icon: "sources", prefixes: ["/sources", "/videos", "/uploads"] },
   { to: "/jobs", label: "Jobs", icon: "jobs", prefixes: ["/jobs"] },
   { to: "/clips", label: "Clips", icon: "clips", prefixes: ["/clips"] },
   { to: "/settings", label: "Settings", icon: "settings", prefixes: ["/settings", "/affiliate"] },
@@ -68,8 +72,23 @@ function GateScreen({ title, children }: { title: string; children: ReactNode })
   );
 }
 
+/** A finished upload changes the video's source status, its jobs and the active upload. */
+function useRefreshOnUploadComplete() {
+  const invalidateVideoData = useInvalidateVideoData();
+  const queryClient = useQueryClient();
+  useEffect(
+    () =>
+      uploadQueue.onCompleted(() => {
+        invalidateVideoData();
+        void queryClient.invalidateQueries({ queryKey: uploadKeys.active });
+      }),
+    [invalidateVideoData, queryClient],
+  );
+}
+
 function AppShell() {
   useTelegramBackButton();
+  useRefreshOnUploadComplete();
   return (
     <>
       <main className="page">
@@ -82,6 +101,7 @@ function AppShell() {
           <Route path="/videos" element={<Videos />} />
           <Route path="/videos/:videoId" element={<VideoDetail />} />
           <Route path="/sources" element={<Sources />} />
+          <Route path="/uploads" element={<Uploads />} />
           <Route path="/affiliate" element={<Affiliate />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/:section" element={<SettingsSection />} />

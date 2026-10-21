@@ -79,11 +79,13 @@ describe("uploadFile", () => {
   it("sends bounded chunks in order, reports progress and completes", async () => {
     const server = fakeServer();
     const onProgress = vi.fn();
+    const onStarted = vi.fn();
     const store = memoryStore();
 
-    const result = await uploadFile({ ...options(server.transport, store), onProgress });
+    const result = await uploadFile({ ...options(server.transport, store), onProgress, onStarted });
 
     expect(result.state).toBe("ready");
+    expect(onStarted).toHaveBeenCalledWith(expect.objectContaining({ id: "up-1", received_bytes: 0 }));
     expect(server.sent).toEqual([
       [0, 4],
       [4, 8],
