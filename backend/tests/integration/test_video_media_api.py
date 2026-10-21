@@ -10,11 +10,6 @@ from psycopg.types.json import Jsonb
 from tests.api import admin_client
 from tests.db import libpq_url
 
-EVIDENCE = {
-    "type": "license",
-    "statement": "Published under CC BY 4.0 by the creator on their site.",
-    "reference": "https://media.example.com/license",
-}
 SOURCE_URL = "https://media.example.com/videos/talk.mp4?sig=abc"
 
 
@@ -50,13 +45,13 @@ def allowlist(migrated_database_url: str) -> Iterator[None]:
 
 
 def register(client: TestClient, video_id: str, **overrides: object) -> tuple[int, Any]:
-    body = {"url": SOURCE_URL, "permission": EVIDENCE} | overrides
+    body = {"url": SOURCE_URL} | overrides
     response = client.post(f"/api/v1/videos/{video_id}/media", json=body)
     return response.status_code, response.json()
 
 
 @pytest.mark.usefixtures("allowlist")
-def test_permitted_url_is_registered_with_evidence(
+def test_permitted_url_is_registered_with_its_registrar(
     client: TestClient, migrated_database_url: str, video_id: str
 ) -> None:
     status, body = register(client, video_id)
@@ -71,8 +66,7 @@ def test_permitted_url_is_registered_with_evidence(
         ).fetchone()
     assert row is not None
     evidence, rights = row
-    assert evidence["type"] == "license"
-    assert evidence["recorded_by"]
+    assert set(evidence) == {"recorded_by", "recorded_at"}
     assert rights == "unverified"
 
 
@@ -107,9 +101,9 @@ def test_url_ingestion_is_disabled_without_an_allowlist(client: TestClient, vide
 @pytest.mark.usefixtures("allowlist")
 @pytest.mark.parametrize(
     "overrides",
-    [{"permission": None}, {"permission": {**EVIDENCE, "statement": ""}}, {"url": "x" * 2049}],
+    [{"url": ""}, {"url": "x" * 2049}],
 )
-def test_evidence_and_url_are_validated(
+def test_url_length_is_validated(
     client: TestClient, video_id: str, overrides: dict[str, object]
 ) -> None:
     status, _ = register(client, video_id, **overrides)

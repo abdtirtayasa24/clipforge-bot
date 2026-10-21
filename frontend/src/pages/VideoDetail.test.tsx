@@ -27,12 +27,6 @@ afterEach(() => {
   removeTelegram();
 });
 
-async function fillEvidence(form: "url" | "upload") {
-  const scope = screen.getByRole("form", { name: form === "url" ? "Register URL" : "Upload file" });
-  await userEvent.selectOptions(scope.querySelector("select") as HTMLSelectElement, "creator_permission");
-  await userEvent.type(scope.querySelector("textarea") as HTMLTextAreaElement, "Written permission from the creator.");
-}
-
 describe("VideoDetail", () => {
   it("opens the video on YouTube and copies its watch URL", async () => {
     const webApp = installTelegram();
@@ -59,7 +53,7 @@ describe("VideoDetail", () => {
     expect(youtubeWatchUrl("a&b=c")).toBe("https://www.youtube.com/watch?v=a%26b%3Dc");
   });
 
-  it("requires permission evidence before registering a URL", async () => {
+  it("registers a URL without permission evidence", async () => {
     const calls = mockApi({
       [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() },
       "GET /api/v1/jobs": noJobs,
@@ -71,21 +65,14 @@ describe("VideoDetail", () => {
     renderPage(<VideoDetail />, route);
 
     await userEvent.type(await screen.findByLabelText("Permitted URL"), "https://cdn.example.com/talk.mp4");
-    const submit = screen.getByRole("button", { name: "Register URL" });
-    expect(submit).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Register URL" }));
 
-    await fillEvidence("url");
-    expect(submit).toBeEnabled();
-    await userEvent.click(submit);
-
-    expect(calls.find((c) => c.method === "POST")?.body).toEqual({
-      url: "https://cdn.example.com/talk.mp4",
-      permission: { type: "creator_permission", statement: "Written permission from the creator.", reference: null },
-    });
+    expect(calls.find((c) => c.method === "POST")?.body).toEqual({ url: "https://cdn.example.com/talk.mp4" });
+    expect(screen.queryByText(/Permission evidence/)).not.toBeInTheDocument();
     expect(await screen.findByText("URL registered.")).toBeInTheDocument();
   });
 
-  it("requires evidence before uploading, then uploads with progress", async () => {
+  it("enables upload once a file is chosen, then uploads with progress", async () => {
     mockApi({ [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() }, "GET /api/v1/jobs": noJobs });
     vi.mocked(uploadFile).mockImplementation(async (options) => {
       options.onProgress?.(4, 8);
@@ -102,18 +89,16 @@ describe("VideoDetail", () => {
     });
     renderPage(<VideoDetail />, route);
 
-    const file = new File(["01234567"], "talk.mp4", { type: "video/mp4" });
-    await userEvent.upload(await screen.findByLabelText("Video file"), file);
-    const submit = screen.getByRole("button", { name: "Upload" });
+    const submit = await screen.findByRole("button", { name: "Upload" });
     expect(submit).toBeDisabled();
-
-    await fillEvidence("upload");
+    const file = new File(["01234567"], "talk.mp4", { type: "video/mp4" });
+    await userEvent.upload(screen.getByLabelText("Video file"), file);
     await userEvent.click(submit);
 
     expect(await screen.findByText("Upload complete.")).toBeInTheDocument();
     const options = vi.mocked(uploadFile).mock.calls[0]?.[0];
     expect(options).toMatchObject({ file, filename: "talk.mp4", videoId: VIDEO, sha256: "f".repeat(64) });
-    expect(options?.permission.type).toBe("creator_permission");
+    expect(options).not.toHaveProperty("permission");
   });
 
   it("offers to resume an interrupted upload", async () => {
@@ -121,7 +106,6 @@ describe("VideoDetail", () => {
     vi.mocked(uploadFile).mockRejectedValueOnce(new UploadInterrupted("u1", 4, new TypeError("offline")));
     renderPage(<VideoDetail />, route);
     await userEvent.upload(await screen.findByLabelText("Video file"), new File(["01234567"], "talk.mp4", { type: "video/mp4" }));
-    await fillEvidence("upload");
 
     await userEvent.click(screen.getByRole("button", { name: "Upload" }));
 

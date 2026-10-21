@@ -137,7 +137,7 @@ def test_job_without_source_awaits_it_until_a_url_is_registered(
 
         media = client.post(
             f"/api/v1/videos/{video_id}/media",
-            json={"url": "https://media.example.com/v.mp4", "permission": EVIDENCE},
+            json={"url": "https://media.example.com/v.mp4"},
         ).json()
     finally:
         execute(

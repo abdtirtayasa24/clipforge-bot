@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from clipforge.checksums import file_sha256
 from clipforge.db.models import MediaAsset, Video
-from clipforge.ingest.evidence import PermissionEvidence
 from clipforge.ingest.validation import validate_media
 from clipforge.media.probe import probe
 from clipforge.queue.errors import PermanentError
@@ -104,8 +103,9 @@ def _remove(path: Path) -> None:
         path.unlink()
 
 
-def evidence_record(evidence: PermissionEvidence, admin_user_id: uuid.UUID) -> dict[str, Any]:
-    return evidence.model_dump() | {
+def evidence_record(admin_user_id: uuid.UUID) -> dict[str, Any]:
+    """Who registered the source and when; no permission statement is asked for (ADR-031)."""
+    return {
         "recorded_by": str(admin_user_id),
         "recorded_at": datetime.now(UTC).isoformat(),
     }

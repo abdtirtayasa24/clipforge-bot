@@ -3715,16 +3715,12 @@
             "maxLength": 2048,
             "minLength": 1,
             "title": "Url"
-          },
-          "permission": {
-            "$ref": "#/components/schemas/PermissionEvidence"
           }
         },
         "additionalProperties": false,
         "type": "object",
         "required": [
-          "url",
-          "permission"
+          "url"
         ],
         "title": "MediaRegistration"
       },
@@ -3856,45 +3852,6 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ModelsPatch"
-      },
-      "PermissionEvidence": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "own_content",
-              "creator_permission",
-              "license"
-            ],
-            "title": "Type"
-          },
-          "statement": {
-            "type": "string",
-            "maxLength": 2000,
-            "minLength": 10,
-            "title": "Statement"
-          },
-          "reference": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 500
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reference"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "type",
-          "statement"
-        ],
-        "title": "PermissionEvidence",
-        "description": "Why the admin may process this media (spec: only creator-authorized sources)."
       },
       "PricesOut": {
         "properties": {
@@ -4968,9 +4925,6 @@
             "type": "string",
             "pattern": "^[0-9a-f]{64}$",
             "title": "Sha256"
-          },
-          "permission": {
-            "$ref": "#/components/schemas/PermissionEvidence"
           }
         },
         "additionalProperties": false,
@@ -4979,8 +4933,7 @@
           "video_id",
           "filename",
           "size_bytes",
-          "sha256",
-          "permission"
+          "sha256"
         ],
         "title": "UploadInit"
       },

@@ -4,10 +4,8 @@ import { ApiError } from "../api/client";
 import { isActiveJob } from "../api/jobs";
 import { useInvalidateVideoData, useQueueJob, useRegisterMediaUrl, useVideo, useVideoJobs } from "../api/videos";
 import { copyText } from "../clipboard";
-import { EMPTY_EVIDENCE, type EvidenceDraft, toEvidence } from "../components/evidence";
 import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
-import { PermissionEvidenceFields } from "../components/PermissionEvidenceFields";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { StatusPill } from "../components/StatusPill";
 import { formatBytes, formatDateTime, formatDuration } from "../format";
@@ -53,15 +51,11 @@ function YouTubeLink({ youtubeVideoId }: { youtubeVideoId: string }) {
 function RegisterUrlForm({ videoId }: { videoId: string }) {
   const register = useRegisterMediaUrl(videoId);
   const [url, setUrl] = useState("");
-  const [evidence, setEvidence] = useState<EvidenceDraft>(EMPTY_EVIDENCE);
-  const permission = toEvidence(evidence);
   const errors = register.error instanceof ApiError ? register.error.fieldErrors() : {};
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (permission) {
-      register.mutate({ url: url.trim(), permission });
-    }
+    register.mutate({ url: url.trim() });
   }
 
   return (
@@ -73,10 +67,9 @@ function RegisterUrlForm({ videoId }: { videoId: string }) {
         <input type="url" required maxLength={2048} value={url} onChange={(event) => setUrl(event.target.value)} />
       </label>
       {errors.url && <p className="error">{errors.url}</p>}
-      <PermissionEvidenceFields value={evidence} onChange={setEvidence} errors={errors} />
       {register.isError && !errors.url && <ErrorMessage error={register.error} />}
       {register.isSuccess && <p role="status">URL registered.</p>}
-      <button type="submit" className="block" disabled={register.isPending || !permission || url.trim() === ""}>
+      <button type="submit" className="block" disabled={register.isPending || url.trim() === ""}>
         Register URL
       </button>
     </form>
@@ -94,13 +87,11 @@ type UploadPhase =
 function UploadForm({ videoId }: { videoId: string }) {
   const invalidate = useInvalidateVideoData();
   const [file, setFile] = useState<File | null>(null);
-  const [evidence, setEvidence] = useState<EvidenceDraft>(EMPTY_EVIDENCE);
   const [phase, setPhase] = useState<UploadPhase>({ kind: "idle" });
-  const permission = toEvidence(evidence);
   const busy = phase.kind === "hashing" || phase.kind === "uploading";
 
   async function start() {
-    if (!file || !permission) {
+    if (!file) {
       return;
     }
     try {
@@ -112,7 +103,6 @@ function UploadForm({ videoId }: { videoId: string }) {
         filename: file.name,
         videoId,
         sha256,
-        permission,
         onProgress: (done, total) => setPhase({ kind: "uploading", done, total }),
       });
       setPhase({ kind: "complete" });
@@ -144,7 +134,6 @@ function UploadForm({ videoId }: { videoId: string }) {
         />
       </label>
       {file && <p className="hint">{formatBytes(file.size)}</p>}
-      <PermissionEvidenceFields value={evidence} onChange={setEvidence} />
 
       {(phase.kind === "hashing" || phase.kind === "uploading") && (
         <div role="status">
@@ -159,7 +148,7 @@ function UploadForm({ videoId }: { videoId: string }) {
       {phase.kind === "interrupted" && <ErrorMessage error={phase.error} />}
       {phase.kind === "failed" && <ErrorMessage error={phase.error} />}
 
-      <button type="submit" className="block" disabled={busy || !file || !permission}>
+      <button type="submit" className="block" disabled={busy || !file}>
         {phase.kind === "interrupted" ? "Resume upload" : "Upload"}
       </button>
     </form>

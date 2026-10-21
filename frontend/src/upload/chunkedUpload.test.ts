@@ -4,7 +4,6 @@ import type { UploadOut } from "../api/types";
 import { type ResumeStore, UploadInterrupted, type UploadTransport, uploadFile } from "./chunkedUpload";
 
 const SHA = "a".repeat(64);
-const PERMISSION = { type: "own_content" as const, statement: "I own this recording." };
 
 function upload(received: number, state = "receiving", size = 10): UploadOut {
   return {
@@ -69,7 +68,6 @@ function options(transport: UploadTransport, store: ResumeStore = memoryStore())
     filename: "talk.mp4",
     videoId: "vid-1",
     sha256: SHA,
-    permission: PERMISSION,
     transport,
     store,
     chunkBytes: 4,
@@ -97,7 +95,6 @@ describe("uploadFile", () => {
       filename: "talk.mp4",
       size_bytes: 10,
       sha256: SHA,
-      permission: PERMISSION,
     });
     expect(store.data.size).toBe(0);
   });

@@ -22,7 +22,7 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-014](adr-014.md) | Idempotent Google Drive uploads | Accepted |
 | [ADR-015](adr-015.md) | Google Drive OAuth and token encryption | Accepted |
 | [ADR-016](adr-016.md) | Telegram initData authentication and session tokens | Accepted |
-| [ADR-017](adr-017.md) | Chunked resumable uploads | Accepted |
+| [ADR-017](adr-017.md) | Chunked resumable uploads | Accepted; evidence part superseded by ADR-031 |
 | [ADR-018](adr-018.md) | Permitted URL downloads via domain allowlist and SSRF guard | Accepted |
 | [ADR-019](adr-019.md) | YouTube discovery for Indonesia with dynamic trending categories | Accepted |
 | [ADR-020](adr-020.md) | Affiliate product matching | Accepted |
@@ -36,3 +36,4 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-028](adr-028.md) | Client-side AI quota guard | Accepted |
 | [ADR-029](adr-029.md) | Clip preview via external Google Drive link | Accepted |
 | [ADR-030](adr-030.md) | Continuous integration on GitHub Actions | Accepted |
+| [ADR-031](adr-031.md) | Source registration without permission evidence | Accepted |

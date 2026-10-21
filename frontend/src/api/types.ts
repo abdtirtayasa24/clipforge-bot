@@ -149,14 +149,6 @@ export interface VideoOut {
   discovered_at: IsoDateTime;
 }
 
-export type PermissionType = "own_content" | "creator_permission" | "license";
-
-export interface PermissionEvidence {
-  type: PermissionType;
-  statement: string;
-  reference?: string | null;
-}
-
 export interface MediaOut {
   id: Uuid;
   video_id: Uuid;
@@ -171,7 +163,6 @@ export interface UploadInit {
   filename: string;
   size_bytes: number;
   sha256: string;
-  permission: PermissionEvidence;
 }
 
 export interface UploadOut {

@@ -18,11 +18,6 @@ from tests.fixtures.make_media import make_media
 UPLOADS = "/api/v1/uploads"
 MIB = 1024 * 1024
 GIB = 1024 * MIB
-EVIDENCE = {
-    "type": "creator_permission",
-    "statement": "The creator granted written permission to clip this video.",
-    "reference": "email from creator, 2026-10-18",
-}
 
 
 class FakeUsage(NamedTuple):
@@ -89,7 +84,6 @@ def init_upload(client: TestClient, video_id: str, data: bytes, **overrides: obj
         "filename": "interview.mp4",
         "size_bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
-        "permission": EVIDENCE,
     }
     merged = body | overrides
     return client.post(
@@ -147,8 +141,7 @@ def test_chunked_upload_completes_and_authorizes_the_video(
     assert asset["kind"] == "upload"
     assert asset["sha256"] == hashlib.sha256(data).hexdigest()
     assert asset["media_info"]["video_codec"] == "h264"
-    assert asset["permission_evidence"]["type"] == "creator_permission"
-    assert asset["permission_evidence"]["recorded_by"]
+    assert set(asset["permission_evidence"]) == {"recorded_by", "recorded_at"}
     source = Path(asset["local_path"])
     assert source == workspace / "sources" / upload_id
     assert source.read_bytes() == data
@@ -268,16 +261,12 @@ def test_chunk_beyond_declared_size_is_rejected(client: TestClient, video_id: st
 @pytest.mark.parametrize(
     "overrides",
     [
-        {"permission": None},
-        {"permission": {"type": "creator_permission"}},
-        {"permission": {**EVIDENCE, "statement": "ok"}},
-        {"permission": {**EVIDENCE, "type": "found_it_online"}},
         {"sha256": "abc"},
         {"size_bytes": 0},
         {"filename": ""},
     ],
 )
-def test_init_requires_valid_evidence_and_metadata(
+def test_init_requires_valid_metadata(
     client: TestClient, video_id: str, overrides: dict[str, object]
 ) -> None:
     assert init_upload(client, video_id, b"x" * 10, **overrides).status_code == 422

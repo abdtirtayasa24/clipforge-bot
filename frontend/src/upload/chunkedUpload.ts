@@ -1,5 +1,5 @@
 import { ApiError, api } from "../api/client";
-import type { PermissionEvidence, UploadInit, UploadOut } from "../api/types";
+import type { UploadInit, UploadOut } from "../api/types";
 
 /** The API's chunk limit (ADR-017); Nginx caps request bodies at 10 MiB. */
 export const CHUNK_BYTES = 8 * 1024 * 1024;
@@ -23,7 +23,6 @@ export interface UploadOptions {
   filename: string;
   videoId: string;
   sha256: string;
-  permission: PermissionEvidence;
   transport?: UploadTransport;
   store?: ResumeStore;
   onProgress?: (sentBytes: number, totalBytes: number) => void;
@@ -132,7 +131,6 @@ export async function uploadFile(options: UploadOptions): Promise<UploadOut> {
       filename: options.filename,
       size_bytes: total,
       sha256: options.sha256,
-      permission: options.permission,
     }));
   store.set(key, upload.id);
 

@@ -12,7 +12,7 @@ a day.
 
 > **Authorized media only.** The YouTube API is used for *discovery metadata*, never for
 > downloading. A video is processed only after the admin uploads the file or registers a
-> permitted download URL, together with evidence of permission.
+> permitted download URL; the admin is responsible for having the right to process it.
 
 ## How it works
 
@@ -51,8 +51,8 @@ flowchart LR
    configured region, picks the chart's top categories dynamically, and checks monitored
    channels. Videos of 30–120 minutes are stored, deduplicated by YouTube id.
 2. **Authorize.** In the Mini App the admin uploads the source file (8 MiB resumable chunks) or
-   registers a URL on the permitted-domain allowlist, with permission evidence. The file must
-   pass format, duration and disk-space checks.
+   registers a URL on the permitted-domain allowlist. The file must pass format, duration and
+   disk-space checks.
 3. **Process.** The worker runs the job through a fixed stage pipeline (below), with every
    stage's result persisted so that it can resume.
 4. **Review.** The admin gets a Telegram message listing the clips with their scores and the
@@ -107,7 +107,7 @@ The scoring weights, clip rules and output format are defined in the
   - The Drive refresh token is encrypted at rest (ADR-015). Logs are structured JSON with
     secrets redacted (ADR-022).
 
-Decisions and their reasoning live in [`docs/adr/`](docs/adr/README.md) (30 ADRs).
+Decisions and their reasoning live in [`docs/adr/`](docs/adr/README.md) (31 ADRs).
 
 ## Tech stack
 

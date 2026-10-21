@@ -11,7 +11,6 @@ from clipforge.api.errors import ApiError, NotFound
 from clipforge.auth.deps import CurrentAdmin, require_admin
 from clipforge.db.app_settings import permitted_download_domains
 from clipforge.db.models import MediaAsset, Video, VideoSource
-from clipforge.ingest.evidence import PermissionEvidence
 from clipforge.ingest.uploads import evidence_record
 from clipforge.security.url_guard import UrlRejected, check_url
 
@@ -124,7 +123,6 @@ class MediaRegistration(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     url: str = Field(min_length=1, max_length=2048)
-    permission: PermissionEvidence
 
 
 class MediaOut(BaseModel):
@@ -155,7 +153,7 @@ async def register_media_url(
         video_id=video_id,
         kind="url",
         source_url=body.url,
-        permission_evidence=evidence_record(body.permission, admin.id),
+        permission_evidence=evidence_record(admin.id),
         state="pending",
     )
     session.add(asset)

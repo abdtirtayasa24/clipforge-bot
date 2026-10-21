@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
 import { jobKeys } from "./jobs";
-import type { Eligibility, JobOut, MediaOut, Page, PermissionEvidence, RightsStatus, SourceStatus, VideoOut } from "./types";
+import type { Eligibility, JobOut, MediaOut, Page, RightsStatus, SourceStatus, VideoOut } from "./types";
 
 export interface VideoFilters {
   eligibility: Eligibility | null;
@@ -41,7 +41,7 @@ export function useInvalidateVideoData() {
 export function useRegisterMediaUrl(videoId: string) {
   const onSuccess = useInvalidateVideoData();
   return useMutation({
-    mutationFn: (body: { url: string; permission: PermissionEvidence }) =>
+    mutationFn: (body: { url: string }) =>
       api.post<MediaOut>(`/videos/${videoId}/media`, body),
     onSuccess,
   });

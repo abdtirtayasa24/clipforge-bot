@@ -35,7 +35,7 @@ YouTube Data API provides discovery metadata, **not permission or an API for arb
 - **REQ-003:** Run discovery once daily and on demand.
 - **REQ-004:** Deduplicate videos and processing jobs.
 - **REQ-005:** Ingest authorized file uploads and permitted download URLs.
-- **REQ-006:** Verify authorization, media formats, and available disk.
+- **REQ-006:** Verify media formats and available disk. No permission evidence is collected; the administrator is responsible for having the right to process each source (ADR-031).
 - **REQ-007:** Transcribe audio through a configurable cloud AI provider.
 - **REQ-008:** Analyze transcript and sampled scenes to rank highlight candidates.
 - **REQ-009:** Produce up to three clips per video.
@@ -166,7 +166,7 @@ Default minimum score: 75. Clip duration: 60–90 seconds by default (adjustable
 | `youtube_sources` | Trending and channel source configurations |
 | `video_sources` | Many-to-many discovery source associations |
 | `videos` | Video metadata, eligibility, rights status |
-| `media_assets` | Permitted URLs, uploaded files, checksums, permission evidence |
+| `media_assets` | Permitted URLs, uploaded files, checksums, who registered each source |
 | `processing_jobs` | Durable queue, stages, attempts, leases, settings snapshot |
 | `job_events` | Immutable stage and error history |
 | `clip_candidates` | Timestamp ranges, scores, explanations |

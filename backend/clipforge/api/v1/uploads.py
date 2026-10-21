@@ -22,7 +22,6 @@ from clipforge.ingest.disk import (
     reserved_disk_bytes,
     workspace_usage,
 )
-from clipforge.ingest.evidence import PermissionEvidence
 from clipforge.queue.errors import PermanentError
 
 router = APIRouter(prefix="/uploads", tags=["uploads"], dependencies=[Depends(require_admin)])
@@ -47,7 +46,6 @@ class UploadInit(BaseModel):
     filename: str = Field(min_length=1, max_length=255)
     size_bytes: int = Field(gt=0, le=MAX_UPLOAD_BYTES)
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
-    permission: PermissionEvidence
 
 
 class UploadOut(BaseModel):
@@ -104,7 +102,7 @@ async def start_upload(
         filename=body.filename,
         size_bytes=body.size_bytes,
         sha256=body.sha256,
-        evidence=uploads.evidence_record(body.permission, admin.id),
+        evidence=uploads.evidence_record(admin.id),
     )
     return UploadOut.of(asset)
 

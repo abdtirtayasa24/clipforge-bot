@@ -231,7 +231,7 @@ account sees "Access denied".
 ## 12. First job (smoke test)
 
 1. **Sources → All videos** → a 30–120 minute video you are authorized to process → upload the
-   file (or register a permitted URL) with the permission evidence → **Queue processing job**.
+   file (or register a permitted URL) → **Queue processing job**.
 2. **Jobs**: the job moves through the stages `validated` → … → `uploading` → `completed`.
    How long that takes depends on the video's length and the AI quotas; the benchmark measures
    it.
