@@ -1,4 +1,4 @@
-import type { DashboardOut, JobDetail, JobOut } from "../api/types";
+import type { DashboardOut, JobDetail, JobOut, VideoOut } from "../api/types";
 
 export function jobFixture(overrides: Partial<JobOut> = {}): JobOut {
   return {
@@ -72,6 +72,26 @@ export function dashboardFixture(overrides: Partial<DashboardOut> = {}): Dashboa
       average_per_completed_job: [{ currency: "USD", estimated: "0.105" }],
       completed_jobs: 4,
     },
+    ...overrides,
+  };
+}
+
+export function videoFixture(overrides: Partial<VideoOut> = {}): VideoOut {
+  return {
+    id: "44444444-4444-4444-4444-444444444444",
+    youtube_video_id: "abcdefghijk",
+    title: "Long podcast episode",
+    channel_id: "UC1234567890123456789012",
+    channel_title: "Podcast ID",
+    category_id: "22",
+    duration_seconds: 5400,
+    published_at: "2026-10-20T10:00:00Z",
+    view_count: 120000,
+    thumbnail_url: null,
+    eligibility: "eligible",
+    rights_status: "unverified",
+    source_status: "awaiting_source",
+    discovered_at: "2026-10-21T06:00:00Z",
     ...overrides,
   };
 }

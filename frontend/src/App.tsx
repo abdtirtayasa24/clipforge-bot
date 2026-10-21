@@ -6,11 +6,16 @@ import { useTelegramAuth } from "./auth/telegram";
 import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
 import Jobs from "./pages/Jobs";
+import Sources from "./pages/Sources";
+import VideoDetail from "./pages/VideoDetail";
+import Videos from "./pages/Videos";
 import { useTelegramBackButton } from "./telegram/webApp";
 
 const NAV_ITEMS = [
   { to: "/", label: "Dashboard" },
   { to: "/jobs", label: "Jobs" },
+  { to: "/videos", label: "Videos" },
+  { to: "/sources", label: "Sources" },
 ];
 
 function createQueryClient(): QueryClient {
@@ -50,6 +55,9 @@ function AppShell() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:jobId" element={<JobDetail />} />
+          <Route path="/videos" element={<Videos />} />
+          <Route path="/videos/:videoId" element={<VideoDetail />} />
+          <Route path="/sources" element={<Sources />} />
         </Routes>
       </main>
     </>

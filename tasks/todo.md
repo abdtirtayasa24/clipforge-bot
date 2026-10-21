@@ -441,9 +441,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `frontend/src/pages/{Dashboard,Jobs,JobDetail}.tsx`, `frontend/src/api/jobs.ts`
 **Size:** M
 
-### - [ ] T36: Sources, Videos, media registration + chunked upload
+### - [x] T36: Sources, Videos, media registration + chunked upload
 **Description:** Source list/create/edit/disable; run discovery; videos list with eligibility/rights status; register permitted URL with evidence form; file upload in 8 MiB chunks with progress, resume, sha256 computed in a Web Worker; queue job with generated Idempotency-Key.
-**Acceptance criteria:** [ ] Upload resumes after network drop; [ ] evidence fields required before submit
+**Acceptance criteria:** [x] Upload resumes after network drop; [x] evidence fields required before submit
 **Verification:** standard frontend checks; manual upload of a real file via Telegram on mobile
 **Dependencies:** T35
 **Files:** `frontend/src/pages/{Sources,Videos,VideoDetail}.tsx`, `frontend/src/upload/{chunkedUpload.ts,hashWorker.ts}`

@@ -116,3 +116,16 @@ def test_pagination(client: TestClient, catalog: dict[str, str]) -> None:
 )
 def test_invalid_query_is_rejected(client: TestClient, params: dict[str, object]) -> None:
     assert client.get(VIDEOS, params=params).status_code == 422
+
+
+def test_video_detail_includes_source_status(client: TestClient, catalog: dict[str, str]) -> None:
+    response = client.get(f"{VIDEOS}/{catalog['b']}")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert (body["id"], body["title"]) == (catalog["b"], "Video b")
+    assert (body["rights_status"], body["source_status"]) == ("authorized", "ready")
+
+
+def test_unknown_video_detail_is_not_found(client: TestClient) -> None:
+    assert client.get(f"{VIDEOS}/{uuid.uuid4()}").status_code == 404

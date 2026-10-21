@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import exists, func, select
+from sqlalchemy import Exists, exists, func, select
 
 from clipforge.api.deps import DbSession, JobQueueDep
 from clipforge.api.errors import ApiError, NotFound
@@ -44,6 +44,33 @@ class VideoPage(BaseModel):
     offset: int
 
 
+def _has_ready_media() -> Exists:
+    return (
+        exists()
+        .where(MediaAsset.video_id == Video.id, MediaAsset.state == "ready")
+        .correlate(Video)
+    )
+
+
+def _video_out(video: Video, has_ready_media: bool) -> VideoOut:
+    return VideoOut(
+        id=video.id,
+        youtube_video_id=video.youtube_video_id,
+        title=video.title,
+        channel_id=video.channel_id,
+        channel_title=video.channel_title,
+        category_id=video.category_id,
+        duration_seconds=video.duration_seconds,
+        published_at=video.published_at,
+        view_count=video.view_count,
+        thumbnail_url=video.thumbnail_url,
+        eligibility=video.eligibility,
+        rights_status=video.rights_status,
+        source_status="ready" if has_ready_media else "awaiting_source",
+        discovered_at=video.discovered_at,
+    )
+
+
 @router.get("")
 async def list_videos(
     session: DbSession,
@@ -54,11 +81,7 @@ async def list_videos(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> VideoPage:
-    has_ready_media = (
-        exists()
-        .where(MediaAsset.video_id == Video.id, MediaAsset.state == "ready")
-        .correlate(Video)
-    )
+    has_ready_media = _has_ready_media()
     query = select(Video, has_ready_media.label("has_ready_media"))
     if eligibility:
         query = query.where(Video.eligibility == eligibility)
@@ -75,26 +98,21 @@ async def list_videos(
     rows = await session.execute(
         query.order_by(Video.discovered_at.desc(), Video.id).limit(limit).offset(offset)
     )
-    items = [
-        VideoOut(
-            id=video.id,
-            youtube_video_id=video.youtube_video_id,
-            title=video.title,
-            channel_id=video.channel_id,
-            channel_title=video.channel_title,
-            category_id=video.category_id,
-            duration_seconds=video.duration_seconds,
-            published_at=video.published_at,
-            view_count=video.view_count,
-            thumbnail_url=video.thumbnail_url,
-            eligibility=video.eligibility,
-            rights_status=video.rights_status,
-            source_status="ready" if ready else "awaiting_source",
-            discovered_at=video.discovered_at,
-        )
-        for video, ready in rows
-    ]
+    items = [_video_out(video, ready) for video, ready in rows]
     return VideoPage(items=items, total=total or 0, limit=limit, offset=offset)
+
+
+@router.get("/{video_id}")
+async def get_video(video_id: uuid.UUID, session: DbSession) -> VideoOut:
+    row = (
+        await session.execute(
+            select(Video, _has_ready_media().label("has_ready_media")).where(Video.id == video_id)
+        )
+    ).first()
+    if row is None:
+        raise NotFound("video not found")
+    video, ready = row
+    return _video_out(video, ready)
 
 
 class UrlRejectedError(ApiError):
