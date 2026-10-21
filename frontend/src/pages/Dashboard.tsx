@@ -1,15 +1,21 @@
-import { Link } from "react-router";
 import { useDashboard } from "../api/jobs";
 import type { CostWindow } from "../api/types";
 import { CostList } from "../components/CostList";
+import { Icon } from "../components/Icon";
+import { ListGroup, ListRow } from "../components/ListRow";
+import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { formatBytes, formatCost, formatDateTime } from "../format";
+
+const ACTIVE_STATUSES = ["queued", "running", "retry_scheduled"];
 
 function CostBreakdown({ title, costWindow }: { title: string; costWindow: CostWindow }) {
   return (
     <div className="card">
       <h3>{title}</h3>
-      <CostList costs={costWindow.totals} />
+      <div className="big-number">
+        <CostList costs={costWindow.totals} />
+      </div>
       {costWindow.by_model.length > 0 && (
         <table>
           <caption className="hint">By provider / model</caption>
@@ -52,49 +58,83 @@ export default function Dashboard() {
     return <ErrorMessage error={dashboard.error} />;
   }
   const data = dashboard.data;
-  const jobCounts = Object.entries(data.jobs_by_status);
+  const count = (status: string) => data.jobs_by_status[status] ?? 0;
+  const active = ACTIVE_STATUSES.reduce((sum, status) => sum + count(status), 0);
+  const completed = count("completed") + count("completed_no_clips");
 
   return (
     <>
-      <h1>Dashboard</h1>
-      <div className="stats">
-        <Link className="card" to="/clips">
-          <div className="hint">Clips awaiting review</div>
-          <strong>{data.clips_awaiting_review}</strong>
-        </Link>
-        <div className="card">
-          <div className="hint">Last discovery run</div>
-          <strong>{formatDateTime(data.last_discovery_run_at)}</strong>
-        </div>
-        <div className="card">
-          <div className="hint">Disk free</div>
-          <strong>{data.disk_free_bytes === null ? "—" : formatBytes(data.disk_free_bytes)}</strong>
-        </div>
-      </div>
+      <PageHeader title="Dashboard" subtitle="Your clip automation at a glance" />
 
-      <section className="card" aria-label="Jobs by status">
-        <h2>Jobs</h2>
-        {jobCounts.length === 0 ? (
-          <p className="hint">No jobs yet.</p>
-        ) : (
-          <div className="row">
-            {jobCounts.map(([status, count]) => (
-              <Link key={status} to={`/jobs?status=${status}`} className="badge">
-                {status}: {count}
-              </Link>
-            ))}
+      <section className="hero" aria-label="Overview">
+        <div className="hero-head">
+          <div>
+            <h2>Overview</h2>
+            <div className="sub">{new Date().toLocaleDateString(undefined, { dateStyle: "medium" })}</div>
           </div>
-        )}
+          <Icon name="sparkles" size={26} />
+        </div>
+        <div className="hero-stats">
+          <div>
+            <strong>{data.clips_awaiting_review}</strong>
+            <span>To review</span>
+          </div>
+          <div>
+            <strong>{active}</strong>
+            <span>Active jobs</span>
+          </div>
+          <div>
+            <strong>{completed}</strong>
+            <span>Completed</span>
+          </div>
+        </div>
       </section>
 
+      <ListGroup label="Needs attention">
+        <ListRow
+          to="/clips"
+          icon="check"
+          tone="green"
+          title={<span className="big-number">{data.clips_awaiting_review}</span>}
+          subtitle="Clips awaiting review"
+        />
+        <ListRow
+          to="/jobs"
+          icon="play"
+          tone="blue"
+          title={<span className="big-number">{active}</span>}
+          subtitle="Processing jobs"
+        />
+        <ListRow
+          to="/jobs?status=failed"
+          icon="alert"
+          tone="red"
+          title={<span className="big-number">{count("failed")}</span>}
+          subtitle="Failed jobs"
+        />
+      </ListGroup>
+
+      <ListGroup title="System">
+        <ListRow icon="clock" tone="purple" title="Last discovery run" subtitle={formatDateTime(data.last_discovery_run_at)} />
+        <ListRow
+          icon="disk"
+          tone="gray"
+          title="Disk free"
+          subtitle={data.disk_free_bytes === null ? "—" : formatBytes(data.disk_free_bytes)}
+        />
+        <ListRow to="/videos" icon="video" tone="orange" title="Videos" subtitle="Discovered and uploaded videos" />
+      </ListGroup>
+
       <section aria-label="Estimated AI cost">
-        <h2>Estimated AI cost</h2>
-        <p className="hint">Estimates from configured provider prices, not invoices.</p>
+        <h2 className="group-title">Estimated AI cost</h2>
+        <p className="hint section-note">Estimates from configured provider prices, not invoices.</p>
         <CostBreakdown title="Last 7 days" costWindow={data.costs.last_7_days} />
         <CostBreakdown title="Last 30 days" costWindow={data.costs.last_30_days} />
         <div className="card">
           <h3>Average per completed job</h3>
-          <CostList costs={data.costs.average_per_completed_job} />
+          <div className="big-number">
+            <CostList costs={data.costs.average_per_completed_job} />
+          </div>
           <div className="hint">{data.costs.completed_jobs} completed jobs in the last 30 days</div>
         </div>
       </section>

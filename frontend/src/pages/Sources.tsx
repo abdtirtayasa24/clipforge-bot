@@ -3,12 +3,23 @@ import { Link } from "react-router";
 import { ApiError } from "../api/client";
 import { useCreateSource, useRunDiscovery, useSources, useUpdateSource } from "../api/sources";
 import type { SourceKind, SourceOut } from "../api/types";
+import { Icon } from "../components/Icon";
+import { IconTile, ListGroup, ListRow } from "../components/ListRow";
+import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { formatDateTime } from "../format";
 
 function fieldErrors(error: unknown): Record<string, string> {
   return error instanceof ApiError ? error.fieldErrors() : {};
 }
+
+type KindFilter = SourceKind | "all";
+
+const KIND_FILTERS: { value: KindFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "trending", label: "Trending" },
+  { value: "channel", label: "Channels" },
+];
 
 function NewSourceForm() {
   const create = useCreateSource();
@@ -34,7 +45,7 @@ function NewSourceForm() {
 
   return (
     <form className="card" aria-label="New source" onSubmit={submit}>
-      <h2>Add source</h2>
+      <h2>New source</h2>
       <label>
         <span>Kind</span>
         <select value={kind} onChange={(event) => setKind(event.target.value as SourceKind)}>
@@ -66,7 +77,7 @@ function NewSourceForm() {
       {errors.channel_id && <p className="error">{errors.channel_id}</p>}
       {errors.region_code && <p className="error">{errors.region_code}</p>}
       {create.isError && Object.keys(errors).length === 0 && <ErrorMessage error={create.error} />}
-      <button type="submit" disabled={create.isPending || name.trim() === ""}>
+      <button type="submit" className="block" disabled={create.isPending || name.trim() === ""}>
         Add source
       </button>
     </form>
@@ -87,50 +98,54 @@ function SourceItem({ source }: { source: SourceOut }) {
   }
 
   return (
-    <li>
-      <div className="row">
-        <strong>{source.name}</strong>
-        <span className="badge">{source.kind}</span>
-        {source.region_code && <span className="badge">{source.region_code}</span>}
-      </div>
-      <div className="hint">
-        {source.channel_id ?? ""} Last run {formatDateTime(source.last_run_at)} ·{" "}
-        <Link to={`/videos?source_id=${source.id}`}>videos</Link>
-      </div>
-      <div className="row">
-        <label className="checkbox">
+    <li className="list-row">
+      <div className="row-body">
+        <IconTile name={source.kind === "trending" ? "trending" : "channel"} tone={source.enabled ? "blue" : "gray"} />
+        <span className="row-text">
+          <span className="row-title">{source.name}</span>
+          <span className="row-subtitle">
+            {source.kind === "trending" ? `Trending · ${source.region_code ?? "—"}` : `Channel · ${source.channel_id ?? ""}`}
+          </span>
+          <span className="row-subtitle">
+            Last run {formatDateTime(source.last_run_at)} · <Link to={`/videos?source_id=${source.id}`}>Videos</Link>
+          </span>
+        </span>
+        <span className="row-trailing">
           <input
             type="checkbox"
+            className="switch"
+            aria-label="Enabled"
             checked={source.enabled}
             disabled={update.isPending}
             onChange={(event) => update.mutate({ id: source.id, body: { enabled: event.target.checked } })}
           />
-          Enabled
-        </label>
-        <button type="button" className="secondary" onClick={() => setEditing(!editing)}>
-          {editing ? "Close" : "Edit"}
-        </button>
-      </div>
-      {editing && (
-        <form aria-label={`Edit ${source.name}`} onSubmit={save}>
-          <label>
-            <span>Name</span>
-            <input required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
-          </label>
-          {errors.name && <p className="error">{errors.name}</p>}
-          {source.kind === "trending" && (
-            <label>
-              <span>Region</span>
-              <input maxLength={2} value={region} onChange={(event) => setRegion(event.target.value)} />
-            </label>
-          )}
-          {errors.region_code && <p className="error">{errors.region_code}</p>}
-          <button type="submit" disabled={update.isPending}>
-            Save
+          <button type="button" className="secondary small" aria-expanded={editing} onClick={() => setEditing(!editing)}>
+            {editing ? "Close" : "Edit"}
           </button>
-        </form>
-      )}
-      {update.isError && Object.keys(errors).length === 0 && <ErrorMessage error={update.error} />}
+        </span>
+      </div>
+      <div className="row-form">
+        {editing && (
+          <form aria-label={`Edit ${source.name}`} onSubmit={save}>
+            <label>
+              <span>Name</span>
+              <input required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
+            </label>
+            {errors.name && <p className="error">{errors.name}</p>}
+            {source.kind === "trending" && (
+              <label>
+                <span>Region</span>
+                <input maxLength={2} value={region} onChange={(event) => setRegion(event.target.value)} />
+              </label>
+            )}
+            {errors.region_code && <p className="error">{errors.region_code}</p>}
+            <button type="submit" className="block" disabled={update.isPending}>
+              Save
+            </button>
+          </form>
+        )}
+        {update.isError && Object.keys(errors).length === 0 && <ErrorMessage error={update.error} />}
+      </div>
     </li>
   );
 }
@@ -138,32 +153,60 @@ function SourceItem({ source }: { source: SourceOut }) {
 export default function Sources() {
   const sources = useSources();
   const discovery = useRunDiscovery();
+  const [kind, setKind] = useState<KindFilter>("all");
+  const [adding, setAdding] = useState(false);
+  const shown = sources.data?.filter((source) => kind === "all" || source.kind === kind) ?? [];
 
   return (
     <>
-      <h1>Sources</h1>
-      <div className="card">
-        <button type="button" disabled={discovery.isPending} onClick={() => discovery.mutate()}>
+      <PageHeader title="Sources" subtitle="Manage your YouTube sources" />
+      <div className="segmented" role="group" aria-label="Source kind">
+        {KIND_FILTERS.map((filter) => (
+          <button key={filter.value} type="button" aria-pressed={filter.value === kind} onClick={() => setKind(filter.value)}>
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="actions">
+        <button type="button" className="with-icon" aria-expanded={adding} onClick={() => setAdding(!adding)}>
+          <Icon name="plus" size={18} />
+          New source
+        </button>
+        <button
+          type="button"
+          className="secondary with-icon"
+          disabled={discovery.isPending}
+          onClick={() => discovery.mutate()}
+        >
+          <Icon name="refresh" size={18} />
           Run discovery now
         </button>
-        {discovery.isSuccess && <p role="status">Discovery started. New videos appear in Videos.</p>}
-        {discovery.isError && <ErrorMessage error={discovery.error} />}
       </div>
+      {discovery.isSuccess && (
+        <p role="status" className="notice">
+          Discovery started. New videos appear in Videos.
+        </p>
+      )}
+      {discovery.isError && <ErrorMessage error={discovery.error} />}
+      {adding && <NewSourceForm />}
 
       {sources.isPending && <Loading />}
       {sources.isError && <ErrorMessage error={sources.error} />}
       {sources.isSuccess &&
-        (sources.data.length === 0 ? (
-          <p className="hint">No sources yet.</p>
+        (shown.length === 0 ? (
+          <p className="empty">{sources.data.length === 0 ? "No sources yet." : "No sources of this kind."}</p>
         ) : (
-          <ul className="list card">
-            {sources.data.map((source) => (
+          <ul className="group-list" aria-label="Sources">
+            {shown.map((source) => (
               <SourceItem key={source.id} source={source} />
             ))}
           </ul>
         ))}
 
-      <NewSourceForm />
+      <ListGroup label="Library">
+        <ListRow to="/videos" icon="video" tone="orange" title="All videos" subtitle="Everything discovered or uploaded" />
+      </ListGroup>
     </>
   );
 }

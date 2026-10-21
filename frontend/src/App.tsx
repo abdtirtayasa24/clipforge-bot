@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
-import { NavLink, Route, Routes } from "react-router";
+import { Link, Route, Routes, useLocation } from "react-router";
 import { ApiError } from "./api/client";
 import { useTelegramAuth } from "./auth/telegram";
 import Affiliate from "./pages/Affiliate";
@@ -9,22 +9,43 @@ import ClipDetail from "./pages/ClipDetail";
 import Clips from "./pages/Clips";
 import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
-import Settings from "./pages/Settings";
+import Settings, { SettingsSection } from "./pages/Settings";
 import Jobs from "./pages/Jobs";
 import Sources from "./pages/Sources";
 import VideoDetail from "./pages/VideoDetail";
 import Videos from "./pages/Videos";
+import { Icon, type IconName } from "./components/Icon";
 import { useTelegramBackButton } from "./telegram/webApp";
 
-const NAV_ITEMS = [
-  { to: "/", label: "Dashboard" },
-  { to: "/clips", label: "Clips" },
-  { to: "/jobs", label: "Jobs" },
-  { to: "/videos", label: "Videos" },
-  { to: "/sources", label: "Sources" },
-  { to: "/affiliate", label: "Affiliate" },
-  { to: "/settings", label: "Settings" },
+/** Bottom tabs; `prefixes` keeps a tab highlighted on the screens pushed from it. */
+const NAV_ITEMS: { to: string; label: string; icon: IconName; prefixes: string[] }[] = [
+  { to: "/", label: "Home", icon: "home", prefixes: [] },
+  { to: "/sources", label: "Sources", icon: "sources", prefixes: ["/sources", "/videos"] },
+  { to: "/jobs", label: "Jobs", icon: "jobs", prefixes: ["/jobs"] },
+  { to: "/clips", label: "Clips", icon: "clips", prefixes: ["/clips"] },
+  { to: "/settings", label: "Settings", icon: "settings", prefixes: ["/settings", "/affiliate"] },
 ];
+
+function isTabActive(item: (typeof NAV_ITEMS)[number], pathname: string): boolean {
+  return item.to === "/" ? pathname === "/" : item.prefixes.some((prefix) => pathname.startsWith(prefix));
+}
+
+function BottomNav() {
+  const { pathname } = useLocation();
+  return (
+    <nav className="tab-bar" aria-label="Main">
+      {NAV_ITEMS.map((item) => {
+        const active = isTabActive(item, pathname);
+        return (
+          <Link key={item.to} to={item.to} className={active ? "active" : undefined} aria-current={active ? "page" : undefined}>
+            <Icon name={item.icon} size={24} />
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -51,13 +72,6 @@ function AppShell() {
   useTelegramBackButton();
   return (
     <>
-      <nav className="tabs" aria-label="Main">
-        {NAV_ITEMS.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.to === "/"}>
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
       <main className="page">
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -70,10 +84,12 @@ function AppShell() {
           <Route path="/sources" element={<Sources />} />
           <Route path="/affiliate" element={<Affiliate />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/:section" element={<SettingsSection />} />
           <Route path="/affiliate/products/new" element={<AffiliateProductForm />} />
           <Route path="/affiliate/products/:productId" element={<AffiliateProductForm />} />
         </Routes>
       </main>
+      <BottomNav />
     </>
   );
 }

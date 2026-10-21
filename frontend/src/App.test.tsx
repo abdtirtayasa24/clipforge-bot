@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it } from "vitest";
 import App from "./App";
@@ -11,9 +11,9 @@ afterEach(() => {
   setAccessToken(null);
 });
 
-function renderApp() {
+function renderApp(route = "/") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[route]}>
       <App />
     </MemoryRouter>,
   );
@@ -55,5 +55,25 @@ describe("App auth gate", () => {
     expect(await screen.findByRole("navigation", { name: "Main" })).toBeInTheDocument();
     expect(webApp.ready).toHaveBeenCalled();
     expect(webApp.expand).toHaveBeenCalled();
+  });
+
+  it("keeps the parent tab highlighted on a pushed screen", async () => {
+    installTelegram();
+    mockApi({
+      "POST /api/v1/auth/telegram": { body: { access_token: "tok", token_type: "bearer", expires_at: "2026-10-21T12:00:00Z" } },
+    });
+
+    renderApp("/affiliate/products/new");
+
+    const nav = await screen.findByRole("navigation", { name: "Main" });
+    expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "Home",
+      "Sources",
+      "Jobs",
+      "Clips",
+      "Settings",
+    ]);
+    expect(within(nav).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
   });
 });

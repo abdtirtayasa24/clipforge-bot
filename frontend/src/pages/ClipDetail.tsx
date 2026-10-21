@@ -6,7 +6,9 @@ import type { CaptionOut, ClipDetail as Clip, ClipScores, ReviewDecision } from 
 import { copyText } from "../clipboard";
 import { AffiliateSuggestions } from "../components/AffiliateSuggestions";
 import { CostList } from "../components/CostList";
+import { Icon } from "../components/Icon";
 import { ErrorMessage, Loading } from "../components/QueryState";
+import { StatusPill } from "../components/StatusPill";
 import { formatDateTime, formatTimestamp } from "../format";
 import { openExternalLink } from "../telegram/webApp";
 
@@ -60,12 +62,12 @@ function ReviewForm({ clip }: { clip: Clip }) {
       </label>
       {errors.note && <p className="error">{errors.note}</p>}
       {review.isError && Object.keys(errors).length === 0 && <ErrorMessage error={review.error} />}
-      <div className="row">
+      <div className="actions">
+        <button type="button" className="outline-danger" disabled={review.isPending} onClick={() => submit("rejected")}>
+          Reject
+        </button>
         <button type="submit" disabled={review.isPending}>
           Approve
-        </button>
-        <button type="button" className="danger" disabled={review.isPending} onClick={() => submit("rejected")}>
-          Reject
         </button>
       </div>
     </form>
@@ -89,7 +91,8 @@ function CaptionDraft({ caption }: { caption: CaptionOut }) {
       <h2>Caption / description draft</h2>
       <p className="hint">Only approved affiliate links are included, with the disclosure. Publishing stays manual.</p>
       <pre className="caption">{caption.text}</pre>
-      <button type="button" onClick={() => void copy()}>
+      <button type="button" className="secondary with-icon block" onClick={() => void copy()}>
+        <Icon name="copy" size={18} />
         Copy caption
       </button>
       {copyState?.ok && <p role="status">Copied.</p>}
@@ -112,15 +115,26 @@ export default function ClipDetail() {
 
   return (
     <>
-      <h1>{data.effective_title ?? "Untitled clip"}</h1>
+      <div className="clip-hero">
+        <Icon name="play" size={40} />
+        <span className="duration">{formatTimestamp(data.end_ms - data.start_ms)}</span>
+      </div>
+      <h1 className="clip-title">{data.effective_title ?? "Untitled clip"}</h1>
       <div className="card">
+        <div className="score-line">
+          <span>Viral score</span>
+          <div className="meter" aria-hidden="true">
+            <span style={{ width: `${Math.min(100, Math.max(0, data.total_score))}%` }} />
+          </div>
+          <strong>{data.total_score}/100</strong>
+        </div>
         <div className="row">
-          <span className="badge">{data.review_status.replace("_", " ")}</span>
+          <StatusPill status={data.review_status} />
           <span className="hint">
             {formatTimestamp(data.start_ms)} – {formatTimestamp(data.end_ms)}
           </span>
         </div>
-        <p className="hint">
+        <p className="hint spaced">
           From <Link to={`/videos/${data.video_id}`}>{data.video_title}</Link> ·{" "}
           <Link to={`/jobs/${data.job_id}`}>job</Link>
         </p>
@@ -131,10 +145,17 @@ export default function ClipDetail() {
         )}
         {data.drive_web_view_link ? (
           <>
-            <button type="button" onClick={() => openExternalLink(data.drive_web_view_link ?? "")}>
+            <button
+              type="button"
+              className="with-icon block"
+              onClick={() => openExternalLink(data.drive_web_view_link ?? "")}
+            >
+              <Icon name="external" size={18} />
               Open in Google Drive
             </button>
-            <p className="hint">Opens outside Telegram; be signed in to the Google account that holds the clips.</p>
+            <p className="hint spaced">
+              Opens outside Telegram; be signed in to the Google account that holds the clips.
+            </p>
           </>
         ) : (
           <p className="hint">Not uploaded to Google Drive yet.</p>
@@ -181,7 +202,7 @@ export default function ClipDetail() {
           <ul className="list">
             {data.reviews.map((entry) => (
               <li key={entry.id}>
-                <span className="badge">{entry.decision}</span> {formatDateTime(entry.created_at)}
+                <StatusPill status={entry.decision} /> <span className="hint">{formatDateTime(entry.created_at)}</span>
                 {entry.title_override && <div className="hint">Title: {entry.title_override}</div>}
                 {entry.note && <div>{entry.note}</div>}
               </li>

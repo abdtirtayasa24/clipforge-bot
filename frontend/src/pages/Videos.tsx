@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import type { Eligibility, RightsStatus, SourceStatus } from "../api/types";
 import { type VideoFilters, useVideos } from "../api/videos";
+import { PageHeader } from "../components/PageHeader";
 import { Pager } from "../components/Pager";
 import { ErrorMessage, Loading } from "../components/QueryState";
-import { formatDuration } from "../format";
+import { StatusPill } from "../components/StatusPill";
+import { VideoThumb } from "../components/VideoThumb";
 
 const FILTERS = {
   eligibility: { label: "Eligibility", options: ["pending", "eligible", "ineligible"] },
@@ -42,8 +44,8 @@ export default function Videos() {
 
   return (
     <>
-      <h1>Videos</h1>
-      <div className="row">
+      <PageHeader title="Videos" subtitle="Discovered videos and their source status" />
+      <div className="filters">
         {(Object.keys(FILTERS) as FilterName[]).map((name) => (
           <label key={name}>
             <span>{FILTERS[name].label}</span>
@@ -59,8 +61,10 @@ export default function Videos() {
         ))}
       </div>
       {filters.source_id && (
-        <p className="hint">
-          Showing one source's videos. <Link to="/videos">Show all</Link>
+        <p className="notice">
+          <span>
+            Showing one source's videos. <Link to="/videos">Show all</Link>
+          </span>
         </p>
       )}
 
@@ -68,29 +72,29 @@ export default function Videos() {
       {videos.isError && <ErrorMessage error={videos.error} />}
       {videos.isSuccess &&
         (videos.data.items.length === 0 ? (
-          <p className="hint">No videos.</p>
+          <p className="empty">No videos.</p>
         ) : (
-          <div className="card">
-            <ul className="list">
+          <>
+            <ul className="media-list">
               {videos.data.items.map((video) => (
                 <li key={video.id}>
-                  <Link to={`/videos/${video.id}`}>
-                    <strong>{video.title}</strong>
-                    <div className="hint">
-                      {video.channel_title ?? video.channel_id}
-                      {video.duration_seconds !== null && ` · ${formatDuration(video.duration_seconds * 1000)}`}
-                    </div>
-                    <div className="row">
-                      <span className="badge">{video.eligibility}</span>
-                      <span className="badge">rights: {video.rights_status}</span>
-                      <span className="badge">{video.source_status.replace("_", " ")}</span>
-                    </div>
+                  <Link className="media-card" to={`/videos/${video.id}`}>
+                    <VideoThumb video={video} />
+                    <span className="media-body">
+                      <span className="media-title">{video.title}</span>
+                      <span className="media-meta">{video.channel_title ?? video.channel_id}</span>
+                      <span className="row">
+                        <StatusPill status={video.eligibility} />
+                        <StatusPill status={video.rights_status} label={`rights: ${video.rights_status}`} />
+                        <StatusPill status={video.source_status} />
+                      </span>
+                    </span>
                   </Link>
                 </li>
               ))}
             </ul>
             <Pager page={videos.data} onOffsetChange={setOffset} />
-          </div>
+          </>
         ))}
     </>
   );

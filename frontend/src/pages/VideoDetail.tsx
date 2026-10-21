@@ -4,8 +4,10 @@ import { ApiError } from "../api/client";
 import { isActiveJob } from "../api/jobs";
 import { useInvalidateVideoData, useQueueJob, useRegisterMediaUrl, useVideo, useVideoJobs } from "../api/videos";
 import { EMPTY_EVIDENCE, type EvidenceDraft, toEvidence } from "../components/evidence";
+import { PageHeader } from "../components/PageHeader";
 import { PermissionEvidenceFields } from "../components/PermissionEvidenceFields";
 import { ErrorMessage, Loading } from "../components/QueryState";
+import { StatusPill } from "../components/StatusPill";
 import { formatBytes, formatDateTime, formatDuration } from "../format";
 import { UploadInterrupted, uploadFile } from "../upload/chunkedUpload";
 import { sha256InWorker } from "../upload/sha256";
@@ -36,7 +38,7 @@ function RegisterUrlForm({ videoId }: { videoId: string }) {
       <PermissionEvidenceFields value={evidence} onChange={setEvidence} errors={errors} />
       {register.isError && !errors.url && <ErrorMessage error={register.error} />}
       {register.isSuccess && <p role="status">URL registered.</p>}
-      <button type="submit" disabled={register.isPending || !permission || url.trim() === ""}>
+      <button type="submit" className="block" disabled={register.isPending || !permission || url.trim() === ""}>
         Register URL
       </button>
     </form>
@@ -119,7 +121,7 @@ function UploadForm({ videoId }: { videoId: string }) {
       {phase.kind === "interrupted" && <ErrorMessage error={phase.error} />}
       {phase.kind === "failed" && <ErrorMessage error={phase.error} />}
 
-      <button type="submit" disabled={busy || !file || !permission}>
+      <button type="submit" className="block" disabled={busy || !file || !permission}>
         {phase.kind === "interrupted" ? "Resume upload" : "Upload"}
       </button>
     </form>
@@ -147,13 +149,17 @@ function VideoJobs({ videoId }: { videoId: string }) {
           {jobs.data.items.map((job) => (
             <li key={job.id}>
               <Link to={`/jobs/${job.id}`}>
-                <span className="badge">{job.status}</span> {job.stage} · {formatDateTime(job.created_at)}
+                <span className="row">
+                  <StatusPill status={job.status} />
+                  <span>{job.stage}</span>
+                  <span className="hint">{formatDateTime(job.created_at)}</span>
+                </span>
               </Link>
             </li>
           ))}
         </ul>
       )}
-      <button type="button" disabled={queue.isPending || hasActiveJob} onClick={queueJob}>
+      <button type="button" className="block" disabled={queue.isPending || hasActiveJob} onClick={queueJob}>
         Queue processing job
       </button>
       {hasActiveJob && <p className="hint">This video already has an active job.</p>}
@@ -179,18 +185,23 @@ export default function VideoDetail() {
 
   return (
     <>
-      <h1>{data.title}</h1>
-      <div className="card">
-        <div className="hint">
-          {data.channel_title ?? data.channel_id}
-          {data.duration_seconds !== null && ` · ${formatDuration(data.duration_seconds * 1000)}`}
-          {data.view_count !== null && ` · ${data.view_count.toLocaleString()} views`}
-        </div>
-        <div className="row">
-          <span className="badge">{data.eligibility}</span>
-          <span className="badge">rights: {data.rights_status}</span>
-          <span className="badge">{data.source_status.replace("_", " ")}</span>
-        </div>
+      {data.thumbnail_url && (
+        <img className="cover" src={data.thumbnail_url} alt="" referrerPolicy="no-referrer" />
+      )}
+      <PageHeader
+        title={data.title}
+        subtitle={
+          <>
+            {data.channel_title ?? data.channel_id}
+            {data.duration_seconds !== null && ` · ${formatDuration(data.duration_seconds * 1000)}`}
+            {data.view_count !== null && ` · ${data.view_count.toLocaleString()} views`}
+          </>
+        }
+      />
+      <div className="row pill-row">
+        <StatusPill status={data.eligibility} />
+        <StatusPill status={data.rights_status} label={`rights: ${data.rights_status}`} />
+        <StatusPill status={data.source_status} />
       </div>
       <VideoJobs videoId={videoId} />
       {data.source_status === "awaiting_source" && (

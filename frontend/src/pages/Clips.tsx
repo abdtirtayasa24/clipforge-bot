@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useClips } from "../api/clips";
 import type { ReviewStatus } from "../api/types";
+import { Chips } from "../components/Chips";
+import { Icon } from "../components/Icon";
+import { PageHeader } from "../components/PageHeader";
 import { Pager } from "../components/Pager";
 import { ErrorMessage, Loading } from "../components/QueryState";
+import { ScoreBadge } from "../components/ScoreBadge";
+import { StatusPill } from "../components/StatusPill";
 import { formatTimestamp } from "../format";
 
 interface Tab {
@@ -29,49 +34,50 @@ export default function Clips() {
 
   return (
     <>
-      <h1>Clips</h1>
-      <div className="row" role="group" aria-label="Review status">
-        {TABS.map((candidate) => (
-          <button
-            key={candidate.status}
-            type="button"
-            className={candidate === tab ? undefined : "secondary"}
-            aria-pressed={candidate === tab}
-            onClick={() => {
-              setOffset(0);
-              setSearchParams({ status: candidate.status });
-            }}
-          >
-            {candidate.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader title="Clips" subtitle="Review and manage generated clips" />
+      <Chips
+        label="Review status"
+        options={TABS.map((candidate) => ({ value: candidate.status, label: candidate.label }))}
+        value={tab.status}
+        onChange={(value) => {
+          setOffset(0);
+          setSearchParams({ status: value });
+        }}
+      />
 
       {clips.isPending && <Loading />}
       {clips.isError && <ErrorMessage error={clips.error} />}
       {clips.isSuccess &&
         (clips.data.items.length === 0 ? (
-          <p className="hint">{tab.empty}</p>
+          <p className="empty">{tab.empty}</p>
         ) : (
-          <div className="card">
-            <ul className="list">
+          <>
+            <ul className="media-list">
               {clips.data.items.map((clip) => (
                 <li key={clip.id}>
-                  <Link to={`/clips/${clip.id}`}>
-                    <strong>{clip.effective_title ?? "Untitled clip"}</strong>
-                    <div className="hint">
-                      {clip.video_title} · {formatTimestamp(clip.start_ms)}–{formatTimestamp(clip.end_ms)}
-                    </div>
-                    <div className="row">
-                      <span className="badge">{clip.review_status.replace("_", " ")}</span>
-                      <span className="badge">score {clip.total_score}</span>
-                    </div>
+                  <Link className="media-card" to={`/clips/${clip.id}`}>
+                    <span className="media-thumb">
+                      <Icon name="play" size={28} />
+                      <span className="duration">{formatTimestamp(clip.end_ms - clip.start_ms)}</span>
+                    </span>
+                    <span className="media-body">
+                      <span className="media-top">
+                        <span className="media-title">{clip.effective_title ?? "Untitled clip"}</span>
+                      </span>
+                      <span className="media-meta">
+                        {clip.video_title} · {formatTimestamp(clip.start_ms)}–{formatTimestamp(clip.end_ms)}
+                      </span>
+                      <span className="row">
+                        <ScoreBadge score={clip.total_score} />
+                        <StatusPill status={clip.review_status} />
+                      </span>
+                    </span>
                   </Link>
                 </li>
               ))}
             </ul>
             <Pager page={clips.data} onOffsetChange={setOffset} />
-          </div>
+          </>
         ))}
     </>
   );

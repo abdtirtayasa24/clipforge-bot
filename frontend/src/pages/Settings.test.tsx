@@ -6,7 +6,7 @@ import { apiError, mockApi } from "../test/fetchMock";
 import { settingsFixture } from "../test/fixtures";
 import { renderPage } from "../test/render";
 import { installTelegram, removeTelegram } from "../test/telegramStub";
-import Settings from "./Settings";
+import Settings, { SettingsSection } from "./Settings";
 
 function provider(overrides: Partial<ProviderOut> = {}): ProviderOut {
   return {
@@ -66,28 +66,57 @@ afterEach(() => {
   removeTelegram();
 });
 
-describe("Settings", () => {
+function renderSection(section: string) {
+  return renderPage(<SettingsSection />, { route: `/settings/${section}`, path: "/settings/:section" });
+}
+
+describe("Settings menu", () => {
+  it("links every section and shows current values", async () => {
+    server();
+    renderPage(<Settings />);
+
+    const clips = await screen.findByRole("link", { name: /Clip generation/ });
+    expect(clips).toHaveAttribute("href", "/settings/clips");
+    expect(screen.getByRole("link", { name: /AI providers/ })).toHaveAttribute("href", "/settings/models");
+    expect(screen.getByRole("link", { name: /YouTube discovery/ })).toHaveAttribute("href", "/settings/discovery");
+    expect(screen.getByRole("link", { name: /Downloads/ })).toHaveAttribute("href", "/settings/downloads");
+    expect(screen.getByRole("link", { name: /Google Drive/ })).toHaveAttribute("href", "/settings/drive");
+    expect(screen.getByRole("link", { name: /Affiliate links/ })).toHaveAttribute("href", "/affiliate");
+    expect(await screen.findByRole("link", { name: /Notifications.*On/ })).toHaveAttribute(
+      "href",
+      "/settings/notifications",
+    );
+  });
+});
+
+describe("Settings sections", () => {
   it("sends only the changed keys and says changes apply to new jobs", async () => {
     const calls = server();
-    renderPage(<Settings />);
+    renderSection("clips");
 
     const minScore = await screen.findByLabelText("Minimum score (0–100)");
     expect(screen.getByText(/apply to new jobs only/)).toBeInTheDocument();
     await userEvent.clear(minScore);
     await userEvent.type(minScore, "80");
-    await userEvent.click(screen.getByLabelText("Telegram notifications"));
     await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
 
-    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({
-      min_score: 80,
-      telegram_notifications_enabled: false,
-    });
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ min_score: 80 });
     expect(await screen.findByText("Settings saved.")).toBeInTheDocument();
+  });
+
+  it("turns Telegram notifications off", async () => {
+    const calls = server();
+    renderSection("notifications");
+
+    await userEvent.click(await screen.findByLabelText("Telegram notifications"));
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ telegram_notifications_enabled: false });
   });
 
   it("bounds inputs to the API limits", async () => {
     server();
-    renderPage(<Settings />);
+    renderSection("clips");
 
     const maxClips = await screen.findByLabelText("Max clips per video (1–3)");
     expect(maxClips).toHaveAttribute("min", "1");
@@ -102,7 +131,7 @@ describe("Settings", () => {
         { loc: ["body", "clip_max_s"], msg: "clip_min_s must not exceed clip_max_s", type: "value_error" },
       ]),
     );
-    renderPage(<Settings />);
+    renderSection("clips");
 
     const minDuration = await screen.findByLabelText("Clip min duration (s)");
     await userEvent.clear(minDuration);
@@ -118,7 +147,7 @@ describe("Settings", () => {
 
   it("offers only enabled models of the matching capability", async () => {
     const calls = server();
-    renderPage(<Settings />);
+    renderSection("models");
 
     const analysis = await screen.findByLabelText("Analysis model");
     const options = within(analysis).getAllByRole("option").map((option) => option.textContent);
@@ -133,7 +162,7 @@ describe("Settings", () => {
 
   it("edits provider prices and quota limits with today's usage", async () => {
     const calls = server();
-    renderPage(<Settings />);
+    renderSection("models");
 
     const card = (await screen.findByText("gemini / gemini-3.5-flash-lite", { selector: "h3" })).closest("form");
     const scope = within(card as HTMLElement);
@@ -148,30 +177,44 @@ describe("Settings", () => {
     });
   });
 
-  it("edits the permitted download domains and excluded categories by name", async () => {
+  it("edits the permitted download domains", async () => {
     const calls = server();
-    renderPage(<Settings />);
+    renderSection("downloads");
 
     const domains = await screen.findByLabelText("Permitted download domains (one per line)");
     await userEvent.type(domains, "\n*.example.org");
-    await userEvent.click(screen.getByRole("checkbox", { name: "Music" }));
     await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
 
     expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({
       permitted_download_domains: ["cdn.example.com", "*.example.org"],
-      discovery: { excluded_category_ids: ["10"] },
     });
+  });
+
+  it("excludes discovery categories by name", async () => {
+    const calls = server();
+    renderSection("discovery");
+
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Music" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ discovery: { excluded_category_ids: ["10"] } });
   });
 
   it("shows Drive status and opens the OAuth consent externally", async () => {
     const webApp = installTelegram();
     server();
-    renderPage(<Settings />);
+    renderSection("drive");
 
     const drive = await screen.findByRole("region", { name: "Google Drive" });
     expect(await within(drive).findByText("disconnected")).toBeInTheDocument();
     await userEvent.click(within(drive).getByRole("button", { name: "Connect Google Drive" }));
 
     await expect.poll(() => webApp.openLink).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2/auth?x=1");
+  });
+
+  it("rejects an unknown section", () => {
+    server();
+    renderSection("nope");
+    expect(screen.getByRole("alert")).toHaveTextContent("unknown settings section");
   });
 });

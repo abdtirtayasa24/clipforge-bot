@@ -9,7 +9,7 @@ export function Pager({ page, onOffsetChange }: { page: Page<unknown>; onOffsetC
     <div className="row">
       <button
         type="button"
-        className="secondary"
+        className="secondary small"
         disabled={page.offset === 0}
         onClick={() => onOffsetChange(Math.max(0, page.offset - page.limit))}
       >
@@ -20,7 +20,7 @@ export function Pager({ page, onOffsetChange }: { page: Page<unknown>; onOffsetC
       </span>
       <button
         type="button"
-        className="secondary"
+        className="secondary small"
         disabled={end >= page.total}
         onClick={() => onOffsetChange(page.offset + page.limit)}
       >

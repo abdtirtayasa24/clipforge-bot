@@ -35,6 +35,7 @@ describe("Sources", () => {
     });
     renderPage(<Sources />);
     await screen.findByText("No sources yet.");
+    await userEvent.click(screen.getByRole("button", { name: "New source" }));
 
     await userEvent.selectOptions(screen.getByLabelText("Kind"), "channel");
     await userEvent.type(screen.getByLabelText("Name"), "My channel");
@@ -54,6 +55,7 @@ describe("Sources", () => {
     });
     renderPage(<Sources />);
     await screen.findByText("No sources yet.");
+    await userEvent.click(screen.getByRole("button", { name: "New source" }));
 
     await userEvent.type(screen.getByLabelText("Name"), "Trending");
     await userEvent.clear(screen.getByLabelText("Region"));
@@ -74,6 +76,21 @@ describe("Sources", () => {
     await userEvent.click(within(item as HTMLElement).getByRole("checkbox", { name: "Enabled" }));
 
     expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ enabled: false });
+  });
+
+  it("filters the list by source kind", async () => {
+    mockApi({
+      "GET /api/v1/sources": {
+        body: { items: [source(), source({ id: "s2", kind: "channel", name: "My channel", channel_id: "UC1" })] },
+      },
+    });
+    renderPage(<Sources />);
+    await screen.findByText("My channel");
+
+    await userEvent.click(screen.getByRole("button", { name: "Channels" }));
+
+    expect(screen.getByText("My channel")).toBeInTheDocument();
+    expect(screen.queryByText("Trending ID")).not.toBeInTheDocument();
   });
 
   it("starts a discovery run and reports a conflict", async () => {

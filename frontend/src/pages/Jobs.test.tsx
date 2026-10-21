@@ -24,7 +24,7 @@ describe("Jobs", () => {
     renderPage(<Jobs />);
     await screen.findByText("No jobs.");
 
-    await userEvent.selectOptions(screen.getByLabelText("Status"), "failed");
+    await userEvent.click(screen.getByRole("button", { name: "Failed" }));
 
     await screen.findByText("No jobs.");
     expect(calls.at(-1)?.query.get("status")).toBe("failed");

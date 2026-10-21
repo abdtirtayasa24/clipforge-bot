@@ -2,7 +2,9 @@ import { useParams } from "react-router";
 import { useJob, useJobAction } from "../api/jobs";
 import type { JobDetail as Job } from "../api/types";
 import { CostList } from "../components/CostList";
+import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
+import { StatusPill } from "../components/StatusPill";
 import { formatCost, formatDateTime, formatDuration } from "../format";
 import { buildStageTimeline } from "../jobs/timeline";
 import { confirmAction } from "../telegram/webApp";
@@ -32,12 +34,12 @@ function JobActions({ job }: { job: Job }) {
   return (
     <div className="row">
       {job.status === "failed" && (
-        <button type="button" disabled={busy} onClick={() => void onRetry()}>
+        <button type="button" className="block" disabled={busy} onClick={() => void onRetry()}>
           Retry
         </button>
       )}
       {CANCELLABLE.has(job.status) && !job.cancel_requested && (
-        <button type="button" className="danger" disabled={busy} onClick={() => void onCancel()}>
+        <button type="button" className="outline-danger block" disabled={busy} onClick={() => void onCancel()}>
           Cancel job
         </button>
       )}
@@ -64,9 +66,7 @@ export default function JobDetail() {
 
   return (
     <>
-      <h1>
-        Job <span className="badge">{data.status}</span>
-      </h1>
+      <PageHeader title="Job" subtitle={`Stage: ${data.stage}`} action={<StatusPill status={data.status} />} />
       <div className="card">
         <dl>
           <dt className="hint">Stage</dt>
@@ -91,7 +91,7 @@ export default function JobDetail() {
 
       <section className="card">
         <h2>Timeline</h2>
-        <ol className="list" aria-label="Stage timeline">
+        <ol className="timeline" aria-label="Stage timeline">
           {timeline.map((segment) => (
             <li key={`${segment.stage}-${segment.startedAt}`}>
               <div className="row">

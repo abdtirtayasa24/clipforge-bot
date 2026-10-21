@@ -4,7 +4,11 @@ import { useDeactivateProduct, useProducts } from "../api/affiliate";
 import { ApiError } from "../api/client";
 import { usePatchSettings, useSettings } from "../api/settings";
 import type { AdminSettings } from "../api/types";
+import { Icon } from "../components/Icon";
+import { IconTile } from "../components/ListRow";
+import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
+import { StatusPill } from "../components/StatusPill";
 
 function AffiliateSettingsForm({ settings }: { settings: AdminSettings }) {
   const patch = usePatchSettings();
@@ -20,15 +24,15 @@ function AffiliateSettingsForm({ settings }: { settings: AdminSettings }) {
 
   return (
     <form className="card" aria-label="Affiliate settings" onSubmit={save}>
-      <h2>Settings</h2>
-      <label className="checkbox">
+      <label className="switch-row">
+        Affiliate links
         <input
           type="checkbox"
+          className="switch"
           checked={settings.affiliate_links_enabled}
           disabled={toggle.isPending}
           onChange={(event) => toggle.mutate({ affiliate_links_enabled: event.target.checked })}
         />
-        Affiliate links
       </label>
       <p className="hint">
         Off: no matching runs and caption exports contain no affiliate links. Approved records are kept for audit.
@@ -60,7 +64,7 @@ function AffiliateSettingsForm({ settings }: { settings: AdminSettings }) {
       {errors.affiliate_disclosure_text && <p className="error">{errors.affiliate_disclosure_text}</p>}
       {patch.isError && Object.keys(errors).length === 0 && <ErrorMessage error={patch.error} />}
       {patch.isSuccess && <p role="status">Saved. Applies to new matches.</p>}
-      <button type="submit" disabled={patch.isPending}>
+      <button type="submit" className="block" disabled={patch.isPending}>
         Save affiliate settings
       </button>
     </form>
@@ -72,37 +76,45 @@ function Catalog() {
   const deactivate = useDeactivateProduct();
 
   return (
-    <section className="card">
-      <div className="row">
+    <section>
+      <div className="section-head">
         <h2>Product catalog</h2>
-        <Link to="/affiliate/products/new">Add product</Link>
+        <Link className="add-link" to="/affiliate/products/new">
+          <Icon name="plus" size={18} />
+          Add product
+        </Link>
       </div>
       {products.isPending && <Loading />}
       {products.isError && <ErrorMessage error={products.error} />}
       {products.isSuccess &&
         (products.data.items.length === 0 ? (
-          <p className="hint">No products yet.</p>
+          <p className="empty">No products yet.</p>
         ) : (
-          <ul className="list" aria-label="Products">
+          <ul className="group-list" aria-label="Products">
             {products.data.items.map((product) => (
-              <li key={product.id}>
-                <Link to={`/affiliate/products/${product.id}`}>
-                  <strong>{product.name}</strong> <span className="hint">{product.merchant}</span>
-                </Link>
-                <div className="row">
-                  <span className="badge">{product.destination_domain}</span>
-                  {!product.active && <span className="badge">inactive</span>}
-                  {product.active && (
-                    <button
-                      type="button"
-                      className="danger"
-                      aria-label={`Deactivate ${product.name}`}
-                      disabled={deactivate.isPending}
-                      onClick={() => deactivate.mutate(product.id)}
-                    >
-                      Deactivate
-                    </button>
-                  )}
+              <li key={product.id} className="list-row">
+                <div className="row-body">
+                  <IconTile name="link" tone={product.active ? "purple" : "gray"} />
+                  <Link className="row-text" to={`/affiliate/products/${product.id}`}>
+                    <span className="row-title">{product.name}</span>
+                    <span className="row-subtitle">
+                      {product.merchant} · {product.destination_domain}
+                    </span>
+                  </Link>
+                  <span className="row-trailing">
+                    {!product.active && <StatusPill status="inactive" />}
+                    {product.active && (
+                      <button
+                        type="button"
+                        className="danger small"
+                        aria-label={`Deactivate ${product.name}`}
+                        disabled={deactivate.isPending}
+                        onClick={() => deactivate.mutate(product.id)}
+                      >
+                        Deactivate
+                      </button>
+                    )}
+                  </span>
                 </div>
               </li>
             ))}
@@ -118,7 +130,7 @@ export default function Affiliate() {
 
   return (
     <>
-      <h1>Affiliate links</h1>
+      <PageHeader title="Affiliate links" subtitle="Suggest relevant products in clip descriptions" />
       {settings.isPending && <Loading />}
       {settings.isError && <ErrorMessage error={settings.error} />}
       {settings.isSuccess && <AffiliateSettingsForm settings={settings.data} />}

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useProducts, useSaveProduct } from "../api/affiliate";
 import { ApiError } from "../api/client";
 import type { ProductOut } from "../api/types";
+import { PageHeader } from "../components/PageHeader";
 import { ErrorMessage, Loading } from "../components/QueryState";
 
 interface Draft {
@@ -87,17 +88,18 @@ function ProductForm({ product }: { product: ProductOut | null }) {
           {(errors[field] ?? errors[`${field}.0`]) && <p className="error">{errors[field] ?? errors[`${field}.0`]}</p>}
         </div>
       ))}
-      <label className="checkbox">
+      <label className="switch-row">
+        Active
         <input
           type="checkbox"
+          className="switch"
           checked={draft.active}
           onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
         />
-        Active
       </label>
       {save.isError && Object.keys(errors).length === 0 && <ErrorMessage error={save.error} />}
       {save.isError && errors[""] && <p className="error">{errors[""]}</p>}
-      <button type="submit" disabled={save.isPending}>
+      <button type="submit" className="block" disabled={save.isPending}>
         Save product
       </button>
     </form>
@@ -124,7 +126,10 @@ export default function AffiliateProductForm() {
   const { productId } = useParams();
   return (
     <>
-      <h1>{productId === undefined ? "New product" : "Edit product"}</h1>
+      <PageHeader
+        title={productId === undefined ? "New product" : "Edit product"}
+        subtitle="Only https links on the product's own domain"
+      />
       {productId === undefined ? <ProductForm product={null} /> : <EditProduct productId={productId} />}
     </>
   );
