@@ -481,9 +481,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 7 — Reliability, Hardening, Handover (M6–M7)
 
-### - [ ] T40: Reliability test suite
+### - [x] T40: Reliability test suite
 **Description:** Scripted scenarios (integration + VPS runbook): `kill -9` during each stage; lease expiry with two workers; DB connection drop; provider timeouts/429; Drive 5xx + ambiguous completion; disk-full admission; discovery API failure; cancellation mid-render.
-**Acceptance criteria:** [ ] Every scenario either recovers or fails visibly (job `failed` + event + notification), never silent; [ ] 0 duplicate Drive files
+**Acceptance criteria:** [x] Every scenario either recovers or fails visibly (job `failed` + event + notification), never silent; [x] 0 duplicate Drive files *(21 scenarios in `tests/reliability`; found and fixed a stale-worker duplicate upload; VPS scenario log pending, `docs/reliability-report.md`)*
 **Verification:** `rtk test python -m pytest tests/reliability`; VPS scenario log attached to `docs/reliability-report.md`
 **Dependencies:** Checkpoint M5
 **Files:** `backend/tests/reliability/*`, `docs/reliability-report.md`

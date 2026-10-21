@@ -57,7 +57,7 @@ class UploadStage:
             if artifact.upload_state == "verified":
                 outcomes["already_verified"] += 1
             else:
-                outcomes[await self._upload(clip, artifact)] += 1
+                outcomes[await self._upload(ctx, clip, artifact)] += 1
             await self._delete_local(artifact.id, artifact.local_path)
         return StageResult(
             details={
@@ -66,7 +66,7 @@ class UploadStage:
             }
         )
 
-    async def _upload(self, clip: Clip, artifact: ClipArtifact) -> str:
+    async def _upload(self, ctx: StageContext, clip: Clip, artifact: ClipArtifact) -> str:
         if self._drive is None:
             raise DriveNotConnected("Google Drive OAuth is not configured")
         drive = self._drive
@@ -93,9 +93,13 @@ class UploadStage:
             except UploadSessionExpired:
                 logger.info("upload session expired; starting a new one")
         if uploaded is None:
+            folder_id = await drive.folder_id()
+            # Drive writes are not fenced: a worker that stalled past its lease must not start
+            # a second copy while the worker that reclaimed the job uploads this clip.
+            await ctx.queue.renew(ctx.job.lease)
             session_uri = await drive.start_upload(
                 drive_file_name(clip.title_override or clip.title, clip.id),
-                await drive.folder_id(),
+                folder_id,
                 clip.id,
                 artifact.size_bytes,
             )

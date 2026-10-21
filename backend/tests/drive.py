@@ -43,6 +43,8 @@ class FakeDrive:
         self.crash_after_chunks: int | None = None
         self.crash_on_complete = False
         self.corrupt_md5 = False
+        # Answer this many of the next chunk uploads with HTTP 503.
+        self.chunk_server_errors = 0
 
     def live_files(self, **app_properties: str) -> list[dict[str, Any]]:
         return [
@@ -109,6 +111,9 @@ class FakeDrive:
         content_range = request.headers["Content-Range"]
         if content_range.startswith("bytes */"):
             return self._progress(session)
+        if self.chunk_server_errors:
+            self.chunk_server_errors -= 1
+            return httpx.Response(503, json={"error": {"code": 503}})
         start = int(content_range.removeprefix("bytes ").split("-")[0])
         if start != len(session.received):
             return httpx.Response(400, json={"error": {"code": 400}})
