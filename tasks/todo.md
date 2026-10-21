@@ -515,7 +515,7 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ### - [ ] T44: Production rollout + 7-day pilot
 **Description:** Deploy tagged release, enable timer, run pilot on representative authorized videos; track spec pilot metrics table daily (discovery 7/7, success ≥ 90 %, 0 duplicate uploads, 0 unauthorized access, 100 % duration compliance, ≤ 3 clips/source, ≥ 5 GB free, ≥ 70 % usable, affiliate toggle/approval/disclosure 100 %).
-**Acceptance criteria:** [ ] All pilot targets met or deviations documented with fixes
+**Acceptance criteria:** [ ] All pilot targets met or deviations documented with fixes *(release + pilot procedure, daily metric queries (validated against the schema) and log template in `docs/pilot-report.md`; the 7-day VPS pilot is pending)*
 **Verification:** `docs/pilot-report.md` with daily metrics
 **Dependencies:** T43
 **Files:** `docs/pilot-report.md`
