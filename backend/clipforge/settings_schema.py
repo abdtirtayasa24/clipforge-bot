@@ -50,8 +50,8 @@ class SettingsSchema(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     min_score: float = Field(default=75, ge=0, le=100)
-    clip_min_s: float = Field(default=20, ge=5, le=180)
-    clip_max_s: float = Field(default=60, ge=5, le=180)
+    clip_min_s: float = Field(default=60, ge=5, le=180)
+    clip_max_s: float = Field(default=90, ge=5, le=180)
     max_clips: int = Field(default=3, ge=1, le=3)
     max_overlap: float = Field(default=0.2, ge=0, le=1)
     audio_chunk_minutes: int = Field(default=20, ge=1, le=28)
@@ -93,8 +93,8 @@ class SettingsSchema(BaseModel):
 class AdminSettings(SettingsSchema):
     """What an administrator may set: the spec's bounds, tighter than stored jobs tolerate."""
 
-    clip_min_s: float = Field(default=20, ge=20, le=60)
-    clip_max_s: float = Field(default=60, ge=20, le=60)
+    clip_min_s: float = Field(default=60, ge=20, le=90)
+    clip_max_s: float = Field(default=90, ge=20, le=90)
     max_overlap: float = Field(default=0.2, ge=0, le=0.2)
 
 

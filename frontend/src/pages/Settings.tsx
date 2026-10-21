@@ -54,8 +54,8 @@ interface NumberField {
 
 const CLIP_FIELDS: NumberField[] = [
   { key: "min_score", label: "Minimum score (0–100)", min: 0, max: 100, step: 1 },
-  { key: "clip_min_s", label: "Clip min duration (s)", min: 20, max: 60, step: 1 },
-  { key: "clip_max_s", label: "Clip max duration (s)", min: 20, max: 60, step: 1 },
+  { key: "clip_min_s", label: "Clip min duration (s)", min: 20, max: 90, step: 1 },
+  { key: "clip_max_s", label: "Clip max duration (s)", min: 20, max: 90, step: 1 },
   { key: "max_clips", label: "Max clips per video (1–3)", min: 1, max: 3, step: 1 },
   { key: "max_overlap", label: "Max overlap (0–0.2)", min: 0, max: 0.2, step: 0.01 },
 ];

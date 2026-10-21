@@ -71,30 +71,30 @@ def test_threshold_edge(total: str, kept: bool) -> None:
 @pytest.mark.parametrize(
     ("second_start", "kept"),
     [
-        # Both clips are 50 s long; the second overlaps the first by 9.5 s (19 %) or 10.5 s (21 %).
-        (140.5, True),
-        (139.5, False),
+        # Both clips are 70 s long; the second overlaps the first by 13.5 s (19 %) or 14.5 s (21 %).
+        (156.5, True),
+        (155.5, False),
     ],
 )
 def test_overlap_limit(second_start: float, kept: bool) -> None:
-    first = scored(100, 150, "90")
-    second = scored(second_start, second_start + 50, "80")
+    first = scored(100, 170, "90")
+    second = scored(second_start, second_start + 70, "80")
 
     selected = select([first, second], transcript(), DEFAULTS)
 
     assert spans(selected) == (
-        [(100, 150), (second_start, second_start + 50)] if kept else [(100, 150)]
+        [(100, 170), (second_start, second_start + 70)] if kept else [(100, 170)]
     )
 
 
 @pytest.mark.parametrize(
     ("start", "end", "expected"),
     [
-        (10, 40, (10, 40)),
-        (10, 90, (10, 70)),  # too long: cut at the last boundary within 60 s
-        (10, 20, (10, 30)),  # too short: extended to the first boundary after 20 s
-        (10, 30, (10, 30)),
+        (10, 80, (10, 80)),
+        (10, 120, (10, 100)),  # too long: cut at the last boundary within 90 s
+        (10, 50, (10, 70)),  # too short: extended to the first boundary after 60 s
         (10, 70, (10, 70)),
+        (10, 100, (10, 100)),
     ],
 )
 def test_duration_is_clamped_to_the_configured_range(
@@ -107,15 +107,15 @@ def test_candidates_snap_to_segment_boundaries() -> None:
     sentences = TranscriptResult(
         segments=[
             Segment(text="a", start_s=0, end_s=12),
-            Segment(text="b", start_s=12, end_s=31),
-            Segment(text="c", start_s=31, end_s=55),
-            Segment(text="d", start_s=55, end_s=70),
+            Segment(text="b", start_s=12, end_s=41),
+            Segment(text="c", start_s=41, end_s=85),
+            Segment(text="d", start_s=85, end_s=100),
         ]
     )
 
-    selected = select([scored(13.4, 53.0, "90")], sentences, DEFAULTS)
+    selected = select([scored(13.4, 83.0, "90")], sentences, DEFAULTS)
 
-    assert spans(selected) == [(12, 55)]
+    assert spans(selected) == [(12, 85)]
 
 
 def test_candidate_that_cannot_fit_the_range_is_discarded() -> None:

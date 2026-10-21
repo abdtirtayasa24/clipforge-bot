@@ -67,8 +67,8 @@ class AnalysisContext(BaseModel):
     channel_title: str | None = None
     language: str | None = None
     duration_s: float
-    clip_min_s: float = 20
-    clip_max_s: float = 60
+    clip_min_s: float = 60
+    clip_max_s: float = 90
 
 
 class Frame(BaseModel):

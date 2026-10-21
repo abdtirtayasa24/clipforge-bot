@@ -64,7 +64,7 @@ SELECT d.day,
   (SELECT round(100.0 * count(*) FILTER (WHERE status IN ('completed', 'completed_no_clips'))
           / nullif(count(*), 0), 1) FROM jobs j WHERE j.day = d.day) AS success_pct,
   (SELECT count(*) FROM pilot_clips c WHERE c.day = d.day) AS clips,
-  (SELECT round(100.0 * count(*) FILTER (WHERE ms BETWEEN 20000 AND 60000)
+  (SELECT round(100.0 * count(*) FILTER (WHERE ms BETWEEN 60000 AND 90000)
           / nullif(count(*), 0), 1) FROM pilot_clips c WHERE c.day = d.day) AS duration_ok_pct,
   (SELECT max(n) FROM (SELECT count(*) AS n FROM pilot_clips c WHERE c.day = d.day
                        GROUP BY c.job_id) per_job) AS max_clips_per_source,
@@ -76,7 +76,7 @@ SELECT d.day,
 FROM days d ORDER BY d.day;
 ```
 
-`duration_ok_pct` uses the default 20–60 s bounds. Use your configured `clip_min_s` and
+`duration_ok_pct` uses the default 60–90 s bounds. Use your configured `clip_min_s` and
 `clip_max_s` if you changed them.
 
 Affiliate toggle history, used to check that no suggestion was created while it was off:

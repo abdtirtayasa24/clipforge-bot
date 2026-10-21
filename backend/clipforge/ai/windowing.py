@@ -23,7 +23,8 @@ from clipforge.settings_schema import ProviderSnapshot
 logger = logging.getLogger(__name__)
 
 WINDOW_S = 540.0
-WINDOW_OVERLAP_S = 60.0
+# At least the longest allowed clip, so a clip crossing a window edge fits whole in one window.
+WINDOW_OVERLAP_S = 90.0
 # Proposals from neighbouring windows overlapping this much are the same moment.
 DUPLICATE_OVERLAP = 0.5
 FRAMES_PER_CANDIDATE = 4

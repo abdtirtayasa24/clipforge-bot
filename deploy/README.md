@@ -352,7 +352,7 @@ out: the job waits for the reset without using an attempt. `costs` shows the est
 There is no clips API before Phase 5; inspect the results in the Supabase SQL editor:
 
 ```sql
--- Candidates: selected ones first (≤ 3, each 20–60 s, total ≥ 75)
+-- Candidates: selected ones first (≤ 3, each 60–90 s by default, total ≥ 75)
 SELECT rank, selected, total_score, round((end_ms - start_ms) / 1000.0, 1) AS seconds,
        to_char(make_interval(secs => start_ms / 1000.0), 'HH24:MI:SS') AS starts_at,
        title, hook_line, hook_score, emotion_score, clarity_score, relevance_score,

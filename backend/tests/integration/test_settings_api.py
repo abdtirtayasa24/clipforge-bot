@@ -49,7 +49,7 @@ def test_get_returns_the_stored_settings(client: TestClient) -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert (body["min_score"], body["clip_min_s"], body["clip_max_s"]) == (75, 20, 60)
+    assert (body["min_score"], body["clip_min_s"], body["clip_max_s"]) == (75, 60, 90)
     assert body["affiliate_links_enabled"] is False
     assert body["discovery"]["region_code"] == "ID"
     assert body["models"]["analysis"] == "gemini-3.5-flash-lite"
@@ -84,7 +84,7 @@ def test_patch_updates_values_merges_nested_objects_and_audits(
         {"models": {"bogus": "x"}},
         {"clip_min_s": 50, "clip_max_s": 40},
         {"clip_min_s": 10},
-        {"clip_max_s": 90},
+        {"clip_max_s": 91},
         {"max_clips": 0},
         {"max_clips": 4},
         {"min_score": 101},

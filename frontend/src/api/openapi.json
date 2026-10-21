@@ -2039,17 +2039,17 @@
           },
           "clip_min_s": {
             "type": "number",
-            "maximum": 60.0,
+            "maximum": 90.0,
             "minimum": 20.0,
             "title": "Clip Min S",
-            "default": 20
+            "default": 60
           },
           "clip_max_s": {
             "type": "number",
-            "maximum": 60.0,
+            "maximum": 90.0,
             "minimum": 20.0,
             "title": "Clip Max S",
-            "default": 60
+            "default": 90
           },
           "max_clips": {
             "type": "integer",

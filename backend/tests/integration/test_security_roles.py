@@ -151,8 +151,8 @@ def test_affiliate_links_disabled_by_default(db_conn: psycopg.Connection) -> Non
 
 def test_default_settings_are_seeded(db_conn: psycopg.Connection) -> None:
     assert setting(db_conn, "min_score") == 75
-    assert setting(db_conn, "clip_min_s") == 20
-    assert setting(db_conn, "clip_max_s") == 60
+    assert setting(db_conn, "clip_min_s") == 60
+    assert setting(db_conn, "clip_max_s") == 90
     assert setting(db_conn, "max_clips") == 3
     assert setting(db_conn, "max_overlap") == 0.2
     assert setting(db_conn, "affiliate_min_relevance") == 0.7

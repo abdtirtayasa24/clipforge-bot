@@ -18,7 +18,7 @@ from clipforge.settings_schema import (
 def test_defaults_match_the_spec() -> None:
     settings = SettingsSchema()
 
-    assert (settings.min_score, settings.clip_min_s, settings.clip_max_s) == (75, 20, 60)
+    assert (settings.min_score, settings.clip_min_s, settings.clip_max_s) == (75, 60, 90)
     assert (settings.max_clips, settings.max_overlap, settings.audio_chunk_minutes) == (3, 0.2, 20)
     assert settings.models.transcription == "gemini-3.5-transcribe"
 
@@ -133,7 +133,7 @@ def test_iso_region_list_is_complete() -> None:
     "values",
     [
         {"clip_min_s": 19},
-        {"clip_max_s": 61},
+        {"clip_max_s": 91},
         {"clip_min_s": 40, "clip_max_s": 30},
         {"max_clips": 0},
         {"max_clips": 4},
@@ -150,10 +150,10 @@ def test_admin_settings_use_the_spec_bounds(values: dict[str, object]) -> None:
 
 def test_admin_settings_accept_the_spec_edges() -> None:
     settings = AdminSettings.model_validate(
-        {"clip_min_s": 20, "clip_max_s": 60, "max_overlap": 0.2, "min_score": 100}
+        {"clip_min_s": 20, "clip_max_s": 90, "max_overlap": 0.2, "min_score": 100}
     )
 
-    assert (settings.clip_min_s, settings.clip_max_s, settings.max_overlap) == (20, 60, 0.2)
+    assert (settings.clip_min_s, settings.clip_max_s, settings.max_overlap) == (20, 90, 0.2)
 
 
 def test_settings_patch_covers_every_admin_setting() -> None:

@@ -179,8 +179,8 @@ export function linkFixture(overrides: Partial<AffiliateLinkOut> = {}): Affiliat
 export function settingsFixture(overrides: Partial<AdminSettings> = {}): AdminSettings {
   return {
     min_score: 75,
-    clip_min_s: 20,
-    clip_max_s: 60,
+    clip_min_s: 60,
+    clip_max_s: 90,
     max_clips: 3,
     max_overlap: 0.2,
     audio_chunk_minutes: 20,

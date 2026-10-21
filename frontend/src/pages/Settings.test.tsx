@@ -152,6 +152,7 @@ describe("Settings sections", () => {
     expect(maxClips).toHaveAttribute("max", "3");
     expect(screen.getByLabelText("Max overlap (0–0.2)")).toHaveAttribute("max", "0.2");
     expect(screen.getByLabelText("Clip min duration (s)")).toHaveAttribute("min", "20");
+    expect(screen.getByLabelText("Clip max duration (s)")).toHaveAttribute("max", "90");
   });
 
   it("shows API validation errors inline", async () => {

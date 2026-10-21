@@ -52,6 +52,32 @@ def test_upgrade_downgrade_upgrade_round_trip(create_database: Callable[[], str]
     assert CORE_TABLES.issubset(public_tables(url))
 
 
+def clip_range(url: str) -> list[object]:
+    with psycopg.connect(libpq_url(url)) as conn:
+        rows = conn.execute(
+            "SELECT value FROM app_settings WHERE key IN ('clip_min_s', 'clip_max_s') ORDER BY key"
+        ).fetchall()
+    return [row[0] for row in rows]
+
+
+def test_clip_duration_defaults_move_to_60_90_unless_changed(
+    create_database: Callable[[], str],
+) -> None:
+    default_url, changed_url = create_database(), create_database()
+    for url in (default_url, changed_url):
+        command.upgrade(alembic_config(url), "0008")
+    with psycopg.connect(libpq_url(changed_url), autocommit=True) as conn:
+        conn.execute("UPDATE app_settings SET value = '30' WHERE key = 'clip_min_s'")
+
+    for url in (default_url, changed_url):
+        command.upgrade(alembic_config(url), "head")
+
+    assert clip_range(default_url) == [90, 60]
+    assert clip_range(changed_url) == [60, 30]
+    command.downgrade(alembic_config(default_url), "0008")
+    assert clip_range(default_url) == [60, 20]
+
+
 def insert_video(conn: psycopg.Connection, youtube_video_id: str) -> object:
     row = conn.execute(
         "INSERT INTO videos (youtube_video_id, title, channel_id) "
