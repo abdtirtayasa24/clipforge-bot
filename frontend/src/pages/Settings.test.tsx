@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import type { AdminSettings, DriveStatus, ProviderOut } from "../api/types";
+import type { AdminSettings, DriveStatus, ProviderOut, SettingsPatch } from "../api/types";
 import { apiError, mockApi } from "../test/fetchMock";
 import { settingsFixture } from "../test/fixtures";
 import { renderPage } from "../test/render";
@@ -46,7 +46,14 @@ function server(patchReply?: (body: unknown) => { status?: number; body?: unknow
       if (patchReply) {
         return patchReply(call.body);
       }
-      settings = { ...settings, ...(call.body as Partial<AdminSettings>) };
+      // Like the API: only sent keys change, nested sections are merged, the full settings come back.
+      const patch = call.body as SettingsPatch;
+      settings = {
+        ...settings,
+        ...patch,
+        discovery: { ...settings.discovery, ...patch.discovery },
+        models: { ...settings.models, ...patch.models },
+      } as AdminSettings;
       return { body: settings };
     },
     "GET /api/v1/ai/providers": { body: { items: PROVIDERS } },
