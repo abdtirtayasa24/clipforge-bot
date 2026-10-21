@@ -77,8 +77,8 @@ sudo ./deploy/install.sh
 ```
 
 Syncs the backend to `/opt/clipforge-bot/backend`, creates the venv as `clipforge`, runs
-`uv pip install .`, records `uv pip freeze` in `/opt/clipforge-bot/releases/`, applies migrations
-001–005 and installs `clipforge-api.service`.
+`uv pip install .`, records `uv pip freeze` in `/opt/clipforge-bot/releases/`, applies every
+migration and installs the systemd units.
 
 Check the migration state:
 
@@ -88,7 +88,7 @@ sudo env CLIPFORGE_MIGRATION_DATABASE_URL="$(sudo sed -n 's/^CLIPFORGE_MIGRATION
   .venv/bin/alembic current
 ```
 
-Expected: `0005 (head)`.
+Expected: the newest revision in `backend/migrations/versions/` followed by `(head)`, e.g. `0008 (head)`.
 
 ## 6. Runtime database login
 

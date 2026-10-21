@@ -505,9 +505,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `backend/clipforge/tools/benchmark_report.py`, `docs/benchmark-report.md`
 **Size:** S
 
-### - [ ] T43: Handover documentation
+### - [x] T43: Handover documentation
 **Description:** `docs/installation.md` (VPS from scratch: Phase 1 commands, uv, env, migrations, systemd, Nginx, BotFather Mini App setup, Google OAuth client, Supabase role creation), `docs/backup-restore.md` (Supabase backups/PITR, env + Fernet key escrow, Drive), `docs/runbook.md` (service ops, logs via journalctl, stuck job handling, retry/cancel, disk pressure, rotating secrets, upgrading with `git pull` + `uv pip install .`, rollback to the previous tag + its recorded `uv pip freeze`). Update graph: `/graphify . --update`.
-**Acceptance criteria:** [ ] A fresh VPS install following only the docs succeeds (dry-run by human)
+**Acceptance criteria:** [ ] A fresh VPS install following only the docs succeeds (dry-run by human) *(docs written; `graphify query "how do I recover a stuck job"` returns the runbook nodes; human dry-run pending)*
 **Verification:** human walkthrough; `graphify query "how do I recover a stuck job"` returns runbook nodes
 **Dependencies:** T42
 **Files:** `docs/{installation,backup-restore,runbook}.md`
