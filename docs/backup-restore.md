@@ -89,9 +89,11 @@ from the dump.
 3. Run `sudo ./deploy/install.sh` to create the schema. Then create the runtime login
    (installation.md step 5).
 4. Empty the rows the migrations seeded, so the dump's rows replace them. In the SQL editor of
-   the **new** project:
+   the **new** project, run both statements together. `job_events` is append-only by trigger,
+   so triggers are switched off for this session:
 
    ```sql
+   SET session_replication_role = replica;
    DO $$ DECLARE t TEXT; BEGIN
      FOR t IN SELECT tablename FROM pg_tables
               WHERE schemaname = 'public' AND tablename <> 'alembic_version' LOOP
