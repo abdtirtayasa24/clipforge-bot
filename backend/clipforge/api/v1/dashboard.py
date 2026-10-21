@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from sqlalchemy import Date, cast, func, select
 
 from clipforge.api.deps import DbSession, SettingsDep
-from clipforge.api.v1.schemas.jobs import CostOut, cost_lines, decimal_text
+from clipforge.api.v1.schemas.jobs import CostOut, StageCost, cost_lines, decimal_text
 from clipforge.auth.deps import require_admin
 from clipforge.db.models import Clip, ProcessingJob, ProviderUsage, YoutubeSource
 
@@ -29,10 +29,6 @@ class DayCost(CostOut):
 class ModelCost(CostOut):
     provider: str
     model: str
-
-
-class StageCost(CostOut):
-    stage: str | None
 
 
 class CostWindow(BaseModel):

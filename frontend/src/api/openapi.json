@@ -3285,6 +3285,13 @@
             },
             "type": "array",
             "title": "Costs"
+          },
+          "costs_by_stage": {
+            "items": {
+              "$ref": "#/components/schemas/StageCost"
+            },
+            "type": "array",
+            "title": "Costs By Stage"
           }
         },
         "type": "object",
@@ -3304,7 +3311,8 @@
           "created_at",
           "updated_at",
           "events",
-          "costs"
+          "costs",
+          "costs_by_stage"
         ],
         "title": "JobDetail"
       },

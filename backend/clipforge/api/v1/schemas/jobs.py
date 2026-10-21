@@ -44,6 +44,10 @@ class CostOut(BaseModel):
     estimated: str
 
 
+class StageCost(CostOut):
+    stage: str | None
+
+
 def decimal_text(value: Decimal) -> str:
     return f"{value.normalize():f}"
 
@@ -58,6 +62,7 @@ def cost_lines(costs: Mapping[str, Decimal]) -> list[CostOut]:
 class JobDetail(JobOut):
     events: list[JobEventOut]
     costs: list[CostOut]
+    costs_by_stage: list[StageCost]
 
 
 class JobPage(BaseModel):

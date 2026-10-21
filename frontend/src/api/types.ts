@@ -98,6 +98,7 @@ export interface JobEventOut {
 export interface JobDetail extends JobOut {
   events: JobEventOut[];
   costs: CostOut[];
+  costs_by_stage: StageCost[];
 }
 
 export type SourceKind = "trending" | "channel";

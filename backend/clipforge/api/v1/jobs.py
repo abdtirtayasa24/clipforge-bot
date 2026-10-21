@@ -6,7 +6,15 @@ from sqlalchemy import and_, func, or_, select
 
 from clipforge.api.deps import DbSession, JobQueueDep
 from clipforge.api.errors import ApiError, Conflict, NotFound
-from clipforge.api.v1.schemas.jobs import JobDetail, JobEventOut, JobOut, JobPage, cost_lines
+from clipforge.api.v1.schemas.jobs import (
+    JobDetail,
+    JobEventOut,
+    JobOut,
+    JobPage,
+    StageCost,
+    cost_lines,
+    decimal_text,
+)
 from clipforge.auth.deps import require_admin
 from clipforge.db.models import JobEvent, MediaAsset, ProcessingJob, Video
 from clipforge.queue.errors import (
@@ -109,11 +117,16 @@ async def get_job(job_id: uuid.UUID, session: DbSession, queue: JobQueueDep) -> 
         select(JobEvent).where(JobEvent.job_id == job_id).order_by(JobEvent.id)
     )
     costs = await queue.estimated_costs(job_id)
+    stage_costs = await queue.estimated_costs_by_stage(job_id)
     return JobDetail.model_validate(
         {
             **JobOut.model_validate(job).model_dump(),
             "events": [JobEventOut.model_validate(event) for event in events],
             "costs": cost_lines(costs),
+            "costs_by_stage": [
+                StageCost(stage=stage, currency=currency, estimated=decimal_text(total))
+                for (stage, currency), total in stage_costs.items()
+            ],
         }
     )
 

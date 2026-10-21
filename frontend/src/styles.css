@@ -214,3 +214,31 @@ pre.caption {
   border-radius: 8px;
   font-family: inherit;
 }
+
+a.card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+h3 {
+  font-size: 0.95rem;
+  margin: 0 0 6px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+}
+
+dd {
+  margin: 0;
+}
+
+.list a {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}

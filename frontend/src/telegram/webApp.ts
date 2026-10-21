@@ -117,3 +117,15 @@ export function useTelegramMainButton({ text, onClick, enabled = true, busy = fa
     }
   }, [enabled, busy]);
 }
+
+export function confirmAction(message: string): Promise<boolean> {
+  const webApp = telegramWebApp();
+  if (!webApp) {
+    return Promise.resolve(window.confirm(message));
+  }
+  return new Promise((resolve) => {
+    webApp.showConfirm(message, (confirmed) => {
+      resolve(confirmed);
+    });
+  });
+}

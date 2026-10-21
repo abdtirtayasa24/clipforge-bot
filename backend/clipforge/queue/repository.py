@@ -265,6 +265,23 @@ class JobQueue:
             )
             return {currency: total for currency, total in rows}
 
+    async def estimated_costs_by_stage(
+        self, job_id: uuid.UUID
+    ) -> dict[tuple[str | None, str], Decimal]:
+        """The job's estimated AI cost per (stage, currency), ordered by stage."""
+        async with self._sessions() as session:
+            rows = await session.execute(
+                select(
+                    ProviderUsage.stage,
+                    ProviderUsage.currency,
+                    func.sum(ProviderUsage.estimated_cost),
+                )
+                .where(ProviderUsage.job_id == job_id)
+                .group_by(ProviderUsage.stage, ProviderUsage.currency)
+                .order_by(ProviderUsage.stage, ProviderUsage.currency)
+            )
+            return {(stage, currency): total for stage, currency, total in rows}
+
     async def cancel_requested(self, job_id: uuid.UUID) -> bool:
         async with self._sessions() as session:
             requested = await session.scalar(

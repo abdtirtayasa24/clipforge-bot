@@ -190,6 +190,28 @@ def test_job_detail_has_events_and_estimated_cost(
     assert detail["costs"] == [{"currency": "USD", "estimated": "0.0015"}]
 
 
+def test_job_detail_breaks_estimated_cost_down_by_stage(
+    client: TestClient, migrated_database_url: str, ready_video: tuple[str, str]
+) -> None:
+    job = queue_job(client, ready_video[0]).json()
+    for stage, cost in (("transcribe", "0.002"), ("analyze", "0.0005"), ("analyze", "0.0001")):
+        execute(
+            migrated_database_url,
+            "INSERT INTO provider_usage (job_id, provider, model, capability, stage, success, "
+            "latency_ms, estimated_cost) VALUES (%s, 'gemini', 'm', 'analysis', %s, true, 10, %s)",
+            job["id"],
+            stage,
+            Decimal(cost),
+        )
+
+    detail = client.get(f"{JOBS}/{job['id']}").json()
+
+    assert detail["costs_by_stage"] == [
+        {"stage": "analyze", "currency": "USD", "estimated": "0.0006"},
+        {"stage": "transcribe", "currency": "USD", "estimated": "0.002"},
+    ]
+
+
 def test_unknown_job_is_not_found(client: TestClient) -> None:
     unknown = f"{JOBS}/{uuid.uuid4()}"
 

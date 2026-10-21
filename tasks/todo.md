@@ -433,9 +433,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `frontend/{package.json,vite.config.ts,tsconfig.json,index.html}`, `frontend/src/{main.tsx,App.tsx,api/client.ts,auth/telegram.ts}`
 **Size:** M
 
-### - [ ] T35: Dashboard + Jobs screens
+### - [x] T35: Dashboard + Jobs screens
 **Description:** Dashboard stats including AI cost cards (7/30-day estimated totals, by provider/model and by stage, average per job); jobs list (status filter, polling while active), job detail (stage timeline from `job_events` with durations, attempts, errors, per-stage cost breakdown, retry/cancel actions with confirm).
-**Acceptance criteria:** [ ] Retry/cancel reflect server state; [ ] loading/error/empty states present; [ ] costs shown with currency and labeled "estimated"
+**Acceptance criteria:** [x] Retry/cancel reflect server state; [x] loading/error/empty states present; [x] costs shown with currency and labeled "estimated"
 **Verification:** standard frontend checks (component tests with mocked API)
 **Dependencies:** T34
 **Files:** `frontend/src/pages/{Dashboard,Jobs,JobDetail}.tsx`, `frontend/src/api/jobs.ts`

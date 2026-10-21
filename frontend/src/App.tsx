@@ -3,9 +3,15 @@ import { type ReactNode, useState } from "react";
 import { NavLink, Route, Routes } from "react-router";
 import { ApiError } from "./api/client";
 import { useTelegramAuth } from "./auth/telegram";
+import Dashboard from "./pages/Dashboard";
+import JobDetail from "./pages/JobDetail";
+import Jobs from "./pages/Jobs";
 import { useTelegramBackButton } from "./telegram/webApp";
 
-const NAV_ITEMS = [{ to: "/", label: "Dashboard" }];
+const NAV_ITEMS = [
+  { to: "/", label: "Dashboard" },
+  { to: "/jobs", label: "Jobs" },
+];
 
 function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -41,7 +47,9 @@ function AppShell() {
       </nav>
       <main className="page">
         <Routes>
-          <Route path="/" element={<h1>Dashboard</h1>} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/:jobId" element={<JobDetail />} />
         </Routes>
       </main>
     </>
