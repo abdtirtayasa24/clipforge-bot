@@ -1,6 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClipDetail as Clip, ClipReviewIn } from "../api/types";
 import { apiError, mockApi } from "../test/fetchMock";
 import { clipDetailFixture, clipFixture } from "../test/fixtures";
@@ -108,5 +108,22 @@ describe("ClipDetail", () => {
     await userEvent.click(screen.getByRole("button", { name: "Approve" }));
 
     expect(await screen.findByText("String should have at most 100 characters")).toBeInTheDocument();
+  });
+
+  it("copies exactly the caption text exported by the API", async () => {
+    const caption = {
+      text: "Sleep > coffee\n\nRelated: Sleep mask (Tokopedia) https://tokopedia.link/abc?aff=1\n\nAffiliate link.",
+      links: [{ name: "Sleep mask", merchant: "Tokopedia", url: "https://tokopedia.link/abc?aff=1", is_primary: true }],
+      disclosure: "Affiliate link.",
+    };
+    reviewServer(clipDetailFixture({ caption }));
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    renderPage(<ClipDetail />, route);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Copy caption" }));
+
+    expect(writeText).toHaveBeenCalledWith(caption.text);
+    expect(await screen.findByText("Copied.")).toBeInTheDocument();
   });
 });

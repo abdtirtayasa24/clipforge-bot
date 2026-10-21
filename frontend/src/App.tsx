@@ -3,6 +3,8 @@ import { type ReactNode, useState } from "react";
 import { NavLink, Route, Routes } from "react-router";
 import { ApiError } from "./api/client";
 import { useTelegramAuth } from "./auth/telegram";
+import Affiliate from "./pages/Affiliate";
+import AffiliateProductForm from "./pages/AffiliateProductForm";
 import ClipDetail from "./pages/ClipDetail";
 import Clips from "./pages/Clips";
 import Dashboard from "./pages/Dashboard";
@@ -19,6 +21,7 @@ const NAV_ITEMS = [
   { to: "/jobs", label: "Jobs" },
   { to: "/videos", label: "Videos" },
   { to: "/sources", label: "Sources" },
+  { to: "/affiliate", label: "Affiliate" },
 ];
 
 function createQueryClient(): QueryClient {
@@ -63,6 +66,9 @@ function AppShell() {
           <Route path="/videos" element={<Videos />} />
           <Route path="/videos/:videoId" element={<VideoDetail />} />
           <Route path="/sources" element={<Sources />} />
+          <Route path="/affiliate" element={<Affiliate />} />
+          <Route path="/affiliate/products/new" element={<AffiliateProductForm />} />
+          <Route path="/affiliate/products/:productId" element={<AffiliateProductForm />} />
         </Routes>
       </main>
     </>

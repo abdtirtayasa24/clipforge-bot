@@ -1,4 +1,14 @@
-import type { ClipDetail, ClipOut, DashboardOut, JobDetail, JobOut, VideoOut } from "../api/types";
+import type {
+  AdminSettings,
+  AffiliateLinkOut,
+  ClipDetail,
+  ClipOut,
+  DashboardOut,
+  JobDetail,
+  JobOut,
+  ProductOut,
+  VideoOut,
+} from "../api/types";
 
 export function jobFixture(overrides: Partial<JobOut> = {}): JobOut {
   return {
@@ -129,6 +139,73 @@ export function clipDetailFixture(overrides: Partial<ClipDetail> = {}): ClipDeta
     reviews: [],
     job_costs: [{ currency: "USD", estimated: "0.012" }],
     caption: { text: "Why sleep beats caffeine\n\nYou are drinking coffee wrong.", links: [], disclosure: null },
+    ...overrides,
+  };
+}
+
+export function productFixture(overrides: Partial<ProductOut> = {}): ProductOut {
+  return {
+    id: "66666666-6666-6666-6666-666666666666",
+    name: "Sleep mask",
+    merchant: "Tokopedia",
+    affiliate_url: "https://tokopedia.link/abc?aff=1",
+    destination_domain: "tokopedia.link",
+    category: "health",
+    tags: ["sleep"],
+    language_code: "id",
+    region_code: "ID",
+    active: true,
+    created_at: "2026-10-21T09:00:00Z",
+    updated_at: "2026-10-21T09:00:00Z",
+    ...overrides,
+  };
+}
+
+export function linkFixture(overrides: Partial<AffiliateLinkOut> = {}): AffiliateLinkOut {
+  return {
+    id: "77777777-7777-7777-7777-777777777777",
+    clip_id: "55555555-5555-5555-5555-555555555555",
+    product: productFixture(),
+    relevance_score: 0.83,
+    match_reason: "Clip discusses sleep quality",
+    status: "suggested",
+    is_primary: false,
+    reviewed_at: null,
+    created_at: "2026-10-21T11:05:00Z",
+    ...overrides,
+  };
+}
+
+export function settingsFixture(overrides: Partial<AdminSettings> = {}): AdminSettings {
+  return {
+    min_score: 75,
+    clip_min_s: 20,
+    clip_max_s: 60,
+    max_clips: 3,
+    max_overlap: 0.2,
+    audio_chunk_minutes: 20,
+    reserved_disk_bytes: 5368709120,
+    permitted_download_domains: ["cdn.example.com"],
+    affiliate_links_enabled: false,
+    affiliate_min_relevance: 0.7,
+    affiliate_merchant_domains: [],
+    affiliate_disclosure_text: "Affiliate link — I may earn a commission from qualifying purchases.",
+    telegram_notifications_enabled: true,
+    discovery: {
+      region_code: "ID",
+      top_categories: 5,
+      chart_pages: 4,
+      per_category_results: 50,
+      max_new_eligible_per_run: 20,
+      excluded_category_ids: [],
+    },
+    models: {
+      transcription: "gemini-3.5-transcribe",
+      analysis: "gemini-3.5-flash-lite",
+      rerank: "gemini-3-flash-preview",
+      analysis_fallback: null,
+      embedding: "gemini-embedding-2",
+    },
     ...overrides,
   };
 }

@@ -2,7 +2,9 @@ import { type FormEvent, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useClip, useReviewClip } from "../api/clips";
 import { ApiError } from "../api/client";
-import type { ClipDetail as Clip, ClipScores, ReviewDecision } from "../api/types";
+import type { CaptionOut, ClipDetail as Clip, ClipScores, ReviewDecision } from "../api/types";
+import { copyText } from "../clipboard";
+import { AffiliateSuggestions } from "../components/AffiliateSuggestions";
 import { CostList } from "../components/CostList";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { formatDateTime, formatTimestamp } from "../format";
@@ -70,6 +72,32 @@ function ReviewForm({ clip }: { clip: Clip }) {
   );
 }
 
+function CaptionDraft({ caption }: { caption: CaptionOut }) {
+  const [copyState, setCopyState] = useState<{ ok: true } | { ok: false; error: unknown } | null>(null);
+
+  async function copy() {
+    try {
+      await copyText(caption.text);
+      setCopyState({ ok: true });
+    } catch (error) {
+      setCopyState({ ok: false, error });
+    }
+  }
+
+  return (
+    <section className="card" aria-label="Caption draft">
+      <h2>Caption / description draft</h2>
+      <p className="hint">Only approved affiliate links are included, with the disclosure. Publishing stays manual.</p>
+      <pre className="caption">{caption.text}</pre>
+      <button type="button" onClick={() => void copy()}>
+        Copy caption
+      </button>
+      {copyState?.ok && <p role="status">Copied.</p>}
+      {copyState?.ok === false && <ErrorMessage error={copyState.error} />}
+    </section>
+  );
+}
+
 export default function ClipDetail() {
   const { clipId = "" } = useParams();
   const clip = useClip(clipId);
@@ -114,6 +142,8 @@ export default function ClipDetail() {
       </div>
 
       <ReviewForm key={`${data.id}:${data.effective_title ?? ""}`} clip={data} />
+      <AffiliateSuggestions clipId={data.id} />
+      <CaptionDraft key={data.caption.text} caption={data.caption} />
 
       <section className="card">
         <h2>Why this clip</h2>

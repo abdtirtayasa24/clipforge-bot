@@ -457,9 +457,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `frontend/src/pages/{Clips,ClipDetail}.tsx`, `frontend/src/api/clips.ts`
 **Size:** M
 
-### - [ ] T38: Affiliate UI
+### - [x] T38: Affiliate UI
 **Description:** Settings → Affiliate Links switch (default off), threshold + disclosure text; product catalog CRUD; in clip detail: suggestions with reasons, approve/reject/set primary/manual pick, rematch; copyable caption/description draft (Telegram clipboard / fallback).
-**Acceptance criteria:** [ ] With toggle off, suggestions/export UI hidden or disabled and caption has no links; [ ] copy produces exactly the API export text
+**Acceptance criteria:** [x] With toggle off, suggestions/export UI hidden or disabled and caption has no links; [x] copy produces exactly the API export text
 **Verification:** standard frontend checks; manual flow on device
 **Dependencies:** T37, T33
 **Files:** `frontend/src/pages/{Affiliate,AffiliateProductForm}.tsx`, `frontend/src/components/AffiliateSuggestions.tsx`, `frontend/src/api/affiliate.ts`
