@@ -7,6 +7,7 @@ import { Pager } from "../components/Pager";
 import { ErrorMessage, Loading } from "../components/QueryState";
 import { StatusPill } from "../components/StatusPill";
 import { VideoThumb } from "../components/VideoThumb";
+import { formatDate } from "../format";
 
 const FILTERS = {
   eligibility: { label: "Eligibility", options: ["pending", "eligible", "ineligible"] },
@@ -83,6 +84,9 @@ export default function Videos() {
                     <span className="media-body">
                       <span className="media-title">{video.title}</span>
                       <span className="media-meta">{video.channel_title ?? video.channel_id}</span>
+                      <span className="media-meta">
+                        Published {formatDate(video.published_at)} · Discovered {formatDate(video.discovered_at)}
+                      </span>
                       <span className="row">
                         <StatusPill status={video.eligibility} />
                         <StatusPill status={video.rights_status} label={`rights: ${video.rights_status}`} />

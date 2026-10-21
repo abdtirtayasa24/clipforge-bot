@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBytes, formatCost, formatDuration, formatTimestamp } from "./format";
+import { formatBytes, formatCost, formatDate, formatDuration, formatTimestamp } from "./format";
 
 describe("formatCost", () => {
   it("shows the currency and the estimated decimal unchanged", () => {
@@ -25,6 +25,15 @@ describe("formatBytes", () => {
     [5 * 1024 ** 3, "5.0 GiB"],
   ])("%i → %s", (bytes, text) => {
     expect(formatBytes(bytes)).toBe(text);
+  });
+});
+
+describe("formatDate", () => {
+  it("shows the date without a time, or a dash when unknown", () => {
+    expect(formatDate("2026-10-20T10:00:00Z")).toBe(
+      new Date("2026-10-20T10:00:00Z").toLocaleDateString(undefined, { dateStyle: "medium" }),
+    );
+    expect(formatDate(null)).toBe("—");
   });
 });
 

@@ -1,6 +1,7 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
+import { formatDate } from "../format";
 import { mockApi } from "../test/fetchMock";
 import { videoFixture } from "../test/fixtures";
 import { renderPage } from "../test/render";
@@ -19,6 +20,19 @@ describe("Videos", () => {
     expect(link).toHaveTextContent("eligible");
     expect(link).toHaveTextContent("unverified");
     expect(link).toHaveTextContent("awaiting source");
+  });
+
+  it("shows when each video was published and discovered", async () => {
+    const video = videoFixture();
+    mockApi({ "GET /api/v1/videos": page([video, videoFixture({ id: "v2", published_at: null })]) });
+
+    renderPage(<Videos />);
+
+    const [first, second] = await screen.findAllByRole("link", { name: /Long podcast/ });
+    expect(first).toHaveTextContent(
+      `Published ${formatDate(video.published_at)} · Discovered ${formatDate(video.discovered_at)}`,
+    );
+    expect(second).toHaveTextContent("Published — · Discovered");
   });
 
   it("filters by rights status", async () => {

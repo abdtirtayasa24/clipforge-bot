@@ -44,6 +44,13 @@ export function formatDateTime(iso: string | null): string {
   return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
+export function formatDate(iso: string | null): string {
+  if (iso === null) {
+    return "—";
+  }
+  return new Date(iso).toLocaleDateString(undefined, { dateStyle: "medium" });
+}
+
 /** Position in the source video, e.g. 754000 → "12:34" (or "1:02:03" past an hour). */
 export function formatTimestamp(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
