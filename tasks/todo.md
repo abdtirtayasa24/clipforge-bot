@@ -423,11 +423,11 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 
 ## Phase 6 — Telegram Mini App (M5, frontend)
 
-### - [ ] T34: Frontend scaffold + auth handshake
+### - [x] T34: Frontend scaffold + auth handshake
 **Description:** `frontend/` Vite React TS (strict), ESLint, Vitest, React Router, TanStack Query; load `telegram-web-app.js`; on start POST `initData` to `/api/v1/auth/telegram`, keep token in memory; typed API client generated from OpenAPI (or hand-typed from it); Telegram theme CSS vars; `BackButton`/`MainButton` helpers; dev proxy to `127.0.0.1:8000`.
 **Acceptance criteria:**
-- [ ] Opened outside Telegram → clear "open from Telegram" screen; non-admin → access denied screen
-- [ ] Build output is static `dist/` deployable to `/var/www/clipforge-bot`
+- [x] Opened outside Telegram → clear "open from Telegram" screen; non-admin → access denied screen
+- [x] Build output is static `dist/` deployable to `/var/www/clipforge-bot`
 **Verification:** standard frontend checks; manual: open via BotFather test Mini App URL
 **Dependencies:** T05, T29, T30
 **Files:** `frontend/{package.json,vite.config.ts,tsconfig.json,index.html}`, `frontend/src/{main.tsx,App.tsx,api/client.ts,auth/telegram.ts}`

@@ -1,0 +1,216 @@
+/* Telegram injects --tg-theme-* on <html>; fallbacks cover local development in a browser. */
+:root {
+  --bg: var(--tg-theme-bg-color, #ffffff);
+  --text: var(--tg-theme-text-color, #111111);
+  --hint: var(--tg-theme-hint-color, #707579);
+  --link: var(--tg-theme-link-color, #2481cc);
+  --button: var(--tg-theme-button-color, #2481cc);
+  --button-text: var(--tg-theme-button-text-color, #ffffff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #f1f1f4);
+  --section-bg: var(--tg-theme-section-bg-color, var(--bg));
+  --destructive: var(--tg-theme-destructive-text-color, #d14e4e);
+  --separator: var(--tg-theme-section-separator-color, #d9d9de);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--secondary-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--secondary-bg);
+  color: var(--text);
+}
+
+a {
+  color: var(--link);
+}
+
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 16px 0 8px;
+}
+
+.gate {
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.gate p {
+  color: var(--hint);
+}
+
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--separator);
+}
+
+.tabs a {
+  flex: none;
+  padding: 6px 12px;
+  border-radius: 16px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.tabs a.active {
+  background: var(--button);
+  color: var(--button-text);
+}
+
+.page {
+  padding: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.card {
+  background: var(--section-bg);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.hint {
+  color: var(--hint);
+  font-size: 0.9rem;
+}
+
+.error {
+  color: var(--destructive);
+}
+
+button {
+  font: inherit;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: var(--button);
+  color: var(--button-text);
+  cursor: pointer;
+}
+
+button.secondary {
+  background: var(--secondary-bg);
+  color: var(--link);
+}
+
+button.danger {
+  background: transparent;
+  color: var(--destructive);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--separator);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+label > span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--hint);
+  font-size: 0.9rem;
+}
+
+label.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+label.checkbox input {
+  width: auto;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list > li {
+  border-bottom: 1px solid var(--separator);
+  padding: 10px 0;
+}
+
+.list > li:last-child {
+  border-bottom: none;
+}
+
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  background: var(--secondary-bg);
+  color: var(--hint);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--separator);
+}
+
+pre.caption {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--secondary-bg);
+  padding: 10px;
+  border-radius: 8px;
+  font-family: inherit;
+}
