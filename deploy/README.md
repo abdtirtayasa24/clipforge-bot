@@ -11,6 +11,8 @@ command on the VPS.
 | `deploy/systemd/clipforge-discovery.{service,timer}` | Daily YouTube discovery at 03:00 (oneshot + timer) |
 | `deploy/backend.env.example` | Template for `/etc/clipforge-bot/backend.env` (runtime, `root:clipforge 0640`) |
 | `deploy/migration.env.example` | Template for `/etc/clipforge-bot/migration.env` (schema owner, `root:root 0600`) |
+| `deploy/nginx/clipforge-bot.conf` | Mini App + `/api/` snippet for the existing HTTPS vhost (section 15) |
+| `deploy/deploy_frontend.sh` | Builds the Mini App and publishes it to `/var/www/clipforge-bot` (section 15) |
 
 The migration credentials live in their own root-only file: only `install.sh` reads them, so
 the API process never holds schema-changing rights (ADR-003).
@@ -503,17 +505,58 @@ replaced after a checksum mismatch.
 ### Notifications
 
 Failures and a disconnected Drive also notify the admin chat. Turn notifications off or on in
-the Supabase SQL editor until the settings screen exists:
+the Mini App: *Settings → Notifications* (section 15).
 
-```sql
-INSERT INTO app_settings (key, value) VALUES ('telegram_notifications_enabled', 'false')
-ON CONFLICT (key) DO UPDATE SET value = excluded.value;
+## 15. Telegram Mini App (Checkpoint M5)
+
+### Nginx
+
+The snippet adds the Mini App files and the `/api/` proxy to the **existing** HTTPS server block;
+its `listen`, `server_name` and TLS lines stay untouched.
+
+```bash
+sudo cp ~/clipforge-bot/deploy/nginx/clipforge-bot.conf /etc/nginx/snippets/clipforge-bot.conf
+sudo nano /etc/nginx/sites-available/<your-site>   # inside the HTTPS server { }: include /etc/nginx/snippets/clipforge-bot.conf;
+sudo nginx -t && sudo systemctl reload nginx
 ```
+
+`nginx -t` must pass before the reload. If it reports a duplicate `root`, `location /` or
+`location /api/`, remove the vhost's own copy of that directive (the Drive OAuth redirect URI from
+section 14 keeps working through the snippet's `/api/` proxy).
+
+### Build and publish
+
+Node.js ≥ 22.22 is needed once (for example `curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash -
+&& sudo apt-get install -y nodejs`). Then, as your normal user:
+
+```bash
+cd ~/clipforge-bot && git pull && ./deploy/deploy_frontend.sh
+curl -sI https://<your-domain>/ | head -1          # HTTP/2 200
+curl -s https://<your-domain>/api/v1/health/live   # {"status":"ok"}
+```
+
+### Open it in Telegram
+
+BotFather → your bot → *Bot Settings → Configure Mini App* (and *Menu Button*) → URL
+`https://<your-domain>/`. Open the bot's menu button on your phone.
+
+| Check | Expected |
+|---|---|
+| Open `https://<your-domain>/` in a normal browser | "Open from Telegram" |
+| Open the Mini App from another Telegram account | "Access denied" |
+| Open the Mini App from the admin account | Dashboard with job counts and estimated AI cost |
+| Settings: change *Minimum score*, save | "Settings saved."; an out-of-range value shows the API's message under the field |
+| Settings → Google Drive → Connect | Google consent opens outside Telegram; status turns `connected` after reopening |
+| Videos → a video → upload a file; switch to airplane mode mid-upload, then back | "Upload paused"; *Resume upload* continues from the last chunk |
+| Clips → a clip → *Open in Google Drive* (iOS and Android) | Drive opens outside Telegram (be signed in to the uploading Google account) |
+| Clip: edit the title, Approve | Title shown in the list; original visible as "AI suggestion" |
+| Affiliate: turn *Affiliate links* on, add a product, rematch a clip, approve a link | Suggestion with reason; *Copy caption* copies the caption with the link and disclosure |
+| Affiliate links off | No review buttons on clips; the caption has no affiliate links |
 
 ## Updating
 
 ```bash
-cd ~/clipforge-bot && git pull && sudo ./deploy/install.sh
+cd ~/clipforge-bot && git pull && sudo ./deploy/install.sh && ./deploy/deploy_frontend.sh
 ```
 
 The script syncs code, reinstalls, migrates and restarts the API and the worker only when
@@ -540,5 +583,6 @@ something changed.
 ## After verification
 
 Tick the VPS items in `tasks/todo.md` (T07 and Checkpoint M1 for steps 1–10, T11 and Checkpoint
-M2 for sections 11–12, Checkpoint M3 for section 13, T28 and Checkpoint M4 for section 14), or
+M2 for sections 11–12, Checkpoint M3 for section 13, T28 and Checkpoint M4 for section 14,
+Checkpoint M5 for section 15), or
 send the outputs for review.

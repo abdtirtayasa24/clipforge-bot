@@ -465,9 +465,9 @@ Sizes: XS (1 file) · S (1–2) · M (3–5) · L (5–8, split if possible).
 **Files:** `frontend/src/pages/{Affiliate,AffiliateProductForm}.tsx`, `frontend/src/components/AffiliateSuggestions.tsx`, `frontend/src/api/affiliate.ts`
 **Size:** M
 
-### - [ ] T39: Settings, providers, Drive connection + Nginx deploy
+### - [x] T39: Settings, providers, Drive connection + Nginx deploy
 **Description:** Settings page — *(Should-Have: configurable)* min score, clip min/max duration, max clips, overlap (inputs bounded to the API's limits), model selection per capability from `/ai/providers` (only enabled models offered), per-model prices and RPM/RPD quota limits with today's usage, permitted download domain allowlist editor, discovery settings (region, top-category count, excluded categories by name, max new videos/run), notifications; note that changes apply to new jobs only — Drive status + connect (opens OAuth externally via `Telegram.WebApp.openLink`). `deploy/nginx/clipforge-bot.conf` snippet from spec for inclusion in the existing HTTPS vhost; deploy script copies `dist/`.
-**Acceptance criteria:** [ ] Validation errors from API shown inline; [ ] `sudo nginx -t` passes before reload; existing TLS config untouched
+**Acceptance criteria:** [x] Validation errors from API shown inline; [ ] `sudo nginx -t` passes before reload; existing TLS config untouched *(snippet is include-only and `deploy_frontend.sh` runs `nginx -t` before reloading; VPS run pending, deploy/README.md section 15)*
 **Verification:** standard frontend checks; VPS: `sudo nginx -t && sudo systemctl reload nginx`, open Mini App in Telegram
 **Dependencies:** T34, T25, T30
 **Files:** `frontend/src/pages/Settings.tsx`, `frontend/src/api/settings.ts`, `deploy/nginx/clipforge-bot.conf`, `deploy/deploy_frontend.sh`

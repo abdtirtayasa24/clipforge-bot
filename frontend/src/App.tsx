@@ -9,6 +9,7 @@ import ClipDetail from "./pages/ClipDetail";
 import Clips from "./pages/Clips";
 import Dashboard from "./pages/Dashboard";
 import JobDetail from "./pages/JobDetail";
+import Settings from "./pages/Settings";
 import Jobs from "./pages/Jobs";
 import Sources from "./pages/Sources";
 import VideoDetail from "./pages/VideoDetail";
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { to: "/videos", label: "Videos" },
   { to: "/sources", label: "Sources" },
   { to: "/affiliate", label: "Affiliate" },
+  { to: "/settings", label: "Settings" },
 ];
 
 function createQueryClient(): QueryClient {
@@ -67,6 +69,7 @@ function AppShell() {
           <Route path="/videos/:videoId" element={<VideoDetail />} />
           <Route path="/sources" element={<Sources />} />
           <Route path="/affiliate" element={<Affiliate />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/affiliate/products/new" element={<AffiliateProductForm />} />
           <Route path="/affiliate/products/:productId" element={<AffiliateProductForm />} />
         </Routes>
