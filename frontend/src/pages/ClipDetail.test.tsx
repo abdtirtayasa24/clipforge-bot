@@ -81,6 +81,7 @@ describe("ClipDetail", () => {
     });
     expect(screen.getByText("approved", { selector: ".badge" })).toBeInTheDocument();
     expect(screen.getByText(/AI suggestion/)).toHaveTextContent("Why sleep beats caffeine");
+    expect(screen.getByText(/AI suggestion/)).toHaveTextContent("A title already shown in the video keeps this text");
   });
 
   it("rejects without sending an unchanged title", async () => {

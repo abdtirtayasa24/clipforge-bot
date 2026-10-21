@@ -19,6 +19,7 @@ from clipforge.pipeline.context import StageContext
 from clipforge.pipeline.stage import StageResult, verified_artifact, write_artifact
 from clipforge.pipeline.stages.transcribe import read_transcript
 from clipforge.queue.errors import PermanentError
+from clipforge.settings_schema import JobSettings
 
 logger = logging.getLogger(__name__)
 
@@ -76,13 +77,17 @@ class RenderStage:
         await asyncio.to_thread(
             (ctx.workspace / CLIPS_DIR).mkdir, mode=0o700, parents=True, exist_ok=True
         )
+        title_overlay = JobSettings.of(ctx.job.settings_snapshot).title_overlay_enabled
         rendered = 0
         for candidate in candidates:
             await ctx.check_cancelled()
             clip_id = await self._clip_for(ctx, candidate)
             if await self._finished(clip_id):
                 continue
-            await self._render(ctx.workspace, source, artifact.transcript, clip_id, candidate)
+            title = candidate.title if title_overlay else None
+            await self._render(
+                ctx.workspace, source, artifact.transcript, clip_id, candidate, title
+            )
             rendered += 1
         return StageResult(
             details={
@@ -137,12 +142,13 @@ class RenderStage:
         transcript: TranscriptResult,
         clip_id: uuid.UUID,
         candidate: ClipCandidateRow,
+        title: str | None,
     ) -> None:
         start_s, end_s = candidate.start_ms / 1000, candidate.end_ms / 1000
         dest = clip_path(workspace, clip_id)
         partial = dest.with_name(f"{clip_id}.part.mp4")
         subtitles = dest.with_name(f"{clip_id}.ass")
-        await write_artifact(subtitles, build_ass(transcript, start_s, end_s))
+        await write_artifact(subtitles, build_ass(transcript, start_s, end_s, title))
         await render_clip(source, partial, subtitles, start_s, end_s)
         await asyncio.to_thread(partial.replace, dest)
         values = {

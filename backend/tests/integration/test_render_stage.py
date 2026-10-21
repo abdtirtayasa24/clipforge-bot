@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -124,6 +125,28 @@ async def test_selected_candidates_render_compliant_clips(
         assert abs(media.duration_s - (end_ms - start_ms) / 1000) <= 0.5
         assert 20 <= media.duration_s <= 60
     assert not list((ctx.workspace / CLIPS_DIR).glob("*.part.mp4"))
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_title_overlay_follows_the_job_setting(
+    sessions: Sessions, ctx: StageContext, enabled: bool
+) -> None:
+    snapshot = {**ctx.job.settings_snapshot, "title_overlay_enabled": enabled}
+    ctx = replace(ctx, job=replace(ctx.job, settings_snapshot=snapshot))
+
+    await RenderStage(sessions).run(ctx)
+
+    burned = [
+        [
+            line.rsplit(",", 1)[-1]
+            for line in (ctx.workspace / CLIPS_DIR / f"{clip.id}.ass")
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.startswith("Dialogue: 1,")
+        ]
+        for clip, _ in await clips_of(sessions, ctx.job.lease.job_id)
+    ]
+    assert burned == ([["Satu"], ["Dua"]] if enabled else [[], []])
 
 
 async def test_restart_re_renders_only_unfinished_clips(

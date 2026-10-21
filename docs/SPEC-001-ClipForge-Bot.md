@@ -156,7 +156,7 @@ Score each dimension on a 0–100 scale:
 
 `Score = 0.25H + 0.20E + 0.20C + 0.15R + 0.10V + 0.10F`
 
-Default minimum score: 75. Clip duration: 20–60 seconds. Up to three clips per source, with at most 20% overlap. Output: 720×1280 MP4, H.264/AAC, burned subtitles. This is a ranking heuristic, **not a calibrated probability of going viral**.
+Default minimum score: 75. Clip duration: 20–60 seconds. Up to three clips per source, with at most 20% overlap. Output: 720×1280 MP4, H.264/AAC, burned subtitles, and the clip's generated title burned over its first 3 seconds as a cover for YouTube Shorts and TikTok (`app_settings.title_overlay_enabled`, default `true`; a later title edit does not change the rendered video). This is a ranking heuristic, **not a calibrated probability of going viral**.
 
 ### Database entities
 

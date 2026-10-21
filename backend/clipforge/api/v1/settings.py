@@ -65,6 +65,7 @@ class SettingsPatch(BaseModel):
     reserved_disk_bytes: int | None = None
     daily_job_cap: int | None = None
     permitted_download_domains: list[str] | None = None
+    title_overlay_enabled: bool | None = None
     affiliate_links_enabled: bool | None = None
     affiliate_min_relevance: float | None = None
     affiliate_merchant_domains: list[str] | None = None

@@ -2098,6 +2098,11 @@
             "type": "array",
             "title": "Permitted Download Domains"
           },
+          "title_overlay_enabled": {
+            "type": "boolean",
+            "title": "Title Overlay Enabled",
+            "default": true
+          },
           "affiliate_links_enabled": {
             "type": "boolean",
             "title": "Affiliate Links Enabled",
@@ -4605,6 +4610,17 @@
               }
             ],
             "title": "Permitted Download Domains"
+          },
+          "title_overlay_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Overlay Enabled"
           },
           "affiliate_links_enabled": {
             "anyOf": [

@@ -187,6 +187,7 @@ export function settingsFixture(overrides: Partial<AdminSettings> = {}): AdminSe
     reserved_disk_bytes: 5368709120,
     daily_job_cap: null,
     permitted_download_domains: ["cdn.example.com"],
+    title_overlay_enabled: true,
     affiliate_links_enabled: false,
     affiliate_min_relevance: 0.7,
     affiliate_merchant_domains: [],

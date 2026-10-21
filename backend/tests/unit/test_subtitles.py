@@ -3,7 +3,14 @@ from pathlib import Path
 import pytest
 
 from clipforge.ai.types import Segment, TranscriptResult, Word
-from clipforge.media.subtitles import MAX_LINE_CHARS, MAX_LINES, build_ass, format_time
+from clipforge.media.subtitles import (
+    MAX_LINE_CHARS,
+    MAX_LINES,
+    MAX_TITLE_LINE_CHARS,
+    MAX_TITLE_LINES,
+    build_ass,
+    format_time,
+)
 
 GOLDEN = Path(__file__).parent.parent / "fixtures" / "subtitles"
 
@@ -114,6 +121,38 @@ def test_cues_stay_inside_the_clip_and_the_line_limits() -> None:
         assert all(len(line) <= MAX_LINE_CHARS for line in lines)
         assert previous_end <= cue[1] <= cue[2] <= "0:00:30.00"
         previous_end = cue[2]
+
+
+def test_title_shows_at_the_top_over_the_opening_seconds() -> None:
+    transcript = TranscriptResult(segments=[spoken(("Halo", 10.5, 11.0))])
+
+    events = dialogues(build_ass(transcript, 10.0, 40.0, "Cara  hemat {listrik}\\ di rumah"))
+
+    assert events[0][:4] == ["1", "0:00:00.00", "0:00:03.00", "Title"]
+    assert events[0][9] == "Cara hemat \\{listrik\\}\\\\\\Ndi rumah"
+    assert [event[3] for event in events[1:]] == ["Default"]
+    assert "Style: Title," in build_ass(transcript, 10.0, 40.0)
+
+
+def test_title_is_wrapped_and_truncated_to_its_line_limits() -> None:
+    title = " ".join(["kata"] * 30)
+
+    events = dialogues(build_ass(TranscriptResult(segments=[]), 0.0, 2.0, title))
+
+    lines = events[0][9].split("\\N")
+    assert events[0][2] == "0:00:02.00"
+    assert len(lines) == MAX_TITLE_LINES
+    assert all(len(line) <= MAX_TITLE_LINE_CHARS for line in lines[:-1])
+    assert lines[-1].endswith("…")
+
+
+@pytest.mark.parametrize("title", [None, "", "   "])
+def test_no_title_event_without_a_title(title: str | None) -> None:
+    transcript = TranscriptResult(segments=[spoken(("Halo", 10.5, 11.0))])
+
+    events = dialogues(build_ass(transcript, 10.0, 40.0, title))
+
+    assert [event[3] for event in events] == ["Default"]
 
 
 @pytest.mark.parametrize(

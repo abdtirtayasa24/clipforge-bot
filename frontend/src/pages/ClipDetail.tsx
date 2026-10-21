@@ -54,7 +54,10 @@ function ReviewForm({ clip }: { clip: Clip }) {
       </label>
       {errors.title_override && <p className="error">{errors.title_override}</p>}
       {clip.title && (clip.title_override !== null || titleChanged) && (
-        <p className="hint">AI suggestion: {clip.title}</p>
+        <p className="hint">
+          AI suggestion: {clip.title}. A title already shown in the video keeps this text; only the caption and file
+          details use your edit.
+        </p>
       )}
       <label>
         <span>Review note</span>

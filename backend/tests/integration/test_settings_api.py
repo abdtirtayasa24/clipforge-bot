@@ -232,6 +232,19 @@ def test_settings_require_admin(database_url: str) -> None:
         assert anonymous.patch(SETTINGS, json={"min_score": 80}).status_code == 401
 
 
+def test_title_overlay_is_on_by_default_and_can_be_turned_off(
+    client: TestClient, database_url: str
+) -> None:
+    assert client.get(SETTINGS).json()["title_overlay_enabled"] is True
+
+    body = client.patch(SETTINGS, json={"title_overlay_enabled": False}).json()
+
+    assert body["title_overlay_enabled"] is False
+    assert query(
+        database_url, "SELECT value FROM app_settings WHERE key = 'title_overlay_enabled'"
+    ) == [(False,)]
+
+
 def test_daily_job_cap_is_off_by_default_and_can_be_set_or_cleared(
     client: TestClient, database_url: str
 ) -> None:

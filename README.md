@@ -69,7 +69,7 @@ flowchart LR
 | `transcribed` | Cloud transcription with word timings, merged across chunks |
 | `analyzed` | Windowed AI analysis of the transcript plus sampled frames proposes scored candidates and titles |
 | `candidates_selected` | Server-side scoring and selection of up to 3 clips |
-| `rendering` | ffmpeg renders 720×1280 H.264/AAC MP4s with burned-in subtitles |
+| `rendering` | ffmpeg renders 720×1280 H.264/AAC MP4s with burned-in subtitles and, optionally, the title over the first 3 seconds |
 | `uploading` | Resumable, idempotent upload to Google Drive, verified by size and MD5 |
 | `affiliate_matching` | Optional: embedding-based product suggestions per clip |
 

@@ -1,4 +1,5 @@
-"""Burned-in ASS subtitles for a 720x1280 clip, timed from the transcript's words (ADR-013)."""
+"""Burned-in ASS subtitles for a 720x1280 clip, timed from the transcript's words, plus an
+optional title over the opening seconds (ADR-013)."""
 
 from dataclasses import dataclass
 
@@ -8,9 +9,13 @@ from clipforge.ai.types import TranscriptResult, Word
 MAX_LINE_CHARS = 32
 MAX_LINES = 2
 MAX_PAUSE_S = 1.0
+TITLE_DURATION_S = 3.0
+MAX_TITLE_LINE_CHARS = 22
+MAX_TITLE_LINES = 4
 
-# Bottom-centred, bold white with a black outline; MarginV keeps clear of the
-# caption and button overlays that short-video apps draw over the lower part.
+# Subtitles: bottom-centred, bold white with a black outline. Title: top-centred white on a
+# black box. The MarginVs keep clear of the tabs, caption and buttons that
+# short-video apps draw over the top and lower parts.
 HEADER = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 720
@@ -24,6 +29,8 @@ Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle,
 Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Default,DejaVu Sans,38,&H00FFFFFF,&H000000FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,\
 1,3,1,2,48,48,240,1
+Style: Title,DejaVu Sans,48,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,\
+3,10,0,8,48,48,160,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -50,10 +57,10 @@ def escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}")
 
 
-def wrap(texts: list[str]) -> list[str]:
+def wrap(texts: list[str], max_chars: int = MAX_LINE_CHARS) -> list[str]:
     lines: list[str] = []
     for text in texts:
-        if lines and len(lines[-1]) + 1 + len(text) <= MAX_LINE_CHARS:
+        if lines and len(lines[-1]) + 1 + len(text) <= max_chars:
             lines[-1] = f"{lines[-1]} {text}"
         else:
             lines.append(text)
@@ -115,10 +122,26 @@ def cues(words: list[Word]) -> list[Cue]:
     return result
 
 
-def build_ass(transcript: TranscriptResult, start_s: float, end_s: float) -> str:
+def title_lines(title: str) -> list[str]:
+    lines = wrap(title.split(), MAX_TITLE_LINE_CHARS)
+    if len(lines) > MAX_TITLE_LINES:
+        lines = [*lines[: MAX_TITLE_LINES - 1], f"{lines[MAX_TITLE_LINES - 1]}…"]
+    return lines
+
+
+def build_ass(
+    transcript: TranscriptResult, start_s: float, end_s: float, title: str | None = None
+) -> str:
     events = [
         f"Dialogue: 0,{format_time(cue.start_s)},{format_time(cue.end_s)},Default,,0,0,0,,"
         + "\\N".join(escape(line) for line in cue.lines)
         for cue in cues(clip_words(transcript, start_s, end_s))
     ]
+    if title and title.strip():
+        title_end_s = min(TITLE_DURATION_S, end_s - start_s)
+        events.insert(
+            0,
+            f"Dialogue: 1,{format_time(0.0)},{format_time(title_end_s)},Title,,0,0,0,,"
+            + "\\N".join(escape(line) for line in title_lines(title)),
+        )
     return HEADER + "".join(f"{event}\n" for event in events)

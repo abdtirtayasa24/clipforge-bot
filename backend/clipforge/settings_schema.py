@@ -59,6 +59,7 @@ class SettingsSchema(BaseModel):
     # Jobs started per rolling 24 hours (T42 benchmark); None means no limit.
     daily_job_cap: int | None = Field(default=None, ge=1, le=100)
     permitted_download_domains: list[str] = Field(default_factory=list)
+    title_overlay_enabled: bool = True
     affiliate_links_enabled: bool = False
     affiliate_min_relevance: float = Field(default=0.7, ge=0, le=1)
     # Tracking or redirect hosts an affiliate URL may use besides its destination domain.

@@ -121,6 +121,18 @@ describe("Settings sections", () => {
     expect(patches).toEqual([{ daily_job_cap: 10 }, { daily_job_cap: null }]);
   });
 
+  it("turns the clip title overlay off", async () => {
+    const calls = server();
+    renderSection("clips");
+
+    const overlay = await screen.findByLabelText("Show title at clip start");
+    expect(overlay).toBeChecked();
+    await userEvent.click(overlay);
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ title_overlay_enabled: false });
+  });
+
   it("turns Telegram notifications off", async () => {
     const calls = server();
     renderSection("notifications");
