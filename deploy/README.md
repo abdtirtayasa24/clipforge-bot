@@ -11,7 +11,7 @@ command on the VPS.
 | `deploy/systemd/clipforge-discovery.{service,timer}` | Daily YouTube discovery at 03:00 (oneshot + timer) |
 | `deploy/backend.env.example` | Template for `/etc/clipforge-bot/backend.env` (runtime, `root:clipforge 0640`) |
 | `deploy/migration.env.example` | Template for `/etc/clipforge-bot/migration.env` (schema owner, `root:root 0600`) |
-| `deploy/nginx/clipforge-bot.conf` | Mini App + `/api/` snippet for the existing HTTPS vhost (section 15) |
+| `deploy/nginx/clipforge-bot.conf` | Nginx site for `clipforge.thetirtayasa.my.id`: HTTPS, Mini App files, `/api/` proxy (section 15) |
 | `deploy/deploy_frontend.sh` | Builds the Mini App and publishes it to `/var/www/clipforge-bot` (section 15) |
 
 The migration credentials live in their own root-only file: only `install.sh` reads them, so
@@ -315,7 +315,7 @@ Add the AI keys to `/etc/clipforge-bot/backend.env` (`GEMINI_API_KEY` from Googl
 ```bash
 sudo nano /etc/clipforge-bot/backend.env
 sudo systemctl restart clipforge-api
-curl -s https://<your-domain>/api/v1/health/ready          # "ai_providers": "ok"
+curl -s https://clipforge.thetirtayasa.my.id/api/v1/health/ready          # "ai_providers": "ok"
 curl -s $API/ai/providers -H "Authorization: Bearer $TOKEN"  # selected models, prices, used_today
 ```
 
@@ -393,7 +393,7 @@ In Google Cloud console (any project you own):
    and Drive would need reconnecting every week. `drive.file` is a non-sensitive scope, so no
    verification is needed.
 3. **Credentials → Create credentials → OAuth client ID**: type "Web application", authorized
-   redirect URI `https://<your-domain>/api/v1/integrations/drive/callback`.
+   redirect URI `https://clipforge.thetirtayasa.my.id/api/v1/integrations/drive/callback`.
 
 Add the four Drive settings to `/etc/clipforge-bot/backend.env` (see `backend.env.example`):
 
@@ -509,20 +509,59 @@ the Mini App: *Settings → Notifications* (section 15).
 
 ## 15. Telegram Mini App (Checkpoint M5)
 
-### Nginx
+### Domain and SSL certificate
 
-The snippet adds the Mini App files and the `/api/` proxy to the **existing** HTTPS server block;
-its `listen`, `server_name` and TLS lines stay untouched.
+The Mini App is served from its own Nginx site, `clipforge.thetirtayasa.my.id`, so the other
+sites and their TLS settings on this Nginx stay untouched. Telegram only opens Mini Apps over
+HTTPS, so get the Let's Encrypt certificate first.
+
+1. **DNS:** add an `A` record `clipforge` → the VPS public IPv4 (and an `AAAA` record if the VPS
+   has IPv6) at the DNS provider of `thetirtayasa.my.id`. Wait until it resolves:
+
+   ```bash
+   dig +short clipforge.thetirtayasa.my.id      # the VPS IP
+   ```
+
+2. **Firewall:** ports 80 and 443 open (`sudo ufw allow 'Nginx Full'` if ufw is active). Port 80
+   stays open: Let's Encrypt validates and renews over HTTP.
+
+3. **Certificate:** install certbot with its Nginx plugin and request the certificate. `certonly`
+   only obtains the certificate; certbot does not edit any Nginx file.
+
+   ```bash
+   sudo apt-get install -y certbot python3-certbot-nginx
+   sudo certbot certonly --nginx -d clipforge.thetirtayasa.my.id \
+     --agree-tos -m <your-email> --no-eff-email
+   sudo ls /etc/letsencrypt/live/clipforge.thetirtayasa.my.id/   # fullchain.pem privkey.pem ...
+   ```
+
+4. **Renewal:** certbot's systemd timer renews automatically about 30 days before expiry. Reload
+   Nginx after each renewal so it serves the new certificate, then test a renewal:
+
+   ```bash
+   printf '#!/bin/sh\nsystemctl reload nginx\n' | sudo tee /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+   sudo chmod 755 /etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh
+   systemctl list-timers certbot.timer
+   sudo certbot renew --dry-run                 # "Congratulations, all simulated renewals succeeded"
+   ```
+
+### Nginx site
 
 ```bash
-sudo cp ~/clipforge-bot/deploy/nginx/clipforge-bot.conf /etc/nginx/snippets/clipforge-bot.conf
-sudo nano /etc/nginx/sites-available/<your-site>   # inside the HTTPS server { }: include /etc/nginx/snippets/clipforge-bot.conf;
+sudo cp ~/clipforge-bot/deploy/nginx/clipforge-bot.conf /etc/nginx/sites-available/clipforge-bot.conf
+sudo ln -sf /etc/nginx/sites-available/clipforge-bot.conf /etc/nginx/sites-enabled/clipforge-bot.conf
 sudo nginx -t && sudo systemctl reload nginx
+curl -sI http://clipforge.thetirtayasa.my.id/ | head -1    # 301 to https
 ```
 
-`nginx -t` must pass before the reload. If it reports a duplicate `root`, `location /` or
-`location /api/`, remove the vhost's own copy of that directive (the Drive OAuth redirect URI from
-section 14 keeps working through the snippet's `/api/` proxy).
+`nginx -t` must pass before the reload. `cannot load certificate` means step 3 did not finish;
+`conflicting server name` means another site already declares this host name. Remove that
+duplicate.
+
+The Google Drive redirect URI (section 14) on this domain is
+`https://clipforge.thetirtayasa.my.id/api/v1/integrations/drive/callback`. Use it in the Google
+Cloud OAuth client and in `CLIPFORGE_DRIVE_REDIRECT_URI`, then restart `clipforge-api` and
+`clipforge-worker` if it changed.
 
 ### Build and publish
 
@@ -531,18 +570,18 @@ Node.js ≥ 22.22 is needed once (for example `curl -fsSL https://deb.nodesource
 
 ```bash
 cd ~/clipforge-bot && git pull && ./deploy/deploy_frontend.sh
-curl -sI https://<your-domain>/ | head -1          # HTTP/2 200
-curl -s https://<your-domain>/api/v1/health/live   # {"status":"ok"}
+curl -sI https://clipforge.thetirtayasa.my.id/ | head -1          # HTTP/2 200
+curl -s https://clipforge.thetirtayasa.my.id/api/v1/health/live   # {"status":"ok"}
 ```
 
 ### Open it in Telegram
 
 BotFather → your bot → *Bot Settings → Configure Mini App* (and *Menu Button*) → URL
-`https://<your-domain>/`. Open the bot's menu button on your phone.
+`https://clipforge.thetirtayasa.my.id/`. Open the bot's menu button on your phone.
 
 | Check | Expected |
 |---|---|
-| Open `https://<your-domain>/` in a normal browser | "Open from Telegram" |
+| Open `https://clipforge.thetirtayasa.my.id/` in a normal browser | "Open from Telegram" |
 | Open the Mini App from another Telegram account | "Access denied" |
 | Open the Mini App from the admin account | Dashboard with job counts and estimated AI cost |
 | Settings: change *Minimum score*, save | "Settings saved."; an out-of-range value shows the API's message under the field |
