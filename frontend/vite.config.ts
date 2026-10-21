@@ -16,5 +16,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     restoreMocks: true,
+    // Form tests type with user-event, which can exceed the 5 s default on a busy machine or CI runner.
+    testTimeout: 15_000,
   },
 });

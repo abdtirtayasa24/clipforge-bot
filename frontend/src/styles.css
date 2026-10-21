@@ -1040,3 +1040,8 @@ progress {
     transition: none;
   }
 }
+
+.hint.url {
+  overflow-wrap: anywhere;
+  user-select: all;
+}

@@ -1,10 +1,12 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockApi } from "../test/fetchMock";
 import { jobFixture, videoFixture } from "../test/fixtures";
 import { renderPage } from "../test/render";
+import { installTelegram, removeTelegram } from "../test/telegramStub";
 import { UploadInterrupted, uploadFile } from "../upload/chunkedUpload";
+import { youtubeWatchUrl } from "../youtube";
 import VideoDetail from "./VideoDetail";
 
 vi.mock("../upload/sha256", () => ({ sha256InWorker: vi.fn(async () => "f".repeat(64)) }));
@@ -21,6 +23,10 @@ beforeEach(() => {
   vi.mocked(uploadFile).mockReset();
 });
 
+afterEach(() => {
+  removeTelegram();
+});
+
 async function fillEvidence(form: "url" | "upload") {
   const scope = screen.getByRole("form", { name: form === "url" ? "Register URL" : "Upload file" });
   await userEvent.selectOptions(scope.querySelector("select") as HTMLSelectElement, "creator_permission");
@@ -28,6 +34,31 @@ async function fillEvidence(form: "url" | "upload") {
 }
 
 describe("VideoDetail", () => {
+  it("opens the video on YouTube and copies its watch URL", async () => {
+    const webApp = installTelegram();
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    const video = videoFixture();
+    const url = "https://www.youtube.com/watch?v=" + video.youtube_video_id;
+    mockApi({
+      [`GET /api/v1/videos/${VIDEO}`]: { body: video },
+      "GET /api/v1/jobs": noJobs,
+    });
+    renderPage(<VideoDetail />, route);
+
+    expect(await screen.findByText(url)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Watch on YouTube" }));
+    expect(webApp.openLink).toHaveBeenCalledWith(url);
+    await userEvent.click(screen.getByRole("button", { name: "Copy URL" }));
+    expect(writeText).toHaveBeenCalledWith(url);
+    expect(await screen.findByText("URL copied.")).toBeInTheDocument();
+  });
+
+  it("builds a safe watch URL from the video id", () => {
+    expect(youtubeWatchUrl("dQw4w9WgXcQ")).toBe("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    expect(youtubeWatchUrl("a&b=c")).toBe("https://www.youtube.com/watch?v=a%26b%3Dc");
+  });
+
   it("requires permission evidence before registering a URL", async () => {
     const calls = mockApi({
       [`GET /api/v1/videos/${VIDEO}`]: { body: videoFixture() },

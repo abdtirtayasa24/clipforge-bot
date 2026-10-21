@@ -3,7 +3,9 @@ import { Link, useParams } from "react-router";
 import { ApiError } from "../api/client";
 import { isActiveJob } from "../api/jobs";
 import { useInvalidateVideoData, useQueueJob, useRegisterMediaUrl, useVideo, useVideoJobs } from "../api/videos";
+import { copyText } from "../clipboard";
 import { EMPTY_EVIDENCE, type EvidenceDraft, toEvidence } from "../components/evidence";
+import { Icon } from "../components/Icon";
 import { PageHeader } from "../components/PageHeader";
 import { PermissionEvidenceFields } from "../components/PermissionEvidenceFields";
 import { ErrorMessage, Loading } from "../components/QueryState";
@@ -11,6 +13,42 @@ import { StatusPill } from "../components/StatusPill";
 import { formatBytes, formatDateTime, formatDuration } from "../format";
 import { UploadInterrupted, uploadFile } from "../upload/chunkedUpload";
 import { sha256InWorker } from "../upload/sha256";
+import { youtubeWatchUrl } from "../youtube";
+import { openExternalLink } from "../telegram/webApp";
+
+/** Watching on YouTube is for preview and finding the creator; processing needs an authorized source. */
+function YouTubeLink({ youtubeVideoId }: { youtubeVideoId: string }) {
+  const url = youtubeWatchUrl(youtubeVideoId);
+  const [copyState, setCopyState] = useState<{ ok: true } | { ok: false; error: unknown } | null>(null);
+
+  async function copy() {
+    try {
+      await copyText(url);
+      setCopyState({ ok: true });
+    } catch (error) {
+      setCopyState({ ok: false, error });
+    }
+  }
+
+  return (
+    <section className="card" aria-label="YouTube">
+      <h2>YouTube</h2>
+      <p className="hint url">{url}</p>
+      <div className="actions">
+        <button type="button" className="with-icon" onClick={() => openExternalLink(url)}>
+          <Icon name="external" size={18} />
+          Watch on YouTube
+        </button>
+        <button type="button" className="secondary with-icon" onClick={() => void copy()}>
+          <Icon name="copy" size={18} />
+          Copy URL
+        </button>
+      </div>
+      {copyState?.ok && <p role="status">URL copied.</p>}
+      {copyState?.ok === false && <ErrorMessage error={copyState.error} />}
+    </section>
+  );
+}
 
 function RegisterUrlForm({ videoId }: { videoId: string }) {
   const register = useRegisterMediaUrl(videoId);
@@ -203,6 +241,7 @@ export default function VideoDetail() {
         <StatusPill status={data.rights_status} label={`rights: ${data.rights_status}`} />
         <StatusPill status={data.source_status} />
       </div>
+      <YouTubeLink youtubeVideoId={data.youtube_video_id} />
       <VideoJobs videoId={videoId} />
       {data.source_status === "awaiting_source" && (
         <>
