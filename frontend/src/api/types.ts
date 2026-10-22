@@ -84,6 +84,10 @@ export interface JobOut {
   updated_at: IsoDateTime;
 }
 
+export interface JobListItem extends JobOut {
+  video_title: string;
+}
+
 export interface JobEventOut {
   id: number;
   event_type: string;

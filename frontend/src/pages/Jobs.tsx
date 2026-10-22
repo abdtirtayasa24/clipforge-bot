@@ -65,6 +65,9 @@ export default function Jobs() {
                       )}
                     </span>
                   </Link>
+                  <p className="media-source">
+                    From <Link to={`/videos/${job.video_id}`}>{job.video_title}</Link>
+                  </p>
                 </li>
               ))}
             </ul>

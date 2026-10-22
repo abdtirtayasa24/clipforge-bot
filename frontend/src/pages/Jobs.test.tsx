@@ -2,7 +2,7 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { apiError, mockApi } from "../test/fetchMock";
-import { jobFixture } from "../test/fixtures";
+import { jobListItemFixture } from "../test/fixtures";
 import { renderPage } from "../test/render";
 import Jobs from "./Jobs";
 
@@ -10,13 +10,22 @@ const page = (items: unknown[]) => ({ body: { items, total: items.length, limit:
 
 describe("Jobs", () => {
   it("lists jobs linking to their detail", async () => {
-    mockApi({ "GET /api/v1/jobs": page([jobFixture()]) });
+    mockApi({ "GET /api/v1/jobs": page([jobListItemFixture()]) });
 
     renderPage(<Jobs />);
 
     const link = await screen.findByRole("link", { name: /transcribe/ });
-    expect(link).toHaveAttribute("href", `/jobs/${jobFixture().id}`);
+    expect(link).toHaveAttribute("href", `/jobs/${jobListItemFixture().id}`);
     expect(link).toHaveTextContent("running");
+  });
+
+  it("links each job to its source video", async () => {
+    mockApi({ "GET /api/v1/jobs": page([jobListItemFixture()]) });
+
+    renderPage(<Jobs />);
+
+    const link = await screen.findByRole("link", { name: "Masa depan AI" });
+    expect(link).toHaveAttribute("href", `/videos/${jobListItemFixture().video_id}`);
   });
 
   it("filters by status through the API", async () => {

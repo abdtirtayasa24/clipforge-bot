@@ -9,6 +9,7 @@ from clipforge.api.errors import ApiError, Conflict, NotFound
 from clipforge.api.v1.schemas.jobs import (
     JobDetail,
     JobEventOut,
+    JobListItem,
     JobOut,
     JobPage,
     StageCost,
@@ -89,19 +90,22 @@ async def list_jobs(
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> JobPage:
-    query = select(ProcessingJob)
+    query = select(ProcessingJob, Video.title).join(Video, Video.id == ProcessingJob.video_id)
     if status_filter:
         query = query.where(ProcessingJob.status == status_filter)
     if video_id:
         query = query.where(ProcessingJob.video_id == video_id)
     total = await session.scalar(select(func.count()).select_from(query.subquery()))
-    jobs = await session.scalars(
+    rows = await session.execute(
         query.order_by(ProcessingJob.created_at.desc(), ProcessingJob.id)
         .limit(limit)
         .offset(offset)
     )
     return JobPage(
-        items=[JobOut.model_validate(job) for job in jobs],
+        items=[
+            JobListItem(**JobOut.model_validate(job).model_dump(), video_title=title)
+            for job, title in rows
+        ],
         total=total or 0,
         limit=limit,
         offset=offset,

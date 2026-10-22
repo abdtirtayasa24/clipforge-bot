@@ -170,6 +170,18 @@ def test_list_jobs_filters_and_paginates(
     assert client.get(JOBS, params={"status": "sleeping"}).status_code == 422
 
 
+def test_listed_jobs_carry_their_video_title(
+    client: TestClient, ready_video: tuple[str, str]
+) -> None:
+    video_id, _ = ready_video
+    queue_job(client, video_id)
+    title = client.get(f"/api/v1/videos/{video_id}").json()["title"]
+
+    items = client.get(JOBS, params={"video_id": video_id}).json()["items"]
+
+    assert [(job["video_id"], job["video_title"]) for job in items] == [(video_id, title)]
+
+
 def test_job_detail_has_events_and_estimated_cost(
     client: TestClient, migrated_database_url: str, ready_video: tuple[str, str]
 ) -> None:

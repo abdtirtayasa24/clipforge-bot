@@ -5,6 +5,7 @@ import type {
   ClipOut,
   DashboardOut,
   JobDetail,
+  JobListItem,
   JobOut,
   ProductOut,
   VideoOut,
@@ -28,6 +29,10 @@ export function jobFixture(overrides: Partial<JobOut> = {}): JobOut {
     updated_at: "2026-10-21T10:03:05Z",
     ...overrides,
   };
+}
+
+export function jobListItemFixture(overrides: Partial<JobListItem> = {}): JobListItem {
+  return { ...jobFixture(), video_title: "Masa depan AI", ...overrides };
 }
 
 export function jobDetailFixture(overrides: Partial<JobDetail> = {}): JobDetail {

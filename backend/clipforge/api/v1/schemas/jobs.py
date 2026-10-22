@@ -26,6 +26,10 @@ class JobOut(BaseModel):
     updated_at: datetime
 
 
+class JobListItem(JobOut):
+    video_title: str
+
+
 class JobEventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,7 +70,7 @@ class JobDetail(JobOut):
 
 
 class JobPage(BaseModel):
-    items: list[JobOut]
+    items: list[JobListItem]
     total: int
     limit: int
     offset: int

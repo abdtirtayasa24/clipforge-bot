@@ -3545,6 +3545,125 @@
         ],
         "title": "JobEventOut"
       },
+      "JobListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "video_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Video Id"
+          },
+          "media_asset_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Asset Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "stage": {
+            "type": "string",
+            "title": "Stage"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts"
+          },
+          "cancel_requested": {
+            "type": "boolean",
+            "title": "Cancel Requested"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "next_attempt_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Next Attempt At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "video_title": {
+            "type": "string",
+            "title": "Video Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "video_id",
+          "media_asset_id",
+          "status",
+          "stage",
+          "attempts",
+          "max_attempts",
+          "cancel_requested",
+          "last_error",
+          "next_attempt_at",
+          "started_at",
+          "finished_at",
+          "created_at",
+          "updated_at",
+          "video_title"
+        ],
+        "title": "JobListItem"
+      },
       "JobOut": {
         "properties": {
           "id": {
@@ -3663,7 +3782,7 @@
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/JobOut"
+              "$ref": "#/components/schemas/JobListItem"
             },
             "type": "array",
             "title": "Items"

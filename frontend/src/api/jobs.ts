@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./client";
-import type { DashboardOut, JobDetail, JobOut, JobStatus, Page } from "./types";
+import type { DashboardOut, JobDetail, JobListItem, JobOut, JobStatus, Page } from "./types";
 
 const POLL_MS = 5_000;
 const ACTIVE_STATUSES: readonly JobStatus[] = ["queued", "running", "retry_scheduled"];
@@ -22,7 +22,7 @@ export function useDashboard() {
 export function useJobs(status: JobStatus | null, offset = 0) {
   return useQuery({
     queryKey: jobKeys.list(status, offset),
-    queryFn: () => api.get<Page<JobOut>>("/jobs", { status, offset, limit: 20 }),
+    queryFn: () => api.get<Page<JobListItem>>("/jobs", { status, offset, limit: 20 }),
     refetchInterval: (query) => (query.state.data?.items.some(isActiveJob) ? POLL_MS : false),
   });
 }

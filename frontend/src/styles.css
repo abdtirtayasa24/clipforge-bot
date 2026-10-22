@@ -484,6 +484,13 @@ a.row-body:active,
   font-size: 0.83rem;
 }
 
+.media-source {
+  margin: 6px 12px 0;
+  color: var(--hint);
+  font-size: 0.83rem;
+  overflow-wrap: anywhere;
+}
+
 .score {
   display: flex;
   align-items: baseline;
