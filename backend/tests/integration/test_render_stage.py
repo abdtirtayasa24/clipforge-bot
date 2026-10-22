@@ -149,6 +149,30 @@ async def test_title_overlay_follows_the_job_setting(
     assert burned == ([["Satu"], ["Dua"]] if enabled else [[], []])
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_subject_reframing_follows_the_job_setting(
+    sessions: Sessions, ctx: StageContext, monkeypatch: pytest.MonkeyPatch, enabled: bool
+) -> None:
+    snapshot = {**ctx.job.settings_snapshot, "subject_reframing_enabled": enabled}
+    ctx = replace(ctx, job=replace(ctx.job, settings_snapshot=snapshot))
+    planned: list[float] = []
+    real = render_module.plan_reframing
+
+    async def planning(source: Path, work_dir: Path, start_s: float, end_s: float) -> object:
+        planned.append(start_s)
+        return await real(source, work_dir, start_s, end_s)
+
+    monkeypatch.setattr(render_module, "plan_reframing", planning)
+
+    await RenderStage(sessions).run(ctx)
+
+    assert planned == ([100.0, 700.0] if enabled else [])
+    for _, artifact in await clips_of(sessions, ctx.job.lease.job_id):
+        media = await probe(Path(artifact.local_path or ""))
+        assert (media.width, media.height) == (720, 1280)
+    assert not list((ctx.workspace / CLIPS_DIR).glob("*.reframe"))
+
+
 async def test_restart_re_renders_only_unfinished_clips(
     sessions: Sessions, ctx: StageContext, monkeypatch: pytest.MonkeyPatch
 ) -> None:

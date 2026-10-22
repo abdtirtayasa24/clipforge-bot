@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from clipforge.media.probe import MediaInfo
-from clipforge.media.render import render_args, verify_clip
+from clipforge.media.reframe import Shot
+from clipforge.media.render import BLURRED_FIT, framing_filter, render_args, verify_clip
 from clipforge.pipeline.stages.render import drive_file_name
 from clipforge.queue.errors import TransientError
 
@@ -48,6 +49,55 @@ def test_render_args_seek_before_input_and_encode_the_profile() -> None:
     ]:
         assert args[args.index(flag) + 1] == value
     assert args[-1] == str(Path("/out/clip.part.mp4"))
+
+
+def test_without_shots_the_clip_is_centre_cropped() -> None:
+    assert framing_filter(None) == (
+        "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280"
+    )
+
+
+def test_cropped_shots_move_the_crop_at_each_cut() -> None:
+    shots = [Shot(0.0, 4.0, 0.2), Shot(4.0, 9.5, 0.5), Shot(9.5, 20.0, 0.75)]
+
+    assert framing_filter(shots) == (
+        "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280:"
+        "x='clip(if(lt(t,4.000),0.2000,if(lt(t,9.500),0.5000,0.7500))*iw-ow/2,0,iw-ow)':y=0"
+    )
+
+
+def test_unframeable_shots_show_the_whole_frame_over_a_blur() -> None:
+    filters = framing_filter([Shot(0.0, 20.0, None)])
+
+    assert filters == BLURRED_FIT
+    assert "boxblur" in filters
+    assert "force_original_aspect_ratio=decrease" in filters
+    assert "crop=720:1280:x=" not in filters
+
+
+def test_mixed_shots_overlay_the_blurred_frame_only_during_unframeable_shots() -> None:
+    shots = [
+        Shot(0.0, 4.0, 0.2),
+        Shot(4.0, 8.0, None),
+        Shot(8.0, 12.0, 0.6),
+        Shot(12.0, 15.0, None),
+    ]
+
+    filters = framing_filter(shots)
+
+    assert filters.startswith("split[crop][fit];[crop]scale=")
+    assert "x='clip(if(lt(t,8.000),0.2000,0.6000)*iw-ow/2,0,iw-ow)'" in filters
+    assert f"[fit]{BLURRED_FIT}[whole];" in filters
+    assert filters.endswith(
+        "[cropped][whole]overlay=enable='gte(t,4.000)*lt(t,8.000)+gte(t,12.000)*lt(t,15.000)'"
+    )
+
+
+def test_render_args_frame_the_clip_before_the_subtitles() -> None:
+    shots = [Shot(0.0, 30.0, None)]
+    args = render_args(Path("/src/in.mp4"), Path("/out/clip.mp4"), "clip.ass", 0.0, 30.0, shots)
+
+    assert args[args.index("-vf") + 1] == f"{BLURRED_FIT},setsar=1,subtitles=filename=clip.ass"
 
 
 def test_compliant_clip_passes_verification() -> None:

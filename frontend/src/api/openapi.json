@@ -2183,6 +2183,11 @@
             "title": "Title Overlay Enabled",
             "default": true
           },
+          "subject_reframing_enabled": {
+            "type": "boolean",
+            "title": "Subject Reframing Enabled",
+            "default": false
+          },
           "affiliate_links_enabled": {
             "type": "boolean",
             "title": "Affiliate Links Enabled",
@@ -4658,6 +4663,17 @@
               }
             ],
             "title": "Title Overlay Enabled"
+          },
+          "subject_reframing_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject Reframing Enabled"
           },
           "affiliate_links_enabled": {
             "anyOf": [

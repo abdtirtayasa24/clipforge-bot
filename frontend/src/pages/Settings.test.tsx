@@ -133,6 +133,18 @@ describe("Settings sections", () => {
     expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ title_overlay_enabled: false });
   });
 
+  it("turns subject reframing on", async () => {
+    const calls = server();
+    renderSection("clips");
+
+    const reframing = await screen.findByLabelText("Keep people in frame");
+    expect(reframing).not.toBeChecked();
+    await userEvent.click(reframing);
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ subject_reframing_enabled: true });
+  });
+
   it("turns Telegram notifications off", async () => {
     const calls = server();
     renderSection("notifications");

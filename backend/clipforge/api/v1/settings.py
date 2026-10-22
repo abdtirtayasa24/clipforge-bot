@@ -66,6 +66,7 @@ class SettingsPatch(BaseModel):
     daily_job_cap: int | None = None
     permitted_download_domains: list[str] | None = None
     title_overlay_enabled: bool | None = None
+    subject_reframing_enabled: bool | None = None
     affiliate_links_enabled: bool | None = None
     affiliate_min_relevance: float | None = None
     affiliate_merchant_domains: list[str] | None = None

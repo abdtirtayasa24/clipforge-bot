@@ -73,6 +73,7 @@ interface Draft {
   numbers: Record<NumberField["key"], string>;
   dailyCap: string;
   titleOverlay: boolean;
+  reframing: boolean;
   notifications: boolean;
   domains: string;
   region: string;
@@ -92,6 +93,7 @@ function toDraft(settings: AdminSettings): Draft {
     },
     dailyCap: settings.daily_job_cap === null ? "" : String(settings.daily_job_cap),
     titleOverlay: settings.title_overlay_enabled,
+    reframing: settings.subject_reframing_enabled,
     notifications: settings.telegram_notifications_enabled,
     domains: settings.permitted_download_domains.join("\n"),
     region: settings.discovery.region_code,
@@ -123,6 +125,9 @@ function buildPatch(settings: AdminSettings, draft: Draft): SettingsPatch {
   }
   if (draft.titleOverlay !== settings.title_overlay_enabled) {
     patch.title_overlay_enabled = draft.titleOverlay;
+  }
+  if (draft.reframing !== settings.subject_reframing_enabled) {
+    patch.subject_reframing_enabled = draft.reframing;
   }
   if (draft.notifications !== settings.telegram_notifications_enabled) {
     patch.telegram_notifications_enabled = draft.notifications;
@@ -189,7 +194,7 @@ interface SectionInfo {
 
 const SECTIONS: Record<FormSection | "drive", SectionInfo> = {
   models: { title: "AI providers", subtitle: "Models, prices and quotas", icon: "sparkles", tone: "purple" },
-  clips: { title: "Clip generation", subtitle: "Duration, scoring, daily cap and title", icon: "scissors", tone: "blue" },
+  clips: { title: "Clip generation", subtitle: "Duration, scoring, daily cap, title and framing", icon: "scissors", tone: "blue" },
   discovery: { title: "YouTube discovery", subtitle: "Region, categories and limits", icon: "trending", tone: "red" },
   downloads: { title: "Downloads", subtitle: "Permitted download domains", icon: "download", tone: "green" },
   drive: { title: "Google Drive", subtitle: "Clip storage", icon: "cloud", tone: "blue" },
@@ -328,6 +333,20 @@ function SettingsForm({
           <p className="hint">
             Burns the clip title into the first 3 seconds, so an early frame works as the cover on YouTube Shorts and
             TikTok. Applies to jobs started after saving.
+          </p>
+          <label className="switch-row">
+            Keep people in frame
+            <input
+              type="checkbox"
+              className="switch"
+              checked={draft.reframing}
+              onChange={(event) => setDraft({ ...draft, reframing: event.target.checked })}
+            />
+          </label>
+          <p className="hint">
+            Moves the portrait crop to the faces in each shot. When they don't fit, the shot is shown whole over a
+            blurred background instead of cutting someone off. Adds a few seconds per clip. Applies to jobs started
+            after saving.
           </p>
           <FieldError errors={errors} name="" />
         </Section>

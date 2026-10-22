@@ -245,6 +245,19 @@ def test_title_overlay_is_on_by_default_and_can_be_turned_off(
     ) == [(False,)]
 
 
+def test_subject_reframing_is_off_by_default_and_can_be_turned_on(
+    client: TestClient, database_url: str
+) -> None:
+    assert client.get(SETTINGS).json()["subject_reframing_enabled"] is False
+
+    body = client.patch(SETTINGS, json={"subject_reframing_enabled": True}).json()
+
+    assert body["subject_reframing_enabled"] is True
+    assert query(
+        database_url, "SELECT value FROM app_settings WHERE key = 'subject_reframing_enabled'"
+    ) == [(True,)]
+
+
 def test_daily_job_cap_is_off_by_default_and_can_be_set_or_cleared(
     client: TestClient, database_url: str
 ) -> None:

@@ -13,6 +13,7 @@ from clipforge.ai.types import TranscriptResult
 from clipforge.checksums import file_md5, file_sha256
 from clipforge.db.models import Clip, ClipArtifact, MediaAsset
 from clipforge.db.models import ClipCandidate as ClipCandidateRow
+from clipforge.media.reframe import plan_reframing
 from clipforge.media.render import render_clip
 from clipforge.media.subtitles import build_ass
 from clipforge.pipeline.context import StageContext
@@ -77,16 +78,22 @@ class RenderStage:
         await asyncio.to_thread(
             (ctx.workspace / CLIPS_DIR).mkdir, mode=0o700, parents=True, exist_ok=True
         )
-        title_overlay = JobSettings.of(ctx.job.settings_snapshot).title_overlay_enabled
+        settings = JobSettings.of(ctx.job.settings_snapshot)
         rendered = 0
         for candidate in candidates:
             await ctx.check_cancelled()
             clip_id = await self._clip_for(ctx, candidate)
             if await self._finished(clip_id):
                 continue
-            title = candidate.title if title_overlay else None
+            title = candidate.title if settings.title_overlay_enabled else None
             await self._render(
-                ctx.workspace, source, artifact.transcript, clip_id, candidate, title
+                ctx.workspace,
+                source,
+                artifact.transcript,
+                clip_id,
+                candidate,
+                title,
+                reframe=settings.subject_reframing_enabled,
             )
             rendered += 1
         return StageResult(
@@ -143,13 +150,28 @@ class RenderStage:
         clip_id: uuid.UUID,
         candidate: ClipCandidateRow,
         title: str | None,
+        *,
+        reframe: bool,
     ) -> None:
         start_s, end_s = candidate.start_ms / 1000, candidate.end_ms / 1000
         dest = clip_path(workspace, clip_id)
         partial = dest.with_name(f"{clip_id}.part.mp4")
         subtitles = dest.with_name(f"{clip_id}.ass")
         await write_artifact(subtitles, build_ass(transcript, start_s, end_s, title))
-        await render_clip(source, partial, subtitles, start_s, end_s)
+        shots = None
+        if reframe:
+            shots = await plan_reframing(
+                source, dest.with_name(f"{clip_id}.reframe"), start_s, end_s
+            )
+            logger.info(
+                "clip reframed",
+                extra={
+                    "clip_id": str(clip_id),
+                    "shots": len(shots or []),
+                    "cropped": sum(shot.crop_center is not None for shot in shots or []),
+                },
+            )
+        await render_clip(source, partial, subtitles, start_s, end_s, shots)
         await asyncio.to_thread(partial.replace, dest)
         values = {
             "local_path": str(dest),

@@ -188,6 +188,7 @@ export function settingsFixture(overrides: Partial<AdminSettings> = {}): AdminSe
     daily_job_cap: null,
     permitted_download_domains: ["cdn.example.com"],
     title_overlay_enabled: true,
+    subject_reframing_enabled: false,
     affiliate_links_enabled: false,
     affiliate_min_relevance: 0.7,
     affiliate_merchant_domains: [],

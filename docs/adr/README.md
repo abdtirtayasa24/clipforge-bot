@@ -18,7 +18,7 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-010](adr-010.md) | Server-side scoring and pure candidate selection | Accepted |
 | [ADR-011](adr-011.md) | Windowed analysis of long transcripts | Accepted |
 | [ADR-012](adr-012.md) | Audio extraction and chunking | Accepted |
-| [ADR-013](adr-013.md) | Clip rendering profile | Accepted |
+| [ADR-013](adr-013.md) | Clip rendering profile | Accepted; crop part superseded by ADR-033 |
 | [ADR-014](adr-014.md) | Idempotent Google Drive uploads | Accepted |
 | [ADR-015](adr-015.md) | Google Drive OAuth and token encryption | Accepted |
 | [ADR-016](adr-016.md) | Telegram initData authentication and session tokens | Accepted |
@@ -38,3 +38,4 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-030](adr-030.md) | Continuous integration on GitHub Actions | Accepted |
 | [ADR-031](adr-031.md) | Source registration without permission evidence | Accepted |
 | [ADR-032](adr-032.md) | One upload at a time, queued in the Mini App | Accepted |
+| [ADR-033](adr-033.md) | Subject-aware reframing with a blurred-background fallback | Accepted |

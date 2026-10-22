@@ -332,6 +332,7 @@ export interface AdminSettings {
   daily_job_cap: number | null;
   permitted_download_domains: string[];
   title_overlay_enabled: boolean;
+  subject_reframing_enabled: boolean;
   affiliate_links_enabled: boolean;
   affiliate_min_relevance: number;
   affiliate_merchant_domains: string[];
