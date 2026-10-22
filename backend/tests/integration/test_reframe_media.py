@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from clipforge.ai.types import TranscriptResult
-from clipforge.media.reframe import Shot, detect_faces, plan_reframing
+from clipforge.media.frames import parse_frame_times
+from clipforge.media.reframe import Shot, detect_faces, plan_reframing, sampling_args
 from clipforge.media.render import render_clip
 from clipforge.media.subtitles import build_ass
 from tests.fixtures.make_media import make_media
@@ -49,6 +50,15 @@ async def test_shots_follow_the_scene_cuts_inside_the_clip(
     assert shots[1].end_s == pytest.approx(13.0, abs=0.1)
     assert shots[2].end_s == pytest.approx(18.0)
     assert not work_dir.exists()
+
+
+def test_sampling_stops_decoding_at_the_clip_end(landscape_cuts: Path, tmp_path: Path) -> None:
+    result = subprocess.run(  # noqa: S603
+        sampling_args(landscape_cuts, tmp_path, 1.0, 5.0), capture_output=True, check=True
+    )
+
+    assert parse_frame_times(result.stderr) == [0.0]
+    assert len(list(tmp_path.glob("frame_*.jpg"))) == 8
 
 
 async def test_a_clip_without_cuts_is_one_shot(media_dir: Path, tmp_path: Path) -> None:

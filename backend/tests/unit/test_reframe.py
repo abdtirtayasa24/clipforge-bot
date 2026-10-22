@@ -90,6 +90,8 @@ def test_sampling_decodes_only_the_clip_range_once() -> None:
     assert args.index("-ss") < args.index("-i")
     assert args[args.index("-ss") + 1] == "125.500"
     assert args[args.index("-t") + 1] == "29.750"
+    assert args.index("-t") < args.index("-i"), "an output -t leaves the cut output unbounded"
+    assert args.count("-t") == 1
     assert args.count("-i") == 1
     filters = args[args.index("-filter_complex") + 1]
     assert "fps=2" in filters

@@ -9,7 +9,7 @@ Backups: `docs/backup-restore.md`. Secret rotation and security checks:
 | Unit | Role | Restart policy |
 |---|---|---|
 | `clipforge-api.service` | FastAPI on `127.0.0.1:8000`, behind Nginx | `on-failure`, 5 s |
-| `clipforge-worker.service` | Runs one job at a time through the pipeline | `always`, 10 s; `MemoryMax=1800M` |
+| `clipforge-worker.service` | Runs one job at a time through the pipeline | `always`, 10 s; `MemoryMax=1800M`, `OOMPolicy=continue` (an OOM-killed ffmpeg fails its stage, the worker keeps running) |
 | `clipforge-discovery.timer` → `.service` | YouTube discovery daily at 03:00, catches up after downtime | oneshot |
 
 ```bash

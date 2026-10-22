@@ -94,7 +94,9 @@ def sampling_args(source: Path, out_dir: Path, start_s: float, end_s: float) -> 
     """One decode of the clip range: frames for face detection and showinfo for scene cuts.
 
     The first frame always passes the scene select: ffmpeg fails an output that gets no frames,
-    which a clip without cuts would otherwise be.
+    which a clip without cuts would otherwise be. `-t` limits the input, not one output: the
+    cut output would otherwise decode to the source's end while ffmpeg 6.1 queues frames for
+    the finished frame output until the worker runs out of memory.
     """
     filters = (
         f"[0:v]scale={SAMPLE_WIDTH}:-2,split[sampled][scenes];"
@@ -103,7 +105,7 @@ def sampling_args(source: Path, out_dir: Path, start_s: float, end_s: float) -> 
     )
     return [
         "ffmpeg", "-hide_banner", "-nostdin", "-nostats", "-v", "info", "-y",
-        "-ss", f"{start_s:.3f}", "-i", str(source), "-t", f"{end_s - start_s:.3f}",
+        "-ss", f"{start_s:.3f}", "-t", f"{end_s - start_s:.3f}", "-i", str(source),
         "-an", "-sn", "-dn", "-filter_complex", filters,
         "-map", "[frames]", "-q:v", "5", "-threads", "2", str(out_dir / "frame_%05d.jpg"),
         "-map", "[cuts]", "-f", "null", "-",
