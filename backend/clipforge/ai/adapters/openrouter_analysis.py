@@ -16,9 +16,11 @@ import httpx
 
 from clipforge.ai.errors import ModelUnavailable
 from clipforge.ai.prompts.analysis import (
+    MAX_OUTPUT_TOKENS,
     PROPOSAL_SCHEMA,
     RESCORE_SCHEMA,
     SYSTEM_PROMPT,
+    OutputCutOff,
     Repair,
     parse_proposals,
     parse_rescores,
@@ -77,7 +79,12 @@ class OpenRouterClient:
         self._sleep = sleep
 
     async def chat(self, messages: list[dict[str, Any]], *, record: UsageRecorder) -> str:
-        body = {"model": self.provider.model, "messages": messages, "temperature": TEMPERATURE}
+        body = {
+            "model": self.provider.model,
+            "messages": messages,
+            "temperature": TEMPERATURE,
+            "max_tokens": MAX_OUTPUT_TOKENS,
+        }
         model = self.provider.model
         for attempt in range(1, MAX_ATTEMPTS + 1):
             await self._quota.acquire(self.provider)
@@ -121,9 +128,12 @@ class OpenRouterClient:
             # Upstream failures can arrive inside a 200 response.
             raise ModelUnavailable(f"{self.provider.model} failed: {result['error'].get('code')}")
         try:
-            content = result["choices"][0]["message"]["content"]
+            choice = result["choices"][0]
+            content = choice["message"]["content"]
         except (KeyError, IndexError, TypeError):
             return ""
+        if choice.get("finish_reason") == "length":
+            raise OutputCutOff
         return content if isinstance(content, str) else ""
 
     def _error(self, response: httpx.Response, attempt: int) -> tuple[Exception, float | None]:

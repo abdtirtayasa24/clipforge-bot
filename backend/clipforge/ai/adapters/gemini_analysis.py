@@ -10,9 +10,11 @@ import httpx
 from clipforge.ai.adapters.gemini_client import GeminiClient
 from clipforge.ai.adapters.gemini_transcription import response_text
 from clipforge.ai.prompts.analysis import (
+    MAX_OUTPUT_TOKENS,
     PROPOSAL_SCHEMA,
     RESCORE_SCHEMA,
     SYSTEM_PROMPT,
+    OutputCutOff,
     Repair,
     parse_proposals,
     parse_rescores,
@@ -65,9 +67,13 @@ class GeminiAnalysisProvider:
                 "responseMimeType": "application/json",
                 "responseSchema": schema,
                 "temperature": TEMPERATURE,
+                "maxOutputTokens": MAX_OUTPUT_TOKENS,
             },
         }
-        return response_text(await self._client.generate(body, record=record))
+        result = await self._client.generate(body, record=record)
+        if any(c.get("finishReason") == "MAX_TOKENS" for c in result.get("candidates") or []):
+            raise OutputCutOff
+        return response_text(result)
 
     async def propose(
         self, segments: Sequence[Segment], context: AnalysisContext, *, record: UsageRecorder

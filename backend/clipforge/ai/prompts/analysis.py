@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 PROMPT_VERSION = "analysis-v1"
 TITLE_MAX_CHARS = 70
 DIMENSIONS = ("hook", "emotion", "clarity", "relevance", "visual", "completeness")
+# A valid answer needs a few thousand tokens at most. The cap keeps a degenerate, repeating
+# answer to seconds; uncapped it ran to the model's limit for about two minutes per call.
+MAX_OUTPUT_TOKENS = 16384
 
 SYSTEM_PROMPT = """You find short-form clip candidates in long videos for an editor.
 Score each candidate from 0 to 100 on six dimensions:
@@ -204,22 +207,36 @@ class Repair(BaseModel):
     error: str
 
 
+class OutputCutOff(Exception):
+    """The answer hit MAX_OUTPUT_TOKENS, typically because the model kept repeating itself."""
+
+
 Ask = Callable[[Repair | None], Awaitable[str]]
 
 
 async def with_repair[T](ask: Ask, parse: Callable[[str], T]) -> T:
-    """Asks once, and once more with the validation error; then gives up (ADR-011)."""
-    text = await ask(None)
+    """Asks once, and once more with the validation error; then gives up (ADR-011).
+
+    A cut-off answer is asked again from scratch: echoing the runaway text back in a repair
+    turn only invites the model to repeat itself again.
+    """
+    repair: Repair | None = None
     try:
-        return parse(text)
-    except (ValidationError, ValueError) as exc:
-        logger.warning(
-            "model output invalid; asking for a repair", extra={"reason": str(exc)[:300]}
-        )
-        repair = Repair(previous_answer=text, error=str(exc))
-    text = await ask(repair)
+        text = await ask(None)
+    except OutputCutOff:
+        logger.warning("model output cut off; asking again")
+    else:
+        try:
+            return parse(text)
+        except (ValidationError, ValueError) as exc:
+            logger.warning(
+                "model output invalid; asking for a repair", extra={"reason": str(exc)[:300]}
+            )
+            repair = Repair(previous_answer=text, error=str(exc))
     try:
-        return parse(text)
+        return parse(await ask(repair))
+    except OutputCutOff:
+        raise TransientError("the model output was cut off at the token limit") from None
     except (ValidationError, ValueError):
         raise TransientError("the model returned invalid JSON twice") from None
 

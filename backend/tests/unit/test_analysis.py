@@ -17,7 +17,7 @@ from clipforge.ai.adapters.openrouter_analysis import (
     OpenRouterAnalysisProvider,
     OpenRouterClient,
 )
-from clipforge.ai.prompts.analysis import TITLE_MAX_CHARS, truncate_title
+from clipforge.ai.prompts.analysis import MAX_OUTPUT_TOKENS, TITLE_MAX_CHARS, truncate_title
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.types import (
     AnalysisContext,
@@ -63,19 +63,32 @@ def candidate_json(start: float, end: float, **overrides: object) -> dict[str, o
     return values | overrides
 
 
-def gemini_body(payload: object, *, raw: str | None = None) -> dict[str, Any]:
+def gemini_body(
+    payload: object, *, raw: str | None = None, finish_reason: str = "STOP"
+) -> dict[str, Any]:
     text = raw if raw is not None else json.dumps(payload)
     return {
-        "candidates": [{"content": {"parts": [{"text": text}], "role": "model"}}],
+        "candidates": [
+            {"content": {"parts": [{"text": text}], "role": "model"}, "finishReason": finish_reason}
+        ],
         "usageMetadata": {"promptTokenCount": 5200, "candidatesTokenCount": 640},
     }
 
 
-def openrouter_body(content: str) -> dict[str, Any]:
+def openrouter_body(content: str, *, finish_reason: str = "stop") -> dict[str, Any]:
     return {
-        "choices": [{"message": {"role": "assistant", "content": content}}],
+        "choices": [
+            {
+                "message": {"role": "assistant", "content": content},
+                "finish_reason": finish_reason,
+            }
+        ],
         "usage": {"prompt_tokens": 5100, "completion_tokens": 700},
     }
+
+
+# A degenerate answer: one string repeated until the output limit cut it off mid-JSON.
+RUNAWAY = '{\n  "candidates": [\n    {\n      "keywords": ["' + "AASSS" * 1000
 
 
 class Recorder:
@@ -180,6 +193,50 @@ async def test_malformed_output_twice_is_transient(http: respx.MockRouter) -> No
 
     with pytest.raises(TransientError, match="invalid JSON"):
         await gemini_provider(StubQuota()).propose(SEGMENTS[:20], CONTEXT, record=Recorder())
+
+
+async def test_cut_off_output_is_asked_again_without_echoing_it(http: respx.MockRouter) -> None:
+    route = http.post(FLASH_LITE_URL).mock(
+        side_effect=[
+            httpx.Response(200, json=gemini_body(None, raw=RUNAWAY, finish_reason="MAX_TOKENS")),
+            httpx.Response(200, json=gemini_body({"candidates": [candidate_json(10, 40)]})),
+        ]
+    )
+
+    found = await gemini_provider(StubQuota()).propose(SEGMENTS[:20], CONTEXT, record=Recorder())
+
+    assert [c.start_s for c in found] == [10]
+    requests = [json.loads(call.request.content) for call in route.calls]
+    assert [len(request["contents"]) for request in requests] == [1, 1]
+    assert all(r["generationConfig"]["maxOutputTokens"] == MAX_OUTPUT_TOKENS for r in requests)
+
+
+async def test_output_cut_off_twice_is_transient(http: respx.MockRouter) -> None:
+    http.post(FLASH_LITE_URL).respond(
+        200, json=gemini_body(None, raw=RUNAWAY, finish_reason="MAX_TOKENS")
+    )
+
+    with pytest.raises(TransientError, match="cut off"):
+        await gemini_provider(StubQuota()).propose(SEGMENTS[:20], CONTEXT, record=Recorder())
+
+
+async def test_openrouter_cut_off_output_is_asked_again(http: respx.MockRouter) -> None:
+    proposal = json.dumps({"candidates": [candidate_json(10, 40)]})
+    route = http.post(CHAT_URL).mock(
+        side_effect=[
+            httpx.Response(200, json=openrouter_body(RUNAWAY, finish_reason="length")),
+            httpx.Response(200, json=openrouter_body(proposal)),
+        ]
+    )
+
+    found = await openrouter_provider(StubQuota()).propose(
+        SEGMENTS[:20], CONTEXT, record=Recorder()
+    )
+
+    assert [c.start_s for c in found] == [10]
+    requests = [json.loads(call.request.content) for call in route.calls]
+    assert [len(request["messages"]) for request in requests] == [2, 2]
+    assert all(request["max_tokens"] == MAX_OUTPUT_TOKENS for request in requests)
 
 
 async def test_blank_title_needs_a_repair(http: respx.MockRouter) -> None:
