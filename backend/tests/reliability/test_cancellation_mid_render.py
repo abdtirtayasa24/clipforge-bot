@@ -23,7 +23,7 @@ async def test_cancel_mid_render_stops_after_the_current_clip(
 
     job = await load_job(pipeline.sessions, job_id)
     assert status == "cancelled"
-    assert (job.status, job.stage, job.lease_token) == ("cancelled", "candidates_selected", None)
+    assert (job.status, job.stage, job.lease_token) == ("cancelled", "rendering_clips", None)
     assert (await event_types(pipeline.sessions, job_id))[-2:] == ["cancel_requested", "cancelled"]
     [(_, artifact)] = await pipeline.clips(job_id)
     assert artifact.upload_state == "pending"

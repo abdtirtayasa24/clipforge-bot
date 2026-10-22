@@ -45,7 +45,7 @@ class RenderStage:
     every clip whose verified file, or verified Drive upload, already exists."""
 
     name: str = "rendering"
-    running_name: str | None = None
+    running_name: str | None = "rendering_clips"
 
     def __init__(self, sessions: async_sessionmaker[AsyncSession]) -> None:
         self._sessions = sessions

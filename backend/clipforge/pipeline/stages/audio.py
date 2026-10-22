@@ -52,7 +52,7 @@ class AudioStage:
     """Extracts the source's audio as overlapping transcription chunks (ADR-012)."""
 
     name: str = "audio_extracted"
-    running_name: str | None = None
+    running_name: str | None = "extracting_audio"
 
     def __init__(self, sessions: async_sessionmaker[AsyncSession]) -> None:
         self._sessions = sessions

@@ -32,7 +32,7 @@ class UploadStage:
     """
 
     name: str = "uploading"
-    running_name: str | None = None
+    running_name: str | None = "uploading_clips"
 
     def __init__(self, sessions: async_sessionmaker[AsyncSession], drive: DriveClient | None):
         self._sessions = sessions

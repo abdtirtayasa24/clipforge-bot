@@ -342,5 +342,5 @@ async def test_upload_and_url_sources_go_through_ingest_and_audio(
         job, _ = await queue.enqueue(video_id, uuid.uuid4().hex, media_asset_id=asset_id)
         assert await runner.run(await claim(queue)) == "completed"
         stages = await stage_events(sessions, job.id)
-        assert stages == ["ingesting", "validated", "audio_extracted"]
+        assert stages == ["ingesting", "validated", "extracting_audio", "audio_extracted"]
         assert asset_state(migrated_database_url, asset_id)[0] == "ready"

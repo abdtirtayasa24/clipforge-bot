@@ -11,7 +11,7 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-003](adr-003.md) | Async SQLAlchemy with psycopg 3 and separated database roles | Accepted |
 | [ADR-004](adr-004.md) | Supabase connection mode and TLS | Accepted |
 | [ADR-005](adr-005.md) | PostgreSQL-backed job queue with leases and fencing | Accepted |
-| [ADR-006](adr-006.md) | Job stage state machine with durable stage artifacts | Accepted |
+| [ADR-006](adr-006.md) | Job stage state machine with durable stage artifacts | Accepted; stage list superseded by ADR-034 |
 | [ADR-007](adr-007.md) | Error taxonomy and retry policy | Accepted |
 | [ADR-008](adr-008.md) | Async subprocesses for media work | Accepted |
 | [ADR-009](adr-009.md) | Provider-independent AI adapters with registry and job snapshot | Accepted |
@@ -39,3 +39,4 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-031](adr-031.md) | Source registration without permission evidence | Accepted |
 | [ADR-032](adr-032.md) | One upload at a time, queued in the Mini App | Accepted |
 | [ADR-033](adr-033.md) | Subject-aware reframing with a blurred-background fallback | Accepted |
+| [ADR-034](adr-034.md) | A running name for every pipeline stage | Accepted |

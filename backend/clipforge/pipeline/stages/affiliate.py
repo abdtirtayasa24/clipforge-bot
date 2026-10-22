@@ -26,7 +26,7 @@ class AffiliateStage:
     """Suggests catalog products per clip when affiliate links are enabled (ADR-020)."""
 
     name: str = "affiliate_matching"
-    running_name: str | None = None
+    running_name: str | None = "matching_affiliates"
 
     def __init__(
         self, sessions: async_sessionmaker[AsyncSession], registry: ProviderRegistry

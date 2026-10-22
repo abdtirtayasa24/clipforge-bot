@@ -79,7 +79,7 @@ class TranscribeStage:
     """Transcribes audio chunks one at a time, keeping each result so a restart resumes."""
 
     name: str = "transcribed"
-    running_name: str | None = None
+    running_name: str | None = "transcribing"
 
     def __init__(
         self,

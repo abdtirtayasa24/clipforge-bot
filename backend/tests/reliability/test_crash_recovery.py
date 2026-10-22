@@ -213,7 +213,7 @@ async def test_database_outage_abandons_the_attempt_and_the_job_resumes(
         await pipeline.runner(stages, queue=flaky_queue).run(claimed)
     outage.down = False
     job = await load_job(pipeline.sessions, job_id)
-    assert (job.status, job.stage) == ("running", "audio_extracted")
+    assert (job.status, job.stage) == ("running", "transcribing")
 
     pipeline.clock.advance(PAST_LEASE)
     status = await pipeline.runner().run(await claim(pipeline.queue, "worker-b"))

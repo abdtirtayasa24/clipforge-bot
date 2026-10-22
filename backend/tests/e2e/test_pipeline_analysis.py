@@ -34,11 +34,17 @@ pytestmark = pytest.mark.usefixtures("require_ffmpeg")
 PIPELINE_STAGES = [
     "ingesting",
     "validated",
+    "extracting_audio",
     "audio_extracted",
+    "transcribing",
     "transcribed",
+    "analyzing",
     "analyzed",
+    "selecting_candidates",
     "candidates_selected",
+    "rendering_clips",
     "rendering",
+    "uploading_clips",
     "uploading",
 ]
 
@@ -190,7 +196,7 @@ async def test_job_uploads_at_most_three_verified_clips(
     )
 
     assert status == "completed"
-    assert (await stage_events(sessions, job_id))[:8] == PIPELINE_STAGES
+    assert (await stage_events(sessions, job_id))[: len(PIPELINE_STAGES)] == PIPELINE_STAGES
     assert sentinel.calls == 1
     rows = await candidate_rows(sessions, job_id)
     selected = [row for row in rows if row.selected]

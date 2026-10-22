@@ -76,7 +76,7 @@ class AnalyzeStage:
     """Windowed AI analysis plus frame re-rank; stores every candidate unselected (ADR-011)."""
 
     name: str = "analyzed"
-    running_name: str | None = None
+    running_name: str | None = "analyzing"
 
     def __init__(
         self,

@@ -110,6 +110,31 @@ def test_only_the_newest_receiving_upload_survives_and_one_at_a_time_is_enforced
         insert_receiving_upload(conn, video_id, "0 seconds")
 
 
+def test_running_stage_names_are_allowed_and_resume_the_same_stage_after_a_downgrade(
+    create_database: Callable[[], str],
+) -> None:
+    url = create_database()
+    command.upgrade(alembic_config(url), "head")
+    with psycopg.connect(libpq_url(url), autocommit=True) as conn:
+        video_id = insert_video(conn, "vid00000011")
+        for index, stage in enumerate(("rendering_clips", "transcribing", "rendering")):
+            conn.execute(
+                "INSERT INTO processing_jobs (video_id, idempotency_key, status, stage) "
+                "VALUES (%s, %s, 'failed', %s)",
+                (video_id, f"key-{index}", stage),
+            )
+
+    command.downgrade(alembic_config(url), "0010")
+
+    with psycopg.connect(libpq_url(url), autocommit=True) as conn:
+        stages = conn.execute(
+            "SELECT stage FROM processing_jobs ORDER BY idempotency_key"
+        ).fetchall()
+        assert [row[0] for row in stages] == ["candidates_selected", "audio_extracted", "rendering"]
+        with pytest.raises(psycopg.errors.CheckViolation):
+            conn.execute("UPDATE processing_jobs SET stage = 'rendering_clips'")
+
+
 def insert_video(conn: psycopg.Connection, youtube_video_id: str) -> object:
     row = conn.execute(
         "INSERT INTO videos (youtube_video_id, title, channel_id) "

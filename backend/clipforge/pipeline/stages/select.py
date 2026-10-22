@@ -37,7 +37,7 @@ class SelectStage:
     """Pure selection over the stored candidates (ADR-010); none qualifying ends the job."""
 
     name: str = "candidates_selected"
-    running_name: str | None = None
+    running_name: str | None = "selecting_candidates"
 
     def __init__(self, sessions: async_sessionmaker[AsyncSession]) -> None:
         self._sessions = sessions

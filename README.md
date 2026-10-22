@@ -73,6 +73,10 @@ flowchart LR
 | `uploading` | Resumable, idempotent upload to Google Drive, verified by size and MD5 |
 | `affiliate_matching` | Optional: embedding-based product suggestions per clip |
 
+While a stage runs, the job shows its running name instead (`extracting_audio`, `transcribing`,
+`analyzing`, `selecting_candidates`, `rendering_clips`, `uploading_clips`, `matching_affiliates`;
+ADR-034), so a running or failed job names the step it is actually in.
+
 The scoring weights, clip rules and output format are defined in the
 [spec](docs/SPEC-001-ClipForge-Bot.md).
 

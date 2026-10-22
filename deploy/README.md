@@ -454,10 +454,10 @@ journalctl -u clipforge-worker -f          # "clip rendered", "clip uploaded"
 curl -s $API/jobs/<job id> -H "Authorization: Bearer $TOKEN"
 ```
 
-Expected: after `candidates_selected` the stages `rendering` and `uploading`, then `completed`,
-and a Telegram message "N clips ready for review" listing the titles, scores and estimated AI
-cost. In Drive, the **ClipForge Bot** folder holds one private MP4 per clip, named after its
-title plus a short clip id. Check the files in the Supabase SQL editor:
+Expected: after `candidates_selected` the stages `rendering_clips`, `rendering`, `uploading_clips`
+and `uploading`, then `completed`, and a Telegram message "N clips ready for review" listing the
+titles, scores and estimated AI cost. In Drive, the **ClipForge Bot** folder holds one private MP4
+per clip, named after its title plus a short clip id. Check the files in the Supabase SQL editor:
 
 ```sql
 SELECT c.title, c.drive_file_id, a.upload_state, a.size_bytes, a.md5, a.local_deleted_at,
