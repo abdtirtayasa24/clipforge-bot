@@ -262,7 +262,18 @@ PROPOSAL_SCHEMA: dict[str, Any] = {
                     "keywords": {"type": "ARRAY", "items": {"type": "STRING"}},
                     "explanation": {"type": "STRING"},
                 },
-                "required": ["start_s", "end_s", *DIMENSIONS, "title", "hook_line"],
+                # All required: Gemini flash-lite left an optional string open and kept writing
+                # garbage into it until the token limit; required fields always closed.
+                "required": [
+                    "start_s",
+                    "end_s",
+                    *DIMENSIONS,
+                    "title",
+                    "hook_line",
+                    "topic",
+                    "keywords",
+                    "explanation",
+                ],
             },
         }
     },

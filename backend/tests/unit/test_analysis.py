@@ -17,7 +17,12 @@ from clipforge.ai.adapters.openrouter_analysis import (
     OpenRouterAnalysisProvider,
     OpenRouterClient,
 )
-from clipforge.ai.prompts.analysis import MAX_OUTPUT_TOKENS, TITLE_MAX_CHARS, truncate_title
+from clipforge.ai.prompts.analysis import (
+    MAX_OUTPUT_TOKENS,
+    PROPOSAL_SCHEMA,
+    TITLE_MAX_CHARS,
+    truncate_title,
+)
 from clipforge.ai.quota import QuotaGuard
 from clipforge.ai.types import (
     AnalysisContext,
@@ -209,6 +214,12 @@ async def test_cut_off_output_is_asked_again_without_echoing_it(http: respx.Mock
     requests = [json.loads(call.request.content) for call in route.calls]
     assert [len(request["contents"]) for request in requests] == [1, 1]
     assert all(r["generationConfig"]["maxOutputTokens"] == MAX_OUTPUT_TOKENS for r in requests)
+
+
+def test_every_proposal_field_is_required() -> None:
+    item = PROPOSAL_SCHEMA["properties"]["candidates"]["items"]
+
+    assert set(item["required"]) == set(item["properties"])
 
 
 async def test_gemini_keeps_the_model_default_temperature(http: respx.MockRouter) -> None:
