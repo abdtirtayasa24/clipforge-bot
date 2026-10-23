@@ -211,6 +211,33 @@ async def test_cut_off_output_is_asked_again_without_echoing_it(http: respx.Mock
     assert all(r["generationConfig"]["maxOutputTokens"] == MAX_OUTPUT_TOKENS for r in requests)
 
 
+async def test_gemini_keeps_the_model_default_temperature(http: respx.MockRouter) -> None:
+    route = http.post(FLASH_LITE_URL).respond(
+        200, json=gemini_body({"candidates": [candidate_json(10, 40)]})
+    )
+
+    await gemini_provider(StubQuota()).propose(SEGMENTS[:20], CONTEXT, record=Recorder())
+
+    assert "temperature" not in json.loads(route.calls.last.request.content)["generationConfig"]
+
+
+async def test_empty_output_is_asked_again_without_echoing_it(
+    http: respx.MockRouter, caplog: pytest.LogCaptureFixture
+) -> None:
+    route = http.post(FLASH_LITE_URL).mock(
+        side_effect=[
+            httpx.Response(200, json=gemini_body(None, raw="", finish_reason="OTHER")),
+            httpx.Response(200, json=gemini_body({"candidates": [candidate_json(10, 40)]})),
+        ]
+    )
+
+    found = await gemini_provider(StubQuota()).propose(SEGMENTS[:20], CONTEXT, record=Recorder())
+
+    assert [c.start_s for c in found] == [10]
+    assert [len(json.loads(call.request.content)["contents"]) for call in route.calls] == [1, 1]
+    assert any(getattr(r, "finish_reason", None) == "OTHER" for r in caplog.records)
+
+
 async def test_output_cut_off_twice_is_transient(http: respx.MockRouter) -> None:
     http.post(FLASH_LITE_URL).respond(
         200, json=gemini_body(None, raw=RUNAWAY, finish_reason="MAX_TOKENS")

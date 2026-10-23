@@ -217,8 +217,9 @@ Ask = Callable[[Repair | None], Awaitable[str]]
 async def with_repair[T](ask: Ask, parse: Callable[[str], T]) -> T:
     """Asks once, and once more with the validation error; then gives up (ADR-011).
 
-    A cut-off answer is asked again from scratch: echoing the runaway text back in a repair
-    turn only invites the model to repeat itself again.
+    A cut-off or empty answer is asked again from scratch: echoing a runaway answer back in a
+    repair turn only invites the model to repeat itself again, and an empty one has nothing to
+    repair.
     """
     repair: Repair | None = None
     try:
@@ -226,13 +227,16 @@ async def with_repair[T](ask: Ask, parse: Callable[[str], T]) -> T:
     except OutputCutOff:
         logger.warning("model output cut off; asking again")
     else:
-        try:
-            return parse(text)
-        except (ValidationError, ValueError) as exc:
-            logger.warning(
-                "model output invalid; asking for a repair", extra={"reason": str(exc)[:300]}
-            )
-            repair = Repair(previous_answer=text, error=str(exc))
+        if not text.strip():
+            logger.warning("model output empty; asking again")
+        else:
+            try:
+                return parse(text)
+            except (ValidationError, ValueError) as exc:
+                logger.warning(
+                    "model output invalid; asking for a repair", extra={"reason": str(exc)[:300]}
+                )
+                repair = Repair(previous_answer=text, error=str(exc))
     try:
         return parse(await ask(repair))
     except OutputCutOff:

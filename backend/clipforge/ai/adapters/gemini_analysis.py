@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import logging
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -29,7 +30,7 @@ from clipforge.ai.usage import UsageRecorder
 from clipforge.ai.windowing import excerpt
 from clipforge.settings_schema import ProviderSnapshot
 
-TEMPERATURE = 0.4
+logger = logging.getLogger(__name__)
 
 
 async def image_parts(frames: Sequence[Frame]) -> list[dict[str, Any]]:
@@ -63,16 +64,20 @@ class GeminiAnalysisProvider:
         body = {
             "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
             "contents": contents,
+            # No temperature: below the default 1.0, Gemini 3 models loop (Google's guidance),
+            # repeating one string until the token limit cuts the JSON off.
             "generationConfig": {
                 "responseMimeType": "application/json",
                 "responseSchema": schema,
-                "temperature": TEMPERATURE,
                 "maxOutputTokens": MAX_OUTPUT_TOKENS,
             },
         }
         result = await self._client.generate(body, record=record)
-        if any(c.get("finishReason") == "MAX_TOKENS" for c in result.get("candidates") or []):
+        finish_reasons = [c.get("finishReason") for c in result.get("candidates") or []]
+        if "MAX_TOKENS" in finish_reasons:
             raise OutputCutOff
+        if any(reason != "STOP" for reason in finish_reasons):
+            logger.warning("gemini answer ended early", extra={"finish_reason": finish_reasons[0]})
         return response_text(result)
 
     async def propose(
