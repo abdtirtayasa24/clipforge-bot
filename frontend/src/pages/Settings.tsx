@@ -69,6 +69,8 @@ const DISCOVERY_FIELDS: { key: DiscoveryNumberKey; label: string; min: number; m
   { key: "max_new_eligible_per_run", label: "Max new videos per run (1–50)", min: 1, max: 50 },
 ];
 
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
+
 interface Draft {
   numbers: Record<NumberField["key"], string>;
   dailyCap: string;
@@ -79,6 +81,8 @@ interface Draft {
   region: string;
   discovery: Record<DiscoveryNumberKey, string>;
   excluded: string[];
+  autoDiscovery: boolean;
+  autoHour: string;
   models: ModelSelection;
 }
 
@@ -104,6 +108,8 @@ function toDraft(settings: AdminSettings): Draft {
       max_new_eligible_per_run: String(settings.discovery.max_new_eligible_per_run),
     },
     excluded: settings.discovery.excluded_category_ids,
+    autoDiscovery: settings.discovery.auto_enabled,
+    autoHour: String(settings.discovery.auto_hour),
     models: settings.models,
   };
 }
@@ -153,6 +159,12 @@ function buildPatch(settings: AdminSettings, draft: Draft): SettingsPatch {
   }
   if (!sameList([...draft.excluded].sort(), [...settings.discovery.excluded_category_ids].sort())) {
     discovery.excluded_category_ids = draft.excluded;
+  }
+  if (draft.autoDiscovery !== settings.discovery.auto_enabled) {
+    discovery.auto_enabled = draft.autoDiscovery;
+  }
+  if (Number(draft.autoHour) !== settings.discovery.auto_hour) {
+    discovery.auto_hour = Number(draft.autoHour);
   }
   if (Object.keys(discovery).length > 0) {
     patch.discovery = discovery;
@@ -393,6 +405,31 @@ function SettingsForm({
 
       {section === "discovery" && (
         <Section>
+          <label className="switch-row">
+            Auto-discovery
+            <input
+              type="checkbox"
+              className="switch"
+              checked={draft.autoDiscovery}
+              onChange={(event) => setDraft({ ...draft, autoDiscovery: event.target.checked })}
+            />
+          </label>
+          <label>
+            <span>Run daily at (VPS time)</span>
+            <select
+              value={draft.autoHour}
+              disabled={!draft.autoDiscovery}
+              onChange={(event) => setDraft({ ...draft, autoHour: event.target.value })}
+            >
+              {HOURS.map((hour) => (
+                <option key={hour} value={String(hour)}>
+                  {String(hour).padStart(2, "0")}:00
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="hint">“Run discovery now” on Sources works whether auto-discovery is on or off.</p>
+          <FieldError errors={errors} name="discovery.auto_hour" />
           <label>
             <span>Region (ISO code)</span>
             <input maxLength={2} value={draft.region} onChange={(event) => setDraft({ ...draft, region: event.target.value })} />

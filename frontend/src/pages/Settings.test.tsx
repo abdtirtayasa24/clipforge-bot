@@ -242,6 +242,29 @@ describe("Settings sections", () => {
     expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ discovery: { excluded_category_ids: ["10"] } });
   });
 
+  it("sets the auto-discovery hour", async () => {
+    const calls = server();
+    renderSection("discovery");
+
+    const hour = await screen.findByLabelText("Run daily at (VPS time)");
+    expect(hour).toHaveValue("3");
+    await userEvent.selectOptions(hour, "22:00");
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ discovery: { auto_hour: 22 } });
+  });
+
+  it("turns auto-discovery off and disables the hour", async () => {
+    const calls = server();
+    renderSection("discovery");
+
+    await userEvent.click(await screen.findByLabelText("Auto-discovery"));
+    expect(screen.getByLabelText("Run daily at (VPS time)")).toBeDisabled();
+    await userEvent.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(calls.find((c) => c.method === "PATCH")?.body).toEqual({ discovery: { auto_enabled: false } });
+  });
+
   it("shows Drive status and opens the OAuth consent externally", async () => {
     const webApp = installTelegram();
     server();

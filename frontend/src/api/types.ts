@@ -315,6 +315,8 @@ export interface DiscoverySettings {
   per_category_results: number;
   max_new_eligible_per_run: number;
   excluded_category_ids: string[];
+  auto_enabled: boolean;
+  auto_hour: number;
 }
 
 export interface ModelSelection {

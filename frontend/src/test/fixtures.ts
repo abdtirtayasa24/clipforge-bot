@@ -206,6 +206,8 @@ export function settingsFixture(overrides: Partial<AdminSettings> = {}): AdminSe
       per_category_results: 50,
       max_new_eligible_per_run: 20,
       excluded_category_ids: [],
+      auto_enabled: true,
+      auto_hour: 3,
     },
     models: {
       transcription: "gemini-3.5-transcribe",
