@@ -3207,6 +3207,28 @@
               }
             ],
             "title": "Excluded Category Ids"
+          },
+          "auto_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Enabled"
+          },
+          "auto_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auto Hour"
           }
         },
         "additionalProperties": false,
@@ -3255,6 +3277,18 @@
             },
             "type": "array",
             "title": "Excluded Category Ids"
+          },
+          "auto_enabled": {
+            "type": "boolean",
+            "title": "Auto Enabled",
+            "default": true
+          },
+          "auto_hour": {
+            "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Auto Hour",
+            "default": 3
           }
         },
         "type": "object",

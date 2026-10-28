@@ -1,11 +1,14 @@
 import time
 from collections.abc import Iterator
+from datetime import datetime
 
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.types.json import Jsonb
 
 from clipforge import discovery_cli
+from clipforge.config import Settings
 from clipforge.discovery.service import DISCOVERY_LOCK_KEY
 from tests.api import admin_client
 from tests.db import libpq_url
@@ -137,6 +140,67 @@ def test_cli_skips_while_another_run_holds_the_lock(
 
     assert discovery_cli.main([]) == 0
     assert youtube.requests == []
+
+
+def set_auto_discovery(url: str, *, enabled: bool, hour: int) -> None:
+    execute(
+        url,
+        "UPDATE app_settings SET value = value || %s WHERE key = 'discovery'",
+        Jsonb({"auto_enabled": enabled, "auto_hour": hour}),
+    )
+
+
+async def run_scheduled(url: str, at: datetime) -> int:
+    return await discovery_cli._run(Settings(), url, "test-key", scheduled_at=at)
+
+
+@pytest.mark.usefixtures("clean_discovery")
+async def test_scheduled_run_at_the_configured_hour_runs_discovery(
+    migrated_database_url: str, youtube: FakeYouTube
+) -> None:
+    add_trending(migrated_database_url)
+    set_auto_discovery(migrated_database_url, enabled=True, hour=5)
+
+    exit_code = await run_scheduled(migrated_database_url, datetime(2026, 10, 28, 5, 0))
+
+    assert exit_code == discovery_cli.EXIT_OK
+    assert video_exists(migrated_database_url, vid("m02"))
+
+
+@pytest.mark.usefixtures("clean_discovery")
+@pytest.mark.parametrize(("enabled", "hour"), [(True, 4), (False, 5)])
+async def test_scheduled_run_outside_the_hour_or_when_disabled_is_skipped(
+    migrated_database_url: str, youtube: FakeYouTube, enabled: bool, hour: int
+) -> None:
+    add_trending(migrated_database_url)
+    set_auto_discovery(migrated_database_url, enabled=enabled, hour=hour)
+
+    exit_code = await run_scheduled(migrated_database_url, datetime(2026, 10, 28, 5, 0))
+
+    assert exit_code == discovery_cli.EXIT_OK
+    assert youtube.requests == []
+
+
+@pytest.mark.usefixtures("cli_env")
+def test_cli_scheduled_flag_respects_disabled_auto_discovery(
+    migrated_database_url: str, youtube: FakeYouTube
+) -> None:
+    add_trending(migrated_database_url)
+    set_auto_discovery(migrated_database_url, enabled=False, hour=3)
+
+    assert discovery_cli.main(["--scheduled"]) == 0
+    assert youtube.requests == []
+
+
+@pytest.mark.usefixtures("cli_env")
+def test_cli_without_scheduled_flag_runs_even_when_auto_discovery_is_disabled(
+    migrated_database_url: str, youtube: FakeYouTube
+) -> None:
+    add_trending(migrated_database_url)
+    set_auto_discovery(migrated_database_url, enabled=False, hour=3)
+
+    assert discovery_cli.main([]) == 0
+    assert video_exists(migrated_database_url, vid("m02"))
 
 
 @pytest.mark.usefixtures("cli_env")

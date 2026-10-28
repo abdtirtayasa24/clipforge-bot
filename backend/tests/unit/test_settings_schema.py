@@ -124,6 +124,18 @@ def test_discovery_region_must_be_iso_3166_alpha_2(region: str) -> None:
         SettingsSchema.model_validate({"discovery": {"region_code": region}})
 
 
+def test_auto_discovery_defaults_to_daily_at_three() -> None:
+    discovery = SettingsSchema().discovery
+
+    assert (discovery.auto_enabled, discovery.auto_hour) == (True, 3)
+
+
+@pytest.mark.parametrize("hour", [-1, 24])
+def test_auto_discovery_hour_must_be_a_clock_hour(hour: int) -> None:
+    with pytest.raises(ValidationError, match="auto_hour"):
+        SettingsSchema.model_validate({"discovery": {"auto_hour": hour}})
+
+
 def test_iso_region_list_is_complete() -> None:
     assert len(ISO_3166_ALPHA2) == 249
     assert {"ID", "US", "GB", "SS", "XK"} & ISO_3166_ALPHA2 == {"ID", "US", "GB", "SS"}

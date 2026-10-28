@@ -44,6 +44,9 @@ class DiscoverySettings(BaseModel):
     per_category_results: int = Field(default=50, ge=1, le=50)
     max_new_eligible_per_run: int = Field(default=20, ge=1, le=50)
     excluded_category_ids: list[str] = Field(default_factory=list)
+    auto_enabled: bool = True
+    # Hour of the day in the VPS time zone; the hourly timer runs discovery only then.
+    auto_hour: int = Field(default=3, ge=0, le=23)
 
     @field_validator("region_code")
     @classmethod

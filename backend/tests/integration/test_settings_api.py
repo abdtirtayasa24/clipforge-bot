@@ -76,6 +76,19 @@ def test_patch_updates_values_merges_nested_objects_and_audits(
     assert "max_clips" not in audited, "unchanged values are not audited"
 
 
+def test_patch_changes_the_auto_discovery_schedule(client: TestClient, database_url: str) -> None:
+    response = client.patch(SETTINGS, json={"discovery": {"auto_enabled": False, "auto_hour": 22}})
+
+    assert response.status_code == 200, response.text
+    discovery = client.get(SETTINGS).json()["discovery"]
+    assert (discovery["auto_enabled"], discovery["auto_hour"]) == (False, 22)
+    assert discovery["region_code"] == "ID"
+    audited = {key: (old, new) for key, old, new, _ in events(database_url)}
+    old_discovery, new_discovery = audited["discovery"]
+    assert (old_discovery["auto_enabled"], old_discovery["auto_hour"]) == (True, 3)
+    assert (new_discovery["auto_enabled"], new_discovery["auto_hour"]) == (False, 22)
+
+
 @pytest.mark.parametrize(
     "body",
     [
@@ -92,6 +105,9 @@ def test_patch_updates_values_merges_nested_objects_and_audits(
         {"max_overlap": 0.5},
         {"min_score": None},
         {"discovery": {"region_code": "ZZ"}},
+        {"discovery": {"auto_hour": 24}},
+        {"discovery": {"auto_hour": -1}},
+        {"discovery": {"auto_enabled": None}},
         {"permitted_download_domains": ["https://cdn.example.com/path"]},
         {"permitted_download_domains": ["192.168.1.10"]},
         {"permitted_download_domains": ["*.googlevideo.com"]},

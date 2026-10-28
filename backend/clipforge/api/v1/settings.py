@@ -24,6 +24,8 @@ class DiscoveryPatch(BaseModel):
     per_category_results: int | None = None
     max_new_eligible_per_run: int | None = None
     excluded_category_ids: list[str] | None = None
+    auto_enabled: bool | None = None
+    auto_hour: int | None = None
 
 
 class ModelsPatch(BaseModel):
