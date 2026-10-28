@@ -8,7 +8,7 @@ command on the VPS.
 |---|---|
 | `deploy/install.sh` | Idempotent provisioning and update script (run as root) |
 | `deploy/systemd/clipforge-api.service` | API unit, installed to `/etc/systemd/system/` |
-| `deploy/systemd/clipforge-discovery.{service,timer}` | Daily YouTube discovery at 03:00 (oneshot + timer) |
+| `deploy/systemd/clipforge-discovery.{service,timer}` | Daily YouTube discovery at the hour set in Settings, default 03:00 (oneshot + hourly timer, ADR-035) |
 | `deploy/backend.env.example` | Template for `/etc/clipforge-bot/backend.env` (runtime, `root:clipforge 0640`) |
 | `deploy/migration.env.example` | Template for `/etc/clipforge-bot/migration.env` (schema owner, `root:root 0600`) |
 | `deploy/nginx/clipforge-bot.conf` | Nginx site for `clipforge.thetirtayasa.my.id`: HTTPS, Mini App files, `/api/` proxy (section 15) |
@@ -183,7 +183,8 @@ sudo systemd-analyze verify /etc/systemd/system/clipforge-discovery.{service,tim
 systemctl list-timers clipforge-discovery.timer
 ```
 
-Expected: `verify` prints nothing; `list-timers` shows the next run at 03:00 (VPS time zone).
+Expected: `verify` prints nothing; `list-timers` shows the next hourly tick. Discovery itself runs only
+in the hour set in Mini App → Settings → YouTube discovery (default 03:00, VPS time zone).
 
 Add discovery sources with a session token from step 10 (`TOKEN=<access_token>`):
 
@@ -195,12 +196,11 @@ curl -s -X POST $API/sources -H "Authorization: Bearer $TOKEN" -H 'Content-Type:
 curl -s $API/sources -H "Authorization: Bearer $TOKEN"
 ```
 
-Run discovery by hand, through the timer's unit and through the API:
+Run discovery by hand, through the CLI and through the API (`systemctl start clipforge-discovery.service`
+only runs it within the configured hour):
 
 ```bash
-sudo systemctl start clipforge-discovery.service
-systemctl status clipforge-discovery.service --no-pager
-journalctl -u clipforge-discovery -n 20 --no-pager
+sudo systemd-run --wait --pipe --uid=clipforge --gid=clipforge \n  -p EnvironmentFile=/etc/clipforge-bot/backend.env -p WorkingDirectory=/opt/clipforge-bot/backend \n  /opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli
 curl -s -w '
 %{http_code}
 ' -X POST $API/discovery/run -H "Authorization: Bearer $TOKEN"
@@ -220,7 +220,7 @@ Expected:
   `"source_status": "awaiting_source"`. The trending chart is mostly short videos, so few or no new
   videos per run is normal; monitored channels are the more reliable long-form source.
 
-The day after, `journalctl -u clipforge-discovery --since yesterday` shows the 03:00 run.
+The day after, `journalctl -u clipforge-discovery --since yesterday` shows the run at the configured hour.
 
 ## 12. Authorized ingestion (Checkpoint M2)
 

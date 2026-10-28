@@ -101,16 +101,16 @@ def test_discovery_unit_runs_the_cli_once_as_service_user() -> None:
     assert service["EnvironmentFile"] == "/etc/clipforge-bot/backend.env"
     assert (
         service["ExecStart"]
-        == "/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli"
+        == "/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli --scheduled"
     )
     assert service["NoNewPrivileges"] == "true"
     assert service["ProtectSystem"] == "strict"
 
 
-def test_discovery_timer_fires_daily_at_three_and_catches_up() -> None:
+def test_discovery_timer_fires_hourly_and_catches_up() -> None:
     timer = unit("clipforge-discovery.timer")
 
-    assert timer["Timer"]["OnCalendar"] == "*-*-* 03:00:00"
+    assert timer["Timer"]["OnCalendar"] == "hourly"
     assert timer["Timer"]["Persistent"] == "true"
     assert timer["Timer"]["Unit"] == "clipforge-discovery.service"
     assert timer["Install"]["WantedBy"] == "timers.target"

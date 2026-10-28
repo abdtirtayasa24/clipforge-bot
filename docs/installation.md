@@ -164,7 +164,7 @@ Expected: a JSON log line `"msg": "admin enabled"`.
 sudo systemctl enable --now clipforge-api clipforge-worker clipforge-discovery.timer
 curl -s 127.0.0.1:8000/api/v1/health/live      # {"status":"ok"}
 curl -s 127.0.0.1:8000/api/v1/health/ready     # 200, every check "ok"
-systemctl list-timers clipforge-discovery.timer   # next run 03:00
+systemctl list-timers clipforge-discovery.timer   # next hourly tick; discovery runs at the Settings hour
 journalctl -u clipforge-worker -n 5 --no-pager    # "worker started"
 ```
 

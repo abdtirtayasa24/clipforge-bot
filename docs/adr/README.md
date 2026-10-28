@@ -40,3 +40,4 @@ New decisions get the next number (`adr-NNN.md`) and use the same sections: Stat
 | [ADR-032](adr-032.md) | One upload at a time, queued in the Mini App | Accepted |
 | [ADR-033](adr-033.md) | Subject-aware reframing with a blurred-background fallback | Accepted |
 | [ADR-034](adr-034.md) | A running name for every pipeline stage | Accepted |
+| [ADR-035](adr-035.md) | Auto-discovery schedule set in the Mini App | Accepted |

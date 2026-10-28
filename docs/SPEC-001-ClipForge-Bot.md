@@ -306,7 +306,7 @@ Create deterministic clip identity → initiate resumable upload → stream chun
 | Worker CPU quota | 170% |
 | Reserved free disk | At least 5 GB |
 | Clips per source | Up to 3 |
-| Daily discovery | Once at 03:00 VPS timezone |
+| Daily discovery | Once a day at the hour set in Settings (default 03:00 VPS timezone), can be turned off (ADR-035) |
 
 Admission-check projected disk use before ingesting large media. Reject/defer oversized sources or use authorized range-based acquisition if supported. Avoid storing full-resolution media unnecessarily.
 
@@ -354,8 +354,8 @@ Required units:
 
 - `clipforge-api.service`: FastAPI/Uvicorn on `127.0.0.1:8000`, one process.
 - `clipforge-worker.service`: One long-running worker, `MemoryMax=1800M`, `CPUQuota=170%`, automatic restart.
-- `clipforge-discovery.service`: One-shot discovery CLI.
-- `clipforge-discovery.timer`: `OnCalendar=*-*-* 03:00:00`, `Persistent=true`.
+- `clipforge-discovery.service`: One-shot discovery CLI with `--scheduled`.
+- `clipforge-discovery.timer`: `OnCalendar=hourly`, `Persistent=true`; the CLI runs discovery only in the configured hour (ADR-035).
 
 Example activation:
 

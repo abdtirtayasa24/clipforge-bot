@@ -10,14 +10,16 @@ Backups: `docs/backup-restore.md`. Secret rotation and security checks:
 |---|---|---|
 | `clipforge-api.service` | FastAPI on `127.0.0.1:8000`, behind Nginx | `on-failure`, 5 s |
 | `clipforge-worker.service` | Runs one job at a time through the pipeline | `always`, 10 s; `MemoryMax=1800M`, `OOMPolicy=continue` (an OOM-killed ffmpeg fails its stage, the worker keeps running) |
-| `clipforge-discovery.timer` → `.service` | YouTube discovery daily at 03:00, catches up after downtime | oneshot |
+| `clipforge-discovery.timer` → `.service` | Hourly tick; runs YouTube discovery only at the hour set in Settings (default 03:00, can be off, ADR-035) | oneshot |
 
 ```bash
 systemctl status clipforge-api clipforge-worker --no-pager
 systemctl list-timers clipforge-discovery.timer
 sudo systemctl restart clipforge-api            # e.g. after editing backend.env
 sudo systemctl restart clipforge-worker         # the running job is abandoned and resumed (below)
-sudo systemctl start clipforge-discovery.service   # discovery now (or Mini App: Sources → Run discovery now)
+# Discovery now (or Mini App: Sources → Run discovery now). Starting clipforge-discovery.service
+# only runs it within the configured hour.
+sudo systemd-run --wait --pipe --uid=clipforge --gid=clipforge \n  -p EnvironmentFile=/etc/clipforge-bot/backend.env -p WorkingDirectory=/opt/clipforge-bot/backend \n  /opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli
 curl -s 127.0.0.1:8000/api/v1/health/ready      # database, workspace, disk, ffmpeg, ai_providers
 ```
 

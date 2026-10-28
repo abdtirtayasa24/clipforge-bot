@@ -9,7 +9,7 @@ User=clipforge
 Group=clipforge
 WorkingDirectory=/opt/clipforge-bot/backend
 EnvironmentFile=/etc/clipforge-bot/backend.env
-ExecStart=/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli
+ExecStart=/opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli --scheduled
 TimeoutStartSec=15min
 UMask=0077
 

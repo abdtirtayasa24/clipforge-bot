@@ -1,8 +1,8 @@
 [Unit]
-Description=Daily ClipForge Bot YouTube discovery at 03:00 (VPS time zone)
+Description=Hourly ClipForge Bot YouTube discovery check (runs at the hour set in Settings)
 
 [Timer]
-OnCalendar=*-*-* 03:00:00
+OnCalendar=hourly
 Persistent=true
 Unit=clipforge-discovery.service
 

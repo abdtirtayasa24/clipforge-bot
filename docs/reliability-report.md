@@ -146,7 +146,7 @@ and finally fail with a Telegram message. Afterwards run `sudo rm /var/lib/clipf
 ```bash
 sudo cp -p /etc/clipforge-bot/backend.env /etc/clipforge-bot/backend.env.bak  # keeps 0640
 sudo sed -i 's/^YOUTUBE_API_KEY=.*/YOUTUBE_API_KEY=invalid/' /etc/clipforge-bot/backend.env
-sudo systemctl start clipforge-discovery.service; systemctl status clipforge-discovery.service
+sudo systemd-run --wait --pipe --uid=clipforge --gid=clipforge \n  -p EnvironmentFile=/etc/clipforge-bot/backend.env -p WorkingDirectory=/opt/clipforge-bot/backend \n  /opt/clipforge-bot/backend/.venv/bin/python -m clipforge.discovery_cli
 sudo mv /etc/clipforge-bot/backend.env.bak /etc/clipforge-bot/backend.env
 ```
 
